@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import './App.css'
+import { API_DECLARACIONES_URL } from './constants'
 
 const INITIAL_STATE = {
   // 1. Datos personales
@@ -214,7 +215,7 @@ export default function App() {
 
     setSubmitting(true)
     try {
-      const response = await fetch('https://api.renta-form.example/v1/irpf/declaraciones', {
+      const response = await fetch(API_DECLARACIONES_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
