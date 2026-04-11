@@ -1,0 +1,264 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background: #eef2f7;
+  color: #222;
+  padding: 24px 16px 60px;
+}
+
+/* ── Header */
+header {
+  background: linear-gradient(135deg, #003087 0%, #0055b3 100%);
+  color: #fff;
+  border-radius: 10px 10px 0 0;
+  padding: 28px 32px 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  max-width: 920px;
+  margin: 0 auto;
+}
+header .logo {
+  background: #fff;
+  color: #003087;
+  font-weight: 900;
+  font-size: 1.5rem;
+  padding: 10px 16px;
+  border-radius: 6px;
+  letter-spacing: 1px;
+}
+header .header-text h1 { font-size: 1.6rem; font-weight: 700; }
+header .header-text p  { font-size: 0.9rem; opacity: .85; margin-top: 4px; }
+
+/* ── Main card */
+.card {
+  background: #fff;
+  max-width: 920px;
+  margin: 0 auto;
+  border-radius: 0 0 10px 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.12);
+  padding: 32px;
+}
+
+/* ── Progress bar */
+.progress-bar {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 32px;
+  position: relative;
+}
+.progress-bar::before {
+  content: '';
+  position: absolute;
+  top: 18px;
+  left: 0; right: 0;
+  height: 3px;
+  background: #d0d8e8;
+}
+.progress-bar .step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  z-index: 1;
+  font-size: .75rem;
+  color: #888;
+  cursor: default;
+  flex: 1;
+}
+.progress-bar .step .bubble {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  background: #d0d8e8;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: .9rem;
+  color: #fff;
+}
+.progress-bar .step.active   .bubble { background: #003087; }
+.progress-bar .step.done     .bubble { background: #28a745; }
+.progress-bar .step.active   { color: #003087; font-weight: 600; }
+
+/* ── Section titles */
+.section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #003087;
+  border-left: 4px solid #003087;
+  padding-left: 10px;
+  margin: 28px 0 16px;
+}
+
+/* ── Grid / form */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 24px;
+}
+.form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+.full { grid-column: 1 / -1; }
+
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field label {
+  font-size: .8rem;
+  font-weight: 600;
+  color: #444;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.field input,
+.field select,
+.field textarea {
+  border: 1.5px solid #c8d1df;
+  border-radius: 6px;
+  padding: 9px 12px;
+  font-size: .92rem;
+  background: #f8fafd;
+  transition: border-color .2s, box-shadow .2s;
+  color: #111;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: #003087;
+  box-shadow: 0 0 0 3px rgba(0,48,135,.12);
+  background: #fff;
+}
+.field textarea { resize: vertical; min-height: 70px; }
+
+/* currency fields */
+.currency-wrap { position: relative; }
+.currency-wrap input { padding-left: 30px; }
+.currency-wrap::before {
+  content: '\20AC';
+  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  color: #666; font-size: .9rem;
+}
+
+/* ── Info box */
+.info-box {
+  background: #e8f0fe;
+  border: 1px solid #c2d4f7;
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: .85rem;
+  color: #1a3a6b;
+  margin-bottom: 20px;
+}
+.info-box strong { display: block; margin-bottom: 4px; }
+
+/* ── Result panel */
+.result-panel {
+  background: linear-gradient(135deg, #f0f7ff 0%, #e8f0fe 100%);
+  border: 2px solid #003087;
+  border-radius: 10px;
+  padding: 24px 28px;
+  margin-top: 28px;
+}
+.result-panel h3 {
+  color: #003087;
+  font-size: 1.05rem;
+  margin-bottom: 16px;
+}
+.result-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px dashed #c2d4f7;
+  font-size: .9rem;
+}
+.result-row:last-child { border-bottom: none; }
+.result-row .label { color: #555; }
+.result-row .value { font-weight: 700; color: #111; }
+.result-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 0 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+}
+.result-total .value.pagar    { color: #c0392b; }
+.result-total .value.devolver { color: #27ae60; }
+
+/* ── Buttons */
+.btn-row {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 32px;
+  flex-wrap: wrap;
+}
+.btn {
+  padding: 11px 26px;
+  border-radius: 7px;
+  border: none;
+  cursor: pointer;
+  font-size: .95rem;
+  font-weight: 600;
+  transition: opacity .15s, transform .1s;
+}
+.btn:hover { opacity: .88; transform: translateY(-1px); }
+.btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+.btn-primary   { background: #003087; color: #fff; }
+.btn-secondary { background: #e0e7f3; color: #003087; }
+.btn-success   { background: #27ae60; color: #fff; }
+
+/* ── Badge */
+.badge {
+  display: inline-block;
+  background: #003087;
+  color: #fff;
+  font-size: .7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  vertical-align: middle;
+  margin-left: 6px;
+}
+
+/* ── Checkbox row */
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  cursor: pointer;
+}
+.check-row input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+.check-row label { font-size: .88rem; cursor: pointer; }
+
+/* ── Toast */
+.toast {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  padding: 14px 22px;
+  border-radius: 8px;
+  font-size: .92rem;
+  font-weight: 600;
+  box-shadow: 0 4px 16px rgba(0,0,0,.18);
+  z-index: 1000;
+  animation: slideIn .25s ease;
+}
+.toast.success { background: #27ae60; color: #fff; }
+.toast.error   { background: #c0392b; color: #fff; }
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Footer */
+footer {
+  max-width: 920px;
+  margin: 16px auto 0;
+  text-align: center;
+  font-size: .75rem;
+  color: #888;
+}
+
+@media (max-width: 600px) {
+  .form-grid, .form-grid.cols-3 { grid-template-columns: 1fr; }
+  .full { grid-column: auto; }
+}
