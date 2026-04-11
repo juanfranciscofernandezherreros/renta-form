@@ -59,7 +59,11 @@ export default function App() {
   const handleChange = e => {
     const { name, value, type } = e.target
     if (type === 'file') {
-      setForm(prev => ({ ...prev, [name]: e.target.files[0] ?? null }))
+      if (e.target.multiple) {
+        setForm(prev => ({ ...prev, [name]: e.target.files.length > 0 ? e.target.files : null }))
+      } else {
+        setForm(prev => ({ ...prev, [name]: e.target.files[0] ?? null }))
+      }
     } else {
       setForm(prev => ({ ...prev, [name]: value }))
     }
@@ -111,7 +115,11 @@ export default function App() {
     // Documents
     if (form.docDniAnverso) payload.append('docDniAnverso', form.docDniAnverso)
     if (form.docDniReverso) payload.append('docDniReverso', form.docDniReverso)
-    if (form.docAdicional)  payload.append('docAdicional',  form.docAdicional)
+    if (form.docAdicional) {
+      for (const file of form.docAdicional) {
+        payload.append('docAdicional', file)
+      }
+    }
 
     // Comments
     payload.append('comentarios', form.comentarios)
@@ -295,7 +303,7 @@ export default function App() {
                 <div className="field full">
                   <label>Documentación adicional (Nóminas, certificados de retenciones, facturas deducibles, etc.)</label>
                   <input type="file" name="docAdicional" accept=".pdf,.jpg,.jpeg,.png,.zip" multiple onChange={handleChange} />
-                  {form.docAdicional && <span className="file-name">📄 {form.docAdicional.name}</span>}
+                  {form.docAdicional && <span className="file-name">📄 {Array.from(form.docAdicional).map(f => f.name).join(', ')}</span>}
                 </div>
               </div>
 
