@@ -170,9 +170,9 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion }) {
                     </tr>
                   </tbody>
                 </table>
-                {onEditDeclaracion && (
-                  <div className="btn-row" style={{ marginTop: '12px' }}>
-                    {result.estado === 'completado' ? (
+                <div className="btn-row" style={{ marginTop: '12px' }}>
+                  {onEditDeclaracion && (
+                    result.estado === 'completado' ? (
                       <span className="info-box" style={{ margin: 0 }}>{t('profileEditLocked')}</span>
                     ) : (
                       <button
@@ -182,27 +182,16 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion }) {
                       >
                         {t('profileEdit')}
                       </button>
-                    )}
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => generateDeclaracionPDF(result)}
-                    >
-                      {t('btnDownloadPDF')}
-                    </button>
-                  </div>
-                )}
-                {!onEditDeclaracion && (
-                  <div className="btn-row" style={{ marginTop: '12px' }}>
-                    <button
-                      type="button"
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => generateDeclaracionPDF(result)}
-                    >
-                      {t('btnDownloadPDF')}
-                    </button>
-                  </div>
-                )}
+                    )
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => generateDeclaracionPDF(result)}
+                  >
+                    {t('btnDownloadPDF')}
+                  </button>
+                </div>
               </div>
             </div>
           </div>

@@ -25,17 +25,17 @@ const CAMPOS_LABELS = {
 }
 
 const SECCIONES = [
-  { titulo: '1. Datos de Identificacion', campos: ['nombre', 'apellidos', 'dniNie', 'email', 'telefono'] },
-  { titulo: '2. Situacion de Vivienda', campos: ['viviendaAlquiler', 'alquilerMenos35', 'viviendaPropiedad', 'propiedadAntes2013', 'pisosAlquiladosTerceros', 'segundaResidencia'] },
-  { titulo: '3. Cargas Familiares y Ayudas Publicas', campos: ['familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'mayoresConviven', 'hijosMenores26'] },
+  { titulo: '1. Datos de Identificación', campos: ['nombre', 'apellidos', 'dniNie', 'email', 'telefono'] },
+  { titulo: '2. Situación de Vivienda', campos: ['viviendaAlquiler', 'alquilerMenos35', 'viviendaPropiedad', 'propiedadAntes2013', 'pisosAlquiladosTerceros', 'segundaResidencia'] },
+  { titulo: '3. Cargas Familiares y Ayudas Públicas', campos: ['familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'mayoresConviven', 'hijosMenores26'] },
   { titulo: '4. Ingresos Extraordinarios e Inversiones', campos: ['ingresosJuego', 'ingresosInversiones'] },
-  { titulo: '6. Informacion Adicional', campos: ['comentarios'] },
+  { titulo: '6. Información Adicional', campos: ['comentarios'] },
 ]
 
 const ESTADO_LABELS = {
   recibido: 'Recibido',
-  en_revision: 'En revision',
-  documentacion_pendiente: 'Documentacion pendiente',
+  en_revision: 'En revisión',
+  documentacion_pendiente: 'Documentación pendiente',
   completado: 'Completado',
   archivado: 'Archivado',
 }
@@ -71,10 +71,10 @@ export function generateDeclaracionPDF(dec) {
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(14)
   doc.setFont('helvetica', 'bold')
-  doc.text('NH Gestion Integral', MARGIN, 11)
+  doc.text('NH Gestión Integral', MARGIN, 11)
   doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
-  doc.text('Campana Renta 2025 - Cuestionario para Expediente Fiscal', MARGIN, 19)
+  doc.text('Campaña Renta 2025 - Cuestionario para Expediente Fiscal', MARGIN, 19)
   doc.setFontSize(8)
   doc.text(`Generado: ${formatFecha(new Date().toISOString())}`, PAGE_W - MARGIN, 19, { align: 'right' })
 
@@ -84,7 +84,7 @@ export function generateDeclaracionPDF(dec) {
   doc.setTextColor(30, 64, 120)
   doc.setFontSize(10)
   doc.setFont('helvetica', 'bold')
-  doc.text('DECLARACION', MARGIN, y)
+  doc.text('DECLARACIÓN', MARGIN, y)
 
   y += 5
   doc.setDrawColor(200, 210, 230)
@@ -167,7 +167,7 @@ export function generateDeclaracionPDF(dec) {
     doc.setTextColor(30, 64, 120)
     doc.setFontSize(9)
     doc.setFont('helvetica', 'bold')
-    doc.text('5. Documentacion Adjunta', MARGIN + 2, y)
+    doc.text('5. Documentación Adjunta', MARGIN + 2, y)
     y += LINE_H - 1
 
     doc.setTextColor(50, 50, 50)
@@ -191,8 +191,8 @@ export function generateDeclaracionPDF(dec) {
     doc.setTextColor(130, 130, 130)
     doc.setFontSize(7)
     doc.setFont('helvetica', 'normal')
-    doc.text('NH Gestion Integral · Agencia Tributaria · www.agenciatributaria.es · Campana Renta 2025', MARGIN, PAGE_H - 7)
-    doc.text(`Pagina ${i} / ${pageCount}`, PAGE_W - MARGIN, PAGE_H - 7, { align: 'right' })
+    doc.text('NH Gestión Integral · Agencia Tributaria · www.agenciatributaria.es · Campaña Renta 2025', MARGIN, PAGE_H - 7)
+    doc.text(`Página ${i} / ${pageCount}`, PAGE_W - MARGIN, PAGE_H - 7, { align: 'right' })
   }
 
   const nombre = dec.nombre ? `_${dec.nombre.replace(/\s+/g, '_')}` : ''
