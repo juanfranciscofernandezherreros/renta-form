@@ -24,6 +24,7 @@ import {
   persistUser,
   codigosAccesoStore,
 } from './demoData.js'
+import { ERROR_USER_BLOCKED } from './constants.js'
 
 /** Simula un pequeño retardo de red (ms). */
 const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms))
@@ -159,6 +160,9 @@ export async function loginUser({ dniNie, password }) {
   const storedPassword = passwordsStore.get(dniNie)
   if (storedPassword === undefined) {
     return { data: null, error: { message: 'DNI/NIE no encontrado' } }
+  }
+  if (blockedStore.get(dniNie) === true) {
+    return { data: null, error: { message: ERROR_USER_BLOCKED } }
   }
   if (!(await verifyPassword(password, storedPassword))) {
     return { data: null, error: { message: 'Contraseña incorrecta' } }
