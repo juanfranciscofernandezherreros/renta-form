@@ -316,9 +316,37 @@ const declaracionesIniciales = [
 
 // ---------------------------------------------------------------------------
 // Almacén en memoria (mutable para soportar nuevos envíos durante la demo)
+// Los envíos de usuarios se persisten en localStorage para sobrevivir recargas.
 // ---------------------------------------------------------------------------
+
+const DEMO_SUBMISSIONS_KEY = 'renta_form_demo_submissions'
+
+/** Carga los envíos de usuario guardados en localStorage. */
+function loadSubmissions() {
+  try {
+    const stored = localStorage.getItem(DEMO_SUBMISSIONS_KEY)
+    return stored ? JSON.parse(stored) : []
+  } catch {
+    return []
+  }
+}
+
+/** Guarda el array de envíos de usuario en localStorage (máx. 50 entradas). */
+export function persistSubmission(declaracion) {
+  try {
+    const stored = loadSubmissions()
+    stored.push(declaracion)
+    localStorage.setItem(DEMO_SUBMISSIONS_KEY, JSON.stringify(stored.slice(-50)))
+  } catch {
+    // localStorage no disponible
+  }
+}
+
+const initialIds = new Set(declaracionesIniciales.map(d => d.id))
+const savedSubmissions = loadSubmissions().filter(d => !initialIds.has(d.id))
+
 /** @type {import('./api/types.gen').Declaracion[]} */
-export const declaracionesStore = [...declaracionesIniciales]
+export const declaracionesStore = [...savedSubmissions, ...declaracionesIniciales]
 
 // ---------------------------------------------------------------------------
 // Contraseñas – contraseña inicial: renta2025
