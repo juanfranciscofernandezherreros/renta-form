@@ -10,6 +10,8 @@ import { LANGUAGES } from './i18n.js'
 const getPreguntas = DEMO_MODE ? getPreguntasMock : getPreguntasReal
 const createDeclaracion = DEMO_MODE ? createDeclaracionMock : createDeclaracionReal
 
+const TOKENS_STORAGE_KEY = 'renta_form_tokens'
+
 const INITIAL_STATE = {
   // 1. Datos de identificación
   nombre: '',
@@ -64,6 +66,8 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const [toast, setToast] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [submissionToken, setSubmissionToken] = useState(null)
+  const [tokenCopied, setTokenCopied] = useState(false)
   const [secciones, setSecciones] = useState([])
   const [loadingPreguntas, setLoadingPreguntas] = useState(true)
   const [errorPreguntas, setErrorPreguntas] = useState(null)
@@ -128,6 +132,8 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
     if (window.confirm(t('confirmClear'))) {
       setForm(INITIAL_STATE)
       setSubmitted(false)
+      setSubmissionToken(null)
+      setTokenCopied(false)
     }
   }
 
@@ -176,6 +182,16 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       const { data, error, response } = await createDeclaracion({ body })
       if (data) {
         setSubmitted(true)
+        if (!user) {
+          setSubmissionToken(data.id)
+          try {
+            const stored = JSON.parse(localStorage.getItem(TOKENS_STORAGE_KEY) ?? '[]')
+            stored.unshift({ id: data.id, creadoEn: data.creadoEn, dniNie: body.dniNie })
+            localStorage.setItem(TOKENS_STORAGE_KEY, JSON.stringify(stored.slice(0, 20)))
+          } catch {
+            // localStorage not available
+          }
+        }
         showToast(t('toastSuccess'), 'success')
         setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
       } else {
@@ -222,9 +238,14 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
               </button>
             </>
           ) : (
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/login')}>
-              {t('navLogin')}
-            </button>
+            <>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/consulta')}>
+                {t('navConsulta')}
+              </button>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/login')}>
+                {t('navLogin')}
+              </button>
+            </>
           )}
         </nav>
       </header>
@@ -244,6 +265,34 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
             <div className="success-icon">✅</div>
             <h2>{t('successTitle')}</h2>
             <p>{t('successText')}</p>
+            {!user && submissionToken && (
+              <div className="token-box">
+                <div className="token-title">{t('tokenTitle')}</div>
+                <p className="token-desc">{t('tokenDesc')}</p>
+                <div className="token-code-row">
+                  <code className="token-code">{submissionToken}</code>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(submissionToken).catch(() => {})
+                      setTokenCopied(true)
+                      setTimeout(() => setTokenCopied(false), 2000)
+                    }}
+                  >
+                    {tokenCopied ? t('tokenCopied') : t('tokenCopy')}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  style={{ marginTop: '8px' }}
+                  onClick={() => onNavigate('#/consulta')}
+                >
+                  {t('navConsulta')}
+                </button>
+              </div>
+            )}
             <button type="button" className="btn btn-secondary" onClick={handleLimpiar}>{t('btnSendAnother')}</button>
           </div>
         ) : (
