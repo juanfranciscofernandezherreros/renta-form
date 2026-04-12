@@ -23,7 +23,7 @@ export default function LoginPage({ onNavigate }) {
   const validate = () => {
     const errs = {}
     const dniNieUpper = form.dniNie.trim().toUpperCase()
-    if (dniNieUpper !== 'ADMIN' && !DNI_NIE_REGEX.test(dniNieUpper)) {
+    if (!DNI_NIE_REGEX.test(dniNieUpper)) {
       errs.dniNie = t('errDniFormat')
     }
     if (!form.password) {
@@ -53,7 +53,7 @@ export default function LoginPage({ onNavigate }) {
       setErrors({ global: error.message })
       return
     }
-    login({ dniNie: data.dniNie })
+    login({ dniNie: data.dniNie, role: data.role })
     onNavigate('#/perfil')
   }
 
@@ -90,7 +90,6 @@ export default function LoginPage({ onNavigate }) {
             <li><strong>87654321B</strong> – Carlos Martínez Ruiz</li>
             <li><strong>11223344C</strong> – Ana López Sánchez</li>
             <li><strong>44332211D</strong> – Pedro Fernández González</li>
-            <li><strong>admin</strong> – Administrador (contraseña: <strong>admin</strong>)</li>
           </ul>
           {t('loginTestPassword')}<strong>renta2025</strong>
         </div>
