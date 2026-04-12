@@ -697,12 +697,18 @@ let nextIdiomaIdCounter = 1
 /** Genera un ID fake para idiomas. */
 export function generarIdiomaId() {
   const n = String(nextIdiomaIdCounter++).padStart(8, '0')
-  return `lang${n.slice(0, 4)}-${n.slice(0, 4)}-${n.slice(0, 4)}-${n.slice(0, 4)}-${n}${n}`
+  return `lang${n.slice(0, 4)}-${n.slice(4, 8)}-${n.slice(0, 4)}-${n.slice(4, 8)}-${n}${n}`
+}
+
+/** Genera un ID estático para un índice dado (usado en idiomasStore inicial). */
+function idiomaIdForIndex(idx) {
+  const n = String(idx + 1).padStart(8, '0')
+  return `lang${n.slice(0, 4)}-${n.slice(4, 8)}-${n.slice(0, 4)}-${n.slice(4, 8)}-${n}${n}`
 }
 
 /** Store de idiomas disponibles – inicializado a partir de LANGUAGES de i18n.js. */
 export const idiomasStore = STATIC_LANGUAGES.map((lang, idx) => ({
-  id: `lang${String(idx + 1).padStart(4, '0')}-${String(idx + 1).padStart(4, '0')}-${String(idx + 1).padStart(4, '0')}-${String(idx + 1).padStart(4, '0')}-${String(idx + 1).padStart(8, '0')}`,
+  id: idiomaIdForIndex(idx),
   code: lang.code,
   label: lang.label,
   activo: true,

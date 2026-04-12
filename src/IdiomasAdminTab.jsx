@@ -11,6 +11,9 @@ import Pagination from './Pagination.jsx'
 
 const EMPTY_FORM = { code: '', label: '', activo: true }
 
+/** Número de caracteres a partir del cual el textarea de traducción se expande a 3 filas. */
+const TEXTAREA_EXPAND_THRESHOLD = 80
+
 function formatFecha(iso) {
   if (!iso) return '—'
   return new Date(iso).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' })
@@ -348,7 +351,7 @@ export default function IdiomasAdminTab({ showToast }) {
                             </td>
                             <td>
                               <textarea
-                                rows={String(content[key] ?? '').length > 80 ? 3 : 1}
+                                rows={String(content[key] ?? '').length > TEXTAREA_EXPAND_THRESHOLD ? 3 : 1}
                                 value={content[key] ?? ''}
                                 onChange={e => handleContentChange(key, e.target.value)}
                                 style={{ width: '100%', resize: 'vertical', fontFamily: 'inherit', fontSize: '.85rem', padding: '4px 6px', border: '1px solid #ccc', borderRadius: 4 }}

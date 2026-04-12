@@ -6,11 +6,16 @@ const LanguageContext = createContext(null)
 
 export function LanguageProvider({ children }) {
   const [lang, setLang] = useState('es')
-  const [, forceUpdate] = useState(0)
+  const [translationVersion, forceUpdate] = useState(0)
 
   const reloadTranslations = useCallback(() => forceUpdate(n => n + 1), [])
 
-  const t = key => translationsStore[lang]?.[key] ?? translationsStore['es']?.[key] ?? key
+  const t = (key) => {
+    // translationVersion is read here so that any call to reloadTranslations()
+    // triggers a re-render and picks up the latest values from translationsStore.
+    void translationVersion
+    return translationsStore[lang]?.[key] ?? translationsStore['es']?.[key] ?? key
+  }
 
   const availableLanguages = idiomasStore.filter(i => i.activo).map(i => ({ code: i.code, label: i.label }))
 
