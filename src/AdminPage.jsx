@@ -7,6 +7,7 @@ import {
   sendEmailDeclaracion,
 } from './mockApi.js'
 import PreguntasAdminTab from './PreguntasAdminTab.jsx'
+import SeccionesAdminTab from './SeccionesAdminTab.jsx'
 import DeclaracionPreguntasPanel from './DeclaracionPreguntasPanel.jsx'
 
 const ESTADOS = ['recibido', 'en_revision', 'documentacion_pendiente', 'completado', 'archivado']
@@ -256,10 +257,21 @@ export default function AdminPage({ onNavigate }) {
           >
             ❓ Preguntas adicionales
           </button>
+          <button
+            type="button"
+            className={`admin-tab${activeTab === 'secciones' ? ' active' : ''}`}
+            onClick={() => setActiveTab('secciones')}
+          >
+            📂 Secciones
+          </button>
         </div>
 
         {activeTab === 'preguntas' && (
           <PreguntasAdminTab showToast={showToast} />
+        )}
+
+        {activeTab === 'secciones' && (
+          <SeccionesAdminTab showToast={showToast} />
         )}
 
         {activeTab === 'declaraciones' && (
