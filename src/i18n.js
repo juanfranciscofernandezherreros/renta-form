@@ -166,6 +166,7 @@ const translations = {
     footerContactErrMessage: 'El mensaje debe tener al menos 10 caracteres',
     footerShowHow: 'ℹ️ ¿Cómo funciona?',
     footerHideHow: '▲ Ocultar',
+    btnDownloadPDF: '📄 Descargar PDF',
   },
 
   fr: {
@@ -315,6 +316,7 @@ const translations = {
     footerContactErrMessage: 'Le message doit comporter au moins 10 caractères',
     footerShowHow: 'ℹ️ Comment ça marche ?',
     footerHideHow: '▲ Masquer',
+    btnDownloadPDF: '📄 Télécharger le PDF',
   },
 
   en: {
@@ -462,6 +464,7 @@ const translations = {
     footerContactErrMessage: 'Message must be at least 10 characters',
     footerShowHow: 'ℹ️ How does it work?',
     footerHideHow: '▲ Hide',
+    btnDownloadPDF: '📄 Download PDF',
   },
 
   ca: {
@@ -611,6 +614,7 @@ const translations = {
     footerContactErrMessage: 'El missatge ha de tenir almenys 10 caràcters',
     footerShowHow: 'ℹ️ Com funciona?',
     footerHideHow: '▲ Amagar',
+    btnDownloadPDF: '📄 Descarregar PDF',
   },
 }
 

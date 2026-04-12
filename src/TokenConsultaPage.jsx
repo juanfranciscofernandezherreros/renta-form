@@ -3,6 +3,7 @@ import { getDeclaracionByToken as getDeclaracionByTokenMock } from './mockApi.js
 import { DEMO_MODE } from './constants.js'
 import { useLanguage } from './LanguageContext.jsx'
 import { LANGUAGES } from './i18n.js'
+import { generateDeclaracionPDF } from './pdfUtils.js'
 
 const TOKENS_STORAGE_KEY = 'renta_form_tokens'
 
@@ -182,6 +183,24 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion }) {
                         {t('profileEdit')}
                       </button>
                     )}
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => generateDeclaracionPDF(result)}
+                    >
+                      {t('btnDownloadPDF')}
+                    </button>
+                  </div>
+                )}
+                {!onEditDeclaracion && (
+                  <div className="btn-row" style={{ marginTop: '12px' }}>
+                    <button
+                      type="button"
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => generateDeclaracionPDF(result)}
+                    >
+                      {t('btnDownloadPDF')}
+                    </button>
                   </div>
                 )}
               </div>
