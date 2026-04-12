@@ -19,6 +19,7 @@ import {
   reportedStore,
   userPreguntasStore,
   userSeccionesStore,
+  persistSubmission,
 } from './demoData.js'
 
 /** Simula un pequeño retardo de red (ms). */
@@ -100,6 +101,7 @@ export async function createDeclaracion(options) {
   }
 
   declaracionesStore.push(nuevaDeclaracion)
+  persistSubmission(nuevaDeclaracion)
 
   return {
     data: { id, estado: 'recibido', creadoEn: ahora },
