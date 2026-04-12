@@ -339,6 +339,37 @@ export const rolesStore = new Map([
   ['ADMIN', 'admin'],
 ])
 
+// ---------------------------------------------------------------------------
+// Usuarios – store enriquecido para la gestión de admin
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {{ dniNie: string, nombre: string, apellidos: string, email: string, telefono: string, role: string, creadoEn: string }} Usuario
+ */
+
+/** @type {Usuario[]} */
+export const usersStore = declaracionesIniciales.map(d => ({
+  dniNie: d.dniNie,
+  nombre: d.nombre,
+  apellidos: d.apellidos,
+  email: d.email,
+  telefono: d.telefono ?? '',
+  role: 'user',
+  creadoEn: d.creadoEn,
+}))
+
+/** @type {Map<string, boolean>} Mapa DNI/NIE → bloqueado */
+export const blockedStore = new Map(declaracionesIniciales.map(d => [d.dniNie, false]))
+
+/** @type {Map<string, boolean>} Mapa DNI/NIE → denunciado */
+export const reportedStore = new Map(declaracionesIniciales.map(d => [d.dniNie, false]))
+
+/** @type {Map<string, string[]>} Mapa DNI/NIE → IDs de preguntas asignadas */
+export const userPreguntasStore = new Map(declaracionesIniciales.map(d => [d.dniNie, []]))
+
+/** @type {Map<string, string[]>} Mapa DNI/NIE → IDs de secciones asignadas */
+export const userSeccionesStore = new Map(declaracionesIniciales.map(d => [d.dniNie, []]))
+
 let nextIdCounter = 5
 
 /** Genera un UUID fake basado en un contador incremental. */

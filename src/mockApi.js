@@ -14,6 +14,11 @@ import {
   generarDpId,
   seccionesStore,
   generarSeccionId,
+  usersStore,
+  blockedStore,
+  reportedStore,
+  userPreguntasStore,
+  userSeccionesStore,
 } from './demoData.js'
 
 /** Simula un pequeño retardo de red (ms). */
@@ -548,4 +553,143 @@ export async function getSeccionPreguntas(options) {
 
   const preguntas = preguntasAdicionalesStore.filter(p => p.seccion === seccion.nombre)
   return { data: { data: preguntas, total: preguntas.length }, error: null }
+}
+
+// ---------------------------------------------------------------------------
+// Gestión de usuarios – CRUD admin
+// ---------------------------------------------------------------------------
+
+/**
+ * Mock de listUsersAdmin – devuelve todos los usuarios registrados con su estado.
+ * @param {{ query?: { bloqueado?: boolean, denunciado?: boolean } }} options
+ * @returns {Promise<{ data: { data: object[], total: number }, error: null }>}
+ */
+export async function listUsersAdmin(options) {
+  await delay()
+  const { bloqueado, denunciado } = options?.query ?? {}
+  let resultado = usersStore.map(u => ({
+    ...u,
+    bloqueado: blockedStore.get(u.dniNie) ?? false,
+    denunciado: reportedStore.get(u.dniNie) ?? false,
+    preguntasAsignadas: userPreguntasStore.get(u.dniNie) ?? [],
+    seccionesAsignadas: userSeccionesStore.get(u.dniNie) ?? [],
+  }))
+  if (bloqueado !== undefined) resultado = resultado.filter(u => u.bloqueado === bloqueado)
+  if (denunciado !== undefined) resultado = resultado.filter(u => u.denunciado === denunciado)
+  return { data: { data: resultado, total: resultado.length }, error: null }
+}
+
+/**
+ * Mock de blockUser – bloquea o desbloquea un usuario.
+ * @param {{ path: { dniNie: string }, body: { bloqueado: boolean } }} options
+ * @returns {Promise<{ data: { success: boolean } | null, error: { message: string } | null }>}
+ */
+export async function blockUser(options) {
+  await delay()
+  const { dniNie } = options?.path ?? {}
+  const { bloqueado } = options?.body ?? {}
+  if (!usersStore.find(u => u.dniNie === dniNie)) {
+    return { data: null, error: { message: 'Usuario no encontrado' } }
+  }
+  blockedStore.set(dniNie, !!bloqueado)
+  return { data: { success: true }, error: null }
+}
+
+/**
+ * Mock de reportUser – denuncia o anula la denuncia de un usuario.
+ * @param {{ path: { dniNie: string }, body: { denunciado: boolean } }} options
+ * @returns {Promise<{ data: { success: boolean } | null, error: { message: string } | null }>}
+ */
+export async function reportUser(options) {
+  await delay()
+  const { dniNie } = options?.path ?? {}
+  const { denunciado } = options?.body ?? {}
+  if (!usersStore.find(u => u.dniNie === dniNie)) {
+    return { data: null, error: { message: 'Usuario no encontrado' } }
+  }
+  reportedStore.set(dniNie, !!denunciado)
+  return { data: { success: true }, error: null }
+}
+
+/**
+ * Mock de deleteUser – elimina un usuario y sus declaraciones del sistema.
+ * @param {{ path: { dniNie: string } }} options
+ * @returns {Promise<{ data: { success: boolean } | null, error: { message: string } | null }>}
+ */
+export async function deleteUser(options) {
+  await delay(400)
+  const { dniNie } = options?.path ?? {}
+  const idx = usersStore.findIndex(u => u.dniNie === dniNie)
+  if (idx === -1) return { data: null, error: { message: 'Usuario no encontrado' } }
+  usersStore.splice(idx, 1)
+  blockedStore.delete(dniNie)
+  reportedStore.delete(dniNie)
+  userPreguntasStore.delete(dniNie)
+  userSeccionesStore.delete(dniNie)
+  passwordsStore.delete(dniNie)
+  rolesStore.delete(dniNie)
+  // Remove all declarations belonging to this user
+  const decIds = declaracionesStore.filter(d => d.dniNie === dniNie).map(d => d.id)
+  decIds.forEach(decId => {
+    const i = declaracionesStore.findIndex(d => d.id === decId)
+    if (i !== -1) declaracionesStore.splice(i, 1)
+    // Remove question assignments
+    for (let j = declaracionPreguntaStore.length - 1; j >= 0; j--) {
+      if (declaracionPreguntaStore[j].declaracionId === decId) declaracionPreguntaStore.splice(j, 1)
+    }
+  })
+  return { data: { success: true }, error: null }
+}
+
+/**
+ * Mock de sendEmailToUser – simula el envío de un email a un usuario.
+ * @param {{ dniNie: string, email: string, mensaje?: string }} options
+ * @returns {Promise<{ data: { success: boolean, to: string } | null, error: null }>}
+ */
+export async function sendEmailToUser({ dniNie, email, mensaje }) {
+  await delay(600)
+  console.info(`[MOCK EMAIL → USUARIO] → ${email} (${dniNie}): ${mensaje ?? 'Notificación enviada.'}`)
+  return { data: { success: true, to: email }, error: null }
+}
+
+/**
+ * Mock de setUserPreguntas – sobreescribe la lista de preguntas asignadas a un usuario.
+ * @param {{ path: { dniNie: string }, body: { preguntaIds: string[] } }} options
+ * @returns {Promise<{ data: { success: boolean } | null, error: { message: string } | null }>}
+ */
+export async function setUserPreguntas(options) {
+  await delay(300)
+  const { dniNie } = options?.path ?? {}
+  const { preguntaIds = [] } = options?.body ?? {}
+  if (!usersStore.find(u => u.dniNie === dniNie)) {
+    return { data: null, error: { message: 'Usuario no encontrado' } }
+  }
+  for (const id of preguntaIds) {
+    if (!preguntasAdicionalesStore.find(p => p.id === id)) {
+      return { data: null, error: { message: `Pregunta ${id} no encontrada` } }
+    }
+  }
+  userPreguntasStore.set(dniNie, [...preguntaIds])
+  return { data: { success: true }, error: null }
+}
+
+/**
+ * Mock de setUserSecciones – sobreescribe la lista de secciones asignadas a un usuario.
+ * @param {{ path: { dniNie: string }, body: { seccionIds: string[] } }} options
+ * @returns {Promise<{ data: { success: boolean } | null, error: { message: string } | null }>}
+ */
+export async function setUserSecciones(options) {
+  await delay(300)
+  const { dniNie } = options?.path ?? {}
+  const { seccionIds = [] } = options?.body ?? {}
+  if (!usersStore.find(u => u.dniNie === dniNie)) {
+    return { data: null, error: { message: 'Usuario no encontrado' } }
+  }
+  for (const id of seccionIds) {
+    if (!seccionesStore.find(s => s.id === id)) {
+      return { data: null, error: { message: `Sección ${id} no encontrada` } }
+    }
+  }
+  userSeccionesStore.set(dniNie, [...seccionIds])
+  return { data: { success: true }, error: null }
 }
