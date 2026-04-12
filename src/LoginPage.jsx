@@ -61,11 +61,6 @@ export default function LoginPage({ onNavigate }) {
           <h1>Acceder a mi expediente</h1>
           <p>Campaña Renta 2025 · Impuesto sobre la Renta de las Personas Físicas (IRPF)</p>
         </div>
-        <nav className="header-nav">
-          <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/')}>
-            ← Volver al formulario
-          </button>
-        </nav>
       </header>
 
       <div className="card">
