@@ -425,6 +425,20 @@ export default function AdminPage({ onNavigate }) {
 
                 {expanded === dec.id && (
                   <div className="declaracion-body">
+                    {/* Full declaration code */}
+                    <div className="admin-codigo-row">
+                      <span className="admin-codigo-label">Código de declaración:</span>
+                      <code className="admin-codigo-value">{dec.id}</code>
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm btn-xs"
+                        onClick={() => navigator.clipboard.writeText(dec.id).catch(() => {})}
+                        title="Copiar código"
+                      >
+                        📋 Copiar
+                      </button>
+                    </div>
+
                     {/* Estado inline editor */}
                     <div className="admin-estado-row">
                       <label className="admin-estado-label">Estado del expediente:</label>
