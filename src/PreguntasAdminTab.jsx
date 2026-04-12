@@ -6,6 +6,7 @@ import {
   deletePreguntaAdmin,
   listSeccionesAdmin,
 } from './mockApi.js'
+import Pagination from './Pagination.jsx'
 
 const TIPO_LABELS = {
   yn: 'Sí / No',
@@ -31,6 +32,8 @@ export default function PreguntasAdminTab({ showToast }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filtroActiva, setFiltroActiva] = useState('')
+  const [page, setPage] = useState(1)
+  const limit = 10
   const [modal, setModal] = useState(null) // null | 'create' | 'edit'
   const [editando, setEditando] = useState(null) // pregunta en edición
   const [form, setForm] = useState(EMPTY_FORM)
@@ -45,7 +48,7 @@ export default function PreguntasAdminTab({ showToast }) {
   // Load active sections for the form dropdown
   const loadSecciones = useCallback(() => {
     setSeccionesLoading(true)
-    listSeccionesAdmin({ query: { activa: true } })
+    listSeccionesAdmin({ query: { activa: true, page: 1, limit: 1000 } })
       .then(({ data }) => setSecciones(data?.data ?? []))
       .finally(() => setSeccionesLoading(false))
   }, [])
@@ -57,7 +60,7 @@ export default function PreguntasAdminTab({ showToast }) {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    const query = filtroActiva !== '' ? { activa: filtroActiva === 'true' } : {}
+    const query = { page, limit, ...(filtroActiva !== '' ? { activa: filtroActiva === 'true' } : {}) }
     listPreguntasAdmin({ query })
       .then(({ data, error: apiErr }) => {
         if (cancelled) return
@@ -69,7 +72,7 @@ export default function PreguntasAdminTab({ showToast }) {
       .catch(err => { if (!cancelled) setError(err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [filtroActiva, refreshKey])
+  }, [filtroActiva, page, refreshKey])
 
   const openCreate = () => {
     setForm(EMPTY_FORM)
@@ -139,7 +142,7 @@ export default function PreguntasAdminTab({ showToast }) {
           <select
             className="admin-filter-select"
             value={filtroActiva}
-            onChange={e => setFiltroActiva(e.target.value)}
+            onChange={e => { setFiltroActiva(e.target.value); setPage(1) }}
           >
             <option value="">Todas</option>
             <option value="true">Activas</option>
@@ -212,6 +215,12 @@ export default function PreguntasAdminTab({ showToast }) {
           </table>
         </div>
       )}
+
+      <Pagination
+        page={page}
+        totalPages={Math.ceil(total / limit)}
+        onPageChange={setPage}
+      />
 
       {/* Create / Edit modal */}
       {modal && (

@@ -231,17 +231,20 @@ export async function sendEmailDeclaracion({ declaracionId, email, mensaje }) {
 
 /**
  * Mock de listPreguntasAdmin – devuelve todas las preguntas adicionales.
- * @param {{ query?: { activa?: boolean } }} options
- * @returns {Promise<{ data: { data: object[], total: number }, error: null }>}
+ * @param {{ query?: { activa?: boolean, page?: number, limit?: number } }} options
+ * @returns {Promise<{ data: { data: object[], total: number, page: number, limit: number }, error: null }>}
  */
 export async function listPreguntasAdmin(options) {
   await delay()
   let resultado = [...preguntasAdicionalesStore]
-  const { activa } = options?.query ?? {}
+  const { activa, page = 1, limit = 10 } = options?.query ?? {}
   if (activa !== undefined) {
     resultado = resultado.filter(p => p.activa === activa)
   }
-  return { data: { data: resultado, total: resultado.length }, error: null }
+  const total = resultado.length
+  const start = (page - 1) * limit
+  const data = resultado.slice(start, start + limit)
+  return { data: { data, total, page, limit }, error: null }
 }
 
 /**
@@ -419,18 +422,21 @@ export async function removeDeclaracionPregunta(options) {
 
 /**
  * Mock de listSeccionesAdmin – devuelve todas las secciones.
- * @param {{ query?: { activa?: boolean } }} options
- * @returns {Promise<{ data: { data: object[], total: number }, error: null }>}
+ * @param {{ query?: { activa?: boolean, page?: number, limit?: number } }} options
+ * @returns {Promise<{ data: { data: object[], total: number, page: number, limit: number }, error: null }>}
  */
 export async function listSeccionesAdmin(options) {
   await delay()
   let resultado = [...seccionesStore]
-  const { activa } = options?.query ?? {}
+  const { activa, page = 1, limit = 10 } = options?.query ?? {}
   if (activa !== undefined) {
     resultado = resultado.filter(s => s.activa === activa)
   }
   resultado.sort((a, b) => a.orden - b.orden)
-  return { data: { data: resultado, total: resultado.length }, error: null }
+  const total = resultado.length
+  const start = (page - 1) * limit
+  const data = resultado.slice(start, start + limit)
+  return { data: { data, total, page, limit }, error: null }
 }
 
 /** Comprueba si ya existe una sección con el mismo nombre (case-insensitive), excluyendo opcionalmente un índice. */
@@ -561,12 +567,12 @@ export async function getSeccionPreguntas(options) {
 
 /**
  * Mock de listUsersAdmin – devuelve todos los usuarios registrados con su estado.
- * @param {{ query?: { bloqueado?: boolean, denunciado?: boolean } }} options
- * @returns {Promise<{ data: { data: object[], total: number }, error: null }>}
+ * @param {{ query?: { bloqueado?: boolean, denunciado?: boolean, page?: number, limit?: number } }} options
+ * @returns {Promise<{ data: { data: object[], total: number, page: number, limit: number }, error: null }>}
  */
 export async function listUsersAdmin(options) {
   await delay()
-  const { bloqueado, denunciado } = options?.query ?? {}
+  const { bloqueado, denunciado, page = 1, limit = 10 } = options?.query ?? {}
   let resultado = usersStore.map(u => ({
     ...u,
     bloqueado: blockedStore.get(u.dniNie) ?? false,
@@ -576,7 +582,10 @@ export async function listUsersAdmin(options) {
   }))
   if (bloqueado !== undefined) resultado = resultado.filter(u => u.bloqueado === bloqueado)
   if (denunciado !== undefined) resultado = resultado.filter(u => u.denunciado === denunciado)
-  return { data: { data: resultado, total: resultado.length }, error: null }
+  const total = resultado.length
+  const start = (page - 1) * limit
+  const data = resultado.slice(start, start + limit)
+  return { data: { data, total, page, limit }, error: null }
 }
 
 /**
