@@ -7,8 +7,16 @@ import {
   listSeccionesAdmin,
 } from './mockApi.js'
 
-const TIPO_LABELS = { yn: 'Sí / No', texto: 'Texto libre', numero: 'Número' }
-const TIPOS = ['yn', 'texto', 'numero']
+const TIPO_LABELS = {
+  yn: 'Sí / No',
+  texto: 'Texto libre',
+  numero: 'Número',
+  fecha: 'Fecha',
+  importe: 'Importe (€)',
+  porcentaje: 'Porcentaje (%)',
+  multilinea: 'Texto largo',
+}
+const TIPOS = ['yn', 'texto', 'numero', 'fecha', 'importe', 'porcentaje', 'multilinea']
 
 const EMPTY_FORM = { texto: '', seccion: '', tipoRespuesta: 'yn', orden: 0, activa: true }
 

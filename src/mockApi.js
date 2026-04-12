@@ -504,3 +504,33 @@ export async function deleteSeccionAdmin(options) {
   seccionesStore.splice(idx, 1)
   return { data: { success: true }, error: null }
 }
+
+/**
+ * Mock de getSeccionDeclaraciones – devuelve las declaraciones que tienen preguntas de una sección.
+ * @param {{ path: { id: string } }} options
+ * @returns {Promise<{ data: { data: object[], total: number } | null, error: { message: string } | null }>}
+ */
+export async function getSeccionDeclaraciones(options) {
+  await delay()
+  const id = options?.path?.id
+  const seccion = seccionesStore.find(s => s.id === id)
+  if (!seccion) return { data: null, error: { message: 'Sección no encontrada' } }
+
+  const preguntasEnSeccion = preguntasAdicionalesStore.filter(p => p.seccion === seccion.nombre)
+  const preguntaIds = new Set(preguntasEnSeccion.map(p => p.id))
+
+  const declaracionIds = [...new Set(
+    declaracionPreguntaStore
+      .filter(dp => preguntaIds.has(dp.preguntaId))
+      .map(dp => dp.declaracionId)
+  )]
+
+  const declaraciones = declaracionIds.map(decId => {
+    const dec = declaracionesStore.find(d => d.id === decId)
+    return dec
+      ? { id: dec.id, dniNie: dec.dniNie, nombre: `${dec.nombre} ${dec.apellidos}` }
+      : { id: decId, dniNie: '—', nombre: '—' }
+  })
+
+  return { data: { data: declaraciones, total: declaraciones.length }, error: null }
+}
