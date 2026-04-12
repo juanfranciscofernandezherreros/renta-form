@@ -84,7 +84,7 @@ export default function PreguntasAdminTab({ showToast }) {
       if (modal === 'create') {
         const { data, error: apiErr } = await createPreguntaAdmin({ body })
         if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
-        showToast(`Pregunta "${data.texto.slice(0, 40)}…" creada`)
+        showToast(`Pregunta "${data.texto.slice(0, 40)}${data.texto.length > 40 ? '…' : ''}" creada`)
       } else {
         const { error: apiErr } = await updatePreguntaAdmin({ path: { id: editando.id }, body })
         if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }

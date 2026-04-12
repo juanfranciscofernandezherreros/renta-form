@@ -375,7 +375,7 @@ export async function upsertDeclaracionPreguntas(options) {
         preguntaId: a.preguntaId,
         respuesta: a.respuesta ?? null,
         asignadaEn: ahora,
-        respondidaEn: a.respuesta != null ? ahora : null,
+        respondidaEn: a.respuesta !== null && a.respuesta !== undefined ? ahora : null,
       })
     }
   }
