@@ -68,7 +68,7 @@ const translations = {
     errorQuestions: '❌ No se pudieron cargar las preguntas: ',
     // Footer
     footerDisclaimer:
-      'Este formulario es meramente informativo y no constituye una presentación oficial ante la AEAT.',
+      'Este formulario es meramente informativo y no constituye una presentación oficial ante la NH Gestión Integral.',
     footerAgency:
       'Agencia Tributaria · www.agenciatributaria.es · Campaña de la Renta 2025',
     footerApiDocs: '📄 API Docs (Swagger UI)',
@@ -194,7 +194,7 @@ const translations = {
     loadingQuestions: '⏳ Chargement des questions…',
     errorQuestions: '❌ Impossible de charger les questions : ',
     footerDisclaimer:
-      'Ce formulaire est purement informatif et ne constitue pas une déclaration officielle auprès de l\'AEAT.',
+      'Ce formulaire est purement informatif et ne constitue pas une déclaration officielle auprès de NH Gestión Integral.',
     footerAgency: 'Agence Fiscale · www.agenciatributaria.es · Campagne Impôt sur le Revenu 2025',
     footerApiDocs: '📄 Documentation API (Swagger UI)',
     loginTitle: 'Accéder à mon dossier',
@@ -312,7 +312,7 @@ const translations = {
     loadingQuestions: '⏳ Loading questions…',
     errorQuestions: '❌ Could not load questions: ',
     footerDisclaimer:
-      'This form is for informational purposes only and does not constitute an official submission to the AEAT.',
+      'This form is for informational purposes only and does not constitute an official submission to NH Gestión Integral.',
     footerAgency: 'Tax Agency · www.agenciatributaria.es · 2025 Income Tax Campaign',
     footerApiDocs: '📄 API Docs (Swagger UI)',
     loginTitle: 'Access my file',
@@ -432,7 +432,7 @@ const translations = {
     loadingQuestions: '⏳ Carregant preguntes…',
     errorQuestions: '❌ No s\'han pogut carregar les preguntes: ',
     footerDisclaimer:
-      'Aquest formulari és merament informatiu i no constitueix una presentació oficial davant de l\'AEAT.',
+      'Aquest formulari és merament informatiu i no constitueix una presentació oficial davant de NH Gestión Integral.',
     footerAgency: 'Agència Tributària · www.agenciatributaria.es · Campanya de la Renda 2025',
     footerApiDocs: '📄 Documentació API (Swagger UI)',
     loginTitle: 'Accedir al meu expedient',

@@ -241,7 +241,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   return (
     <>
       <header ref={topRef}>
-        <div className="logo">AEAT</div>
+        <div className="logo">NH Gestión Integral</div>
         <div className="header-text">
           <h1>{t('headerTitle')}</h1>
           <p>{t('headerSubtitle')}</p>

@@ -79,7 +79,7 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion }) {
   return (
     <>
       <header>
-        <div className="logo">AEAT</div>
+        <div className="logo">NH Gestión Integral</div>
         <div className="header-text">
           <h1>{t('tokenConsultaTitle')}</h1>
           <p>{t('headerSubtitle')}</p>

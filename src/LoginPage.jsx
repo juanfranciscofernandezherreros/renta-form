@@ -60,7 +60,7 @@ export default function LoginPage({ onNavigate }) {
   return (
     <>
       <header>
-        <div className="logo">AEAT</div>
+        <div className="logo">NH Gestión Integral</div>
         <div className="header-text">
           <h1>{t('loginTitle')}</h1>
           <p>{t('headerSubtitle')}</p>

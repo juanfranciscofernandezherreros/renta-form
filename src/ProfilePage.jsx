@@ -128,7 +128,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
   return (
     <>
       <header>
-        <div className="logo">AEAT</div>
+        <div className="logo">NH Gestión Integral</div>
         <div className="header-text">
           <h1>{t('profileTitle')}</h1>
           <p>{t('headerSubtitle')}</p>
