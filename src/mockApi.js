@@ -20,6 +20,7 @@ import {
   userPreguntasStore,
   userSeccionesStore,
   persistSubmission,
+  codigosAccesoStore,
 } from './demoData.js'
 
 /** Simula un pequeño retardo de red (ms). */
@@ -126,6 +127,23 @@ export async function loginUser({ dniNie, password }) {
   }
   const role = rolesStore.get(dniNie) ?? 'user'
   return { data: { dniNie, role }, error: null }
+}
+
+/**
+ * Mock de verificarCodigoAcceso – comprueba si el código de acceso existe
+ * y está activo en la tabla codigos_acceso.
+ * @param {{ codigo: string }} options
+ * @returns {Promise<{ data: { valido: boolean } | null, error: { message: string } | null }>}
+ */
+export async function verificarCodigoAcceso({ codigo }) {
+  await delay()
+  const encontrado = codigosAccesoStore.find(
+    c => c.activo && c.codigo === codigo.trim()
+  )
+  if (!encontrado) {
+    return { data: null, error: { message: 'Código de acceso incorrecto' } }
+  }
+  return { data: { valido: true }, error: null }
 }
 
 /**

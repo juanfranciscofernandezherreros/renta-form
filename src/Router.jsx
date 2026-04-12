@@ -5,6 +5,7 @@ import ProfilePage from './ProfilePage.jsx'
 import AdminPage from './AdminPage.jsx'
 import AdminLoginPage from './AdminLoginPage.jsx'
 import TokenConsultaPage from './TokenConsultaPage.jsx'
+import IntranetLoginPage from './IntranetLoginPage.jsx'
 import { useAuth } from './AuthContext.jsx'
 
 const ApiDocs = lazy(() => import('./ApiDocs.jsx'))
@@ -12,7 +13,7 @@ const ApiDocs = lazy(() => import('./ApiDocs.jsx'))
 export default function Router() {
   const [hash, setHash] = useState(window.location.hash)
   const [editData, setEditData] = useState(null)
-  const { user } = useAuth()
+  const { user, intranetAccess } = useAuth()
 
   useEffect(() => {
     const onHashChange = () => setHash(window.location.hash)
@@ -28,6 +29,11 @@ export default function Router() {
 
   const handleEditDeclaracion = useCallback((dec) => setEditData(dec), [])
   const handleEditDataConsumed = useCallback(() => setEditData(null), [])
+
+  // Intranet gate: all routes require the access code first
+  if (!intranetAccess) {
+    return <IntranetLoginPage />
+  }
 
   if (hash === '#/api-docs') {
     return (
