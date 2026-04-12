@@ -355,15 +355,16 @@ function loadSavedPasswords() {
 }
 
 /**
- * Persiste la contraseña (ya hasheada) de un usuario en localStorage.
- * El valor recibido debe ser el hash producido por hashPassword() en mockApi.js.
+ * Persiste la contraseña hasheada de un usuario en localStorage.
+ * El valor recibido debe ser el hash producido por hashPassword() en mockApi.js
+ * (prefijado con $sha256$; nunca es la contraseña en claro).
  * @param {string} dniNie
- * @param {string} hashedPassword
+ * @param {string} credential  Hash SHA-256 prefijado con $sha256$
  */
-export function persistPassword(dniNie, hashedPassword) {
+export function persistPassword(dniNie, credential) {
   try {
     const stored = loadSavedPasswords().filter(p => p.dniNie !== dniNie)
-    stored.push({ dniNie, password: hashedPassword })
+    stored.push({ dniNie, credential })
     localStorage.setItem(DEMO_PASSWORDS_KEY, JSON.stringify(stored))
   } catch {
     // localStorage no disponible
@@ -424,7 +425,7 @@ export const codigosAccesoStore = [
 // Las contraseñas modificadas se persisten en localStorage.
 // ---------------------------------------------------------------------------
 const _savedPasswords = loadSavedPasswords()
-const _savedPasswordsMap = new Map(_savedPasswords.map(p => [p.dniNie, p.password]))
+const _savedPasswordsMap = new Map(_savedPasswords.map(p => [p.dniNie, p.credential]))
 
 /** @type {Map<string, string>} */
 export const passwordsStore = new Map([
