@@ -7,6 +7,8 @@
 //   · 87654321B  /  renta2025
 //   · 11223344C  /  renta2025
 //   · 44332211D  /  renta2025
+// Administrador (URL: /admin):
+//   · admin  /  admin
 // ---------------------------------------------------------------------------
 
 /** @type {import('./api/types.gen').CatalogoPreguntas} */
@@ -320,12 +322,12 @@ export const declaracionesStore = [...declaracionesIniciales]
 
 // ---------------------------------------------------------------------------
 // Contraseñas – contraseña inicial: renta2025
-// Admin: ADMIN001 / admin2025
+// Admin: admin / admin
 // ---------------------------------------------------------------------------
 /** @type {Map<string, string>} */
 export const passwordsStore = new Map([
   ...declaracionesIniciales.map(d => [d.dniNie, 'renta2025']),
-  ['ADMIN001', 'admin2025'],
+  ['ADMIN', 'admin'],
 ])
 
 // ---------------------------------------------------------------------------
@@ -334,7 +336,7 @@ export const passwordsStore = new Map([
 /** @type {Map<string, string>} */
 export const rolesStore = new Map([
   ...declaracionesIniciales.map(d => [d.dniNie, 'user']),
-  ['ADMIN001', 'admin'],
+  ['ADMIN', 'admin'],
 ])
 
 let nextIdCounter = 5
