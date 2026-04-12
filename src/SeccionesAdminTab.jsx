@@ -91,6 +91,7 @@ export default function SeccionesAdminTab({ showToast }) {
   }, [secciones])
 
   const openCreate = () => {
+    // Default orden to total + 1 as a sensible suggestion (user can change it)
     setForm({ ...EMPTY_FORM, orden: total + 1 })
     setEditando(null)
     setModal('create')

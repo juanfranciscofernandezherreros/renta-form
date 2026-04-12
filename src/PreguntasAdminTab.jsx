@@ -20,6 +20,7 @@ const TIPO_LABELS = {
 const TIPOS = ['yn', 'texto', 'numero', 'fecha', 'importe', 'porcentaje', 'multilinea']
 
 const EMPTY_FORM = { texto: '', seccion: '', tipoRespuesta: 'yn', orden: 0, activa: true }
+const MAX_ITEMS_FOR_DROPDOWN = 1000
 
 function formatFecha(iso) {
   if (!iso) return '—'
@@ -48,7 +49,7 @@ export default function PreguntasAdminTab({ showToast }) {
   // Load active sections for the form dropdown
   const loadSecciones = useCallback(() => {
     setSeccionesLoading(true)
-    listSeccionesAdmin({ query: { activa: true, page: 1, limit: 1000 } })
+    listSeccionesAdmin({ query: { activa: true, page: 1, limit: MAX_ITEMS_FOR_DROPDOWN } })
       .then(({ data }) => setSecciones(data?.data ?? []))
       .finally(() => setSeccionesLoading(false))
   }, [])

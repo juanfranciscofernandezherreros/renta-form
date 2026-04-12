@@ -14,6 +14,7 @@ import { declaracionesStore } from './demoData.js'
 import Pagination from './Pagination.jsx'
 
 // Re-use the same PDF logic as AdminPage
+const MAX_ITEMS_FOR_DROPDOWN = 1000
 const ESTADOS_LABELS = {
   recibido: 'Recibido',
   en_revision: 'En revisión',
@@ -189,8 +190,8 @@ export default function UsuariosAdminTab({ showToast }) {
 
   // Load all questions & sections once (for modals)
   useEffect(() => {
-    listPreguntasAdmin({ query: { page: 1, limit: 1000 } }).then(({ data }) => setAllPreguntas(data?.data ?? []))
-    listSeccionesAdmin({ query: { page: 1, limit: 1000 } }).then(({ data }) => setAllSecciones(data?.data ?? []))
+    listPreguntasAdmin({ query: { page: 1, limit: MAX_ITEMS_FOR_DROPDOWN } }).then(({ data }) => setAllPreguntas(data?.data ?? []))
+    listSeccionesAdmin({ query: { page: 1, limit: MAX_ITEMS_FOR_DROPDOWN } }).then(({ data }) => setAllSecciones(data?.data ?? []))
   }, [])
 
   const handleBlock = async (user) => {
