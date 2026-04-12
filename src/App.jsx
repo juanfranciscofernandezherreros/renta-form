@@ -181,7 +181,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
     setSubmitting(true)
     try {
       if (editData?.id && updateDeclaracion) {
-        // Update existing declaration
+        // Update existing declaration (only available in DEMO_MODE; falls through to create otherwise)
         const updateBody = {
           nombre: form.nombre,
           apellidos: form.apellidos,
