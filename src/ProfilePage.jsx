@@ -6,6 +6,7 @@ import { DEMO_MODE } from './constants.js'
 import { useLanguage } from './LanguageContext.jsx'
 import { LANGUAGES } from './i18n.js'
 import Footer from './Footer.jsx'
+import { generateDeclaracionPDF } from './pdfUtils.js'
 
 const listDeclaraciones = DEMO_MODE ? listDeclaracionesMock : listDeclaracionesReal
 const changePasswordFn = DEMO_MODE ? changePasswordMock : null
@@ -276,6 +277,13 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
                           {t('profileEdit')}
                         </button>
                       )}
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => generateDeclaracionPDF(dec)}
+                      >
+                        {t('btnDownloadPDF')}
+                      </button>
                     </div>
                   </div>
                 )}
