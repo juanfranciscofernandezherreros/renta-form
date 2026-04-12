@@ -4,6 +4,8 @@ import { getPreguntas as getPreguntasReal, createDeclaracion as createDeclaracio
 import { getPreguntas as getPreguntasMock, createDeclaracion as createDeclaracionMock } from './mockApi.js'
 import { DEMO_MODE } from './constants.js'
 import { useAuth } from './AuthContext.jsx'
+import { useLanguage } from './LanguageContext.jsx'
+import { LANGUAGES } from './i18n.js'
 
 const getPreguntas = DEMO_MODE ? getPreguntasMock : getPreguntasReal
 const createDeclaracion = DEMO_MODE ? createDeclaracionMock : createDeclaracionReal
@@ -39,17 +41,17 @@ const INITIAL_STATE = {
   comentarios: '',
 }
 
-const YesNoField = ({ label, name, value, onChange, indent }) => (
+const YesNoField = ({ label, name, value, onChange, indent, t }) => (
   <div className={`question-row${indent ? ' indent' : ''}`}>
     <span className="question-text">{label}</span>
     <div className="radio-group">
       <label className="radio-label">
         <input type="radio" name={name} value="si" checked={value === 'si'} onChange={onChange} />
-        Sí
+        {t('yes')}
       </label>
       <label className="radio-label">
         <input type="radio" name={name} value="no" checked={value === 'no'} onChange={onChange} />
-        No
+        {t('no')}
       </label>
     </div>
   </div>
@@ -57,6 +59,7 @@ const YesNoField = ({ label, name, value, onChange, indent }) => (
 
 export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const { user, logout } = useAuth()
+  const { lang, setLang, t } = useLanguage()
   const [form, setForm] = useState(INITIAL_STATE)
   const [toast, setToast] = useState(null)
   const [submitting, setSubmitting] = useState(false)
@@ -122,7 +125,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   }
 
   const handleLimpiar = () => {
-    if (window.confirm('¿Seguro que quiere limpiar todos los campos?')) {
+    if (window.confirm(t('confirmClear'))) {
       setForm(INITIAL_STATE)
       setSubmitted(false)
     }
@@ -173,13 +176,13 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       const { data, error, response } = await createDeclaracion({ body })
       if (data) {
         setSubmitted(true)
-        showToast('✅ Cuestionario enviado correctamente. Nos pondremos en contacto contigo en breve.', 'success')
+        showToast(t('toastSuccess'), 'success')
         setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
       } else {
-        showToast(`❌ Error al enviar el cuestionario (HTTP ${response?.status ?? '?'}): ${error?.message ?? 'Error desconocido'}. Inténtelo de nuevo.`, 'error')
+        showToast(`${t('toastErrorHttp')} ${response?.status ?? '?'}${t('toastErrorHttpSuffix')} ${error?.message ?? ''}`, 'error')
       }
     } catch {
-      showToast('❌ No se pudo conectar con el servidor. Compruebe su conexión e inténtelo de nuevo.', 'error')
+      showToast(t('toastErrorNetwork'), 'error')
     } finally {
       setSubmitting(false)
     }
@@ -190,22 +193,32 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       <header ref={topRef}>
         <div className="logo">AEAT</div>
         <div className="header-text">
-          <h1>Cuestionario para Expediente Fiscal</h1>
-          <p>Campaña Renta 2025 · Impuesto sobre la Renta de las Personas Físicas (IRPF)</p>
+          <h1>{t('headerTitle')}</h1>
+          <p>{t('headerSubtitle')}</p>
         </div>
         <nav className="header-nav">
+          <select
+            className="lang-select"
+            value={lang}
+            onChange={e => setLang(e.target.value)}
+            aria-label={t('langLabel')}
+          >
+            {LANGUAGES.map(l => (
+              <option key={l.code} value={l.code}>{l.label}</option>
+            ))}
+          </select>
           {user ? (
             <>
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/perfil')}>
-                👤 Mi perfil
+                {t('navProfile')}
               </button>
               <button type="button" className="btn btn-danger btn-sm" onClick={() => { logout(); onNavigate('#/') }}>
-                🚪 Cerrar sesión
+                {t('navLogout')}
               </button>
             </>
           ) : (
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/login')}>
-              🔑 Acceder
+              {t('navLogin')}
             </button>
           )}
         </nav>
@@ -214,62 +227,60 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       <div className="card">
         {/* Progress bar */}
         <div className="progress-bar">
-          <div className={`step ${submitted ? 'done' : 'active'}`}><div className="bubble">{submitted ? '✓' : '1'}</div> Identificación</div>
-          <div className={`step ${submitted ? 'done' : ''}`}><div className="bubble">{submitted ? '✓' : '2'}</div> Vivienda</div>
-          <div className={`step ${submitted ? 'done' : ''}`}><div className="bubble">{submitted ? '✓' : '3'}</div> Familia</div>
-          <div className={`step ${submitted ? 'done' : ''}`}><div className="bubble">{submitted ? '✓' : '4'}</div> Ingresos</div>
-          <div className={`step ${submitted ? 'done' : ''}`}><div className="bubble">{submitted ? '✓' : '5'}</div> Documentación</div>
+          <div className={`step ${submitted ? 'done' : 'active'}`}><div className="bubble">{submitted ? '✓' : '1'}</div> {t('stepId')}</div>
+          <div className={`step ${submitted ? 'done' : ''}`}><div className="bubble">{submitted ? '✓' : '2'}</div> {t('stepHousing')}</div>
+          <div className={`step ${submitted ? 'done' : ''}`}><div className="bubble">{submitted ? '✓' : '3'}</div> {t('stepFamily')}</div>
+          <div className={`step ${submitted ? 'done' : ''}`}><div className="bubble">{submitted ? '✓' : '4'}</div> {t('stepIncome')}</div>
+          <div className={`step ${submitted ? 'done' : ''}`}><div className="bubble">{submitted ? '✓' : '5'}</div> {t('stepDocs')}</div>
         </div>
 
         {submitted ? (
           <div className="success-panel">
             <div className="success-icon">✅</div>
-            <h2>¡Cuestionario enviado correctamente!</h2>
-            <p>Hemos recibido tu información. Nuestro equipo revisará tu expediente fiscal y se pondrá en contacto contigo en breve.</p>
-            <button type="button" className="btn btn-secondary" onClick={handleLimpiar}>Enviar otro cuestionario</button>
+            <h2>{t('successTitle')}</h2>
+            <p>{t('successText')}</p>
+            <button type="button" className="btn btn-secondary" onClick={handleLimpiar}>{t('btnSendAnother')}</button>
           </div>
         ) : (
           <>
             <div className="info-box">
-              <strong>📋 Instrucciones</strong>
-              Rellene el siguiente cuestionario con la mayor precisión posible. La información proporcionada nos permitirá
-              preparar su expediente fiscal para la <em>Campaña de la Renta 2025</em>. Todos los datos se tratarán con
-              total confidencialidad conforme a la normativa de protección de datos.
+              <strong>{t('instructionsTitle')}</strong>
+              {t('instructionsText')}<em>{t('campaignName')}</em>{t('instructionsText2')}
             </div>
 
             <form onSubmit={handleSubmit} noValidate>
 
               {/* 1. Datos de identificación */}
-              <div className="section-title">1. Datos de Identificación</div>
+              <div className="section-title">{t('section1')}</div>
               <div className="form-grid">
                 <div className="field">
-                  <label>Nombre</label>
-                  <input type="text" name="nombre" value={form.nombre} onChange={handleChange} placeholder="Nombre" required />
+                  <label>{t('fieldNombre')}</label>
+                  <input type="text" name="nombre" value={form.nombre} onChange={handleChange} placeholder={t('fieldNombre')} required />
                 </div>
                 <div className="field">
-                  <label>Apellidos</label>
-                  <input type="text" name="apellidos" value={form.apellidos} onChange={handleChange} placeholder="Primer apellido Segundo apellido" required />
+                  <label>{t('fieldApellidos')}</label>
+                  <input type="text" name="apellidos" value={form.apellidos} onChange={handleChange} placeholder={t('fieldApellidosPlaceholder')} required />
                 </div>
                 <div className="field">
-                  <label>Número de DNI / NIE</label>
+                  <label>{t('fieldDniNie')}</label>
                   <input type="text" name="dniNie" value={form.dniNie} onChange={handleChange} placeholder="00000000A" maxLength={9} required />
                 </div>
                 <div className="field">
-                  <label>Correo electrónico de contacto</label>
-                  <input type="email" name="email" value={form.email} onChange={handleChange} placeholder="ejemplo@correo.es" required />
+                  <label>{t('fieldEmail')}</label>
+                  <input type="email" name="email" value={form.email} onChange={handleChange} placeholder={t('fieldEmailPlaceholder')} required />
                 </div>
                 <div className="field">
-                  <label>Teléfono móvil</label>
-                  <input type="tel" name="telefono" value={form.telefono} onChange={handleChange} placeholder="600 000 000" required />
+                  <label>{t('fieldTelefono')}</label>
+                  <input type="tel" name="telefono" value={form.telefono} onChange={handleChange} placeholder={t('fieldTelefonoPlaceholder')} required />
                 </div>
               </div>
 
               {/* 2–4. Preguntas dinámicas cargadas desde el endpoint */}
               {loadingPreguntas && (
-                <div className="info-box">⏳ Cargando preguntas…</div>
+                <div className="info-box">{t('loadingQuestions')}</div>
               )}
               {errorPreguntas && (
-                <div className="info-box">❌ No se pudieron cargar las preguntas: {errorPreguntas}</div>
+                <div className="info-box">{t('errorQuestions')}{errorPreguntas}</div>
               )}
               {!loadingPreguntas && !errorPreguntas && secciones.map(seccion => (
                 <div key={seccion.id}>
@@ -287,6 +298,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                           onChange={handleChange}
                           label={pregunta.texto}
                           indent={pregunta.indentada}
+                          t={t}
                         />
                       )
                     })}
@@ -295,39 +307,39 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
               ))}
 
               {/* 5. Documentación adjunta */}
-              <div className="section-title">5. Documentación Adjunta</div>
+              <div className="section-title">{t('section5')}</div>
               <div className="info-box">
-                <strong>📎 Formatos admitidos</strong>
-                Se admiten archivos en formato PDF, JPG o PNG. Tamaño máximo por archivo: 5 MB.
+                <strong>{t('docsInfoTitle')}</strong>
+                {t('docsInfoText')}
               </div>
               <div className="form-grid">
                 <div className="field">
-                  <label>Copia escaneada del DNI/NIE — Anverso</label>
+                  <label>{t('docDniAnverso')}</label>
                   <input type="file" name="docDniAnverso" accept=".pdf,.jpg,.jpeg,.png" onChange={handleChange} />
                   {form.docDniAnverso && <span className="file-name">📄 {form.docDniAnverso.name}</span>}
                 </div>
                 <div className="field">
-                  <label>Copia escaneada del DNI/NIE — Reverso</label>
+                  <label>{t('docDniReverso')}</label>
                   <input type="file" name="docDniReverso" accept=".pdf,.jpg,.jpeg,.png" onChange={handleChange} />
                   {form.docDniReverso && <span className="file-name">📄 {form.docDniReverso.name}</span>}
                 </div>
                 <div className="field full">
-                  <label>Documentación adicional (Nóminas, certificados de retenciones, facturas deducibles, etc.)</label>
+                  <label>{t('docAdicional')}</label>
                   <input type="file" name="docAdicional" accept=".pdf,.jpg,.jpeg,.png,.zip" multiple onChange={handleChange} />
                   {form.docAdicional && <span className="file-name">📄 {Array.from(form.docAdicional).map(f => f.name).join(', ')}</span>}
                 </div>
               </div>
 
               {/* 6. Información adicional */}
-              <div className="section-title">6. Información Adicional</div>
+              <div className="section-title">{t('section6')}</div>
               <div className="form-grid">
                 <div className="field full">
-                  <label>Comentarios sobre situaciones especiales</label>
+                  <label>{t('commentsLabel')}</label>
                   <textarea
                     name="comentarios"
                     value={form.comentarios}
                     onChange={handleChange}
-                    placeholder="Indique aquí cualquier situación especial que deba tenerse en cuenta: ventas de inmuebles, inversiones en el extranjero, cambios en el estado civil, herencias, etc."
+                    placeholder={t('commentsPlaceholder')}
                     rows={5}
                   />
                 </div>
@@ -335,9 +347,9 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
 
               {/* Buttons */}
               <div className="btn-row">
-                <button type="button" className="btn btn-secondary" onClick={handleLimpiar}>🗑 Limpiar</button>
+                <button type="button" className="btn btn-secondary" onClick={handleLimpiar}>{t('btnClear')}</button>
                 <button type="submit" className="btn btn-success" disabled={submitting}>
-                  {submitting ? '⏳ Enviando…' : '📤 Enviar cuestionario'}
+                  {submitting ? t('btnSubmitting') : t('btnSubmit')}
                 </button>
               </div>
 
@@ -347,9 +359,9 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       </div>
 
       <footer>
-        <p>Este formulario es meramente informativo y no constituye una presentación oficial ante la AEAT.</p>
-        <p>Agencia Tributaria · <a href="https://www.agenciatributaria.es" target="_blank" rel="noreferrer">www.agenciatributaria.es</a> · Campaña de la Renta 2025</p>
-        <p><a href="#/api-docs">📄 API Docs (Swagger UI)</a></p>
+        <p>{t('footerDisclaimer')}</p>
+        <p>Agencia Tributaria · <a href="https://www.agenciatributaria.es" target="_blank" rel="noreferrer">www.agenciatributaria.es</a> · {t('campaignName')}</p>
+        <p><a href="#/api-docs">{t('footerApiDocs')}</a></p>
       </footer>
 
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}

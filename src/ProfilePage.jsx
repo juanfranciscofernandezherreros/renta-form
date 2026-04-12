@@ -3,6 +3,8 @@ import { useAuth } from './AuthContext.jsx'
 import { listDeclaraciones as listDeclaracionesReal } from './api/index.ts'
 import { listDeclaraciones as listDeclaracionesMock, changePassword as changePasswordMock } from './mockApi.js'
 import { DEMO_MODE } from './constants.js'
+import { useLanguage } from './LanguageContext.jsx'
+import { LANGUAGES } from './i18n.js'
 
 const listDeclaraciones = DEMO_MODE ? listDeclaracionesMock : listDeclaracionesReal
 const changePasswordFn = DEMO_MODE ? changePasswordMock : null
@@ -65,6 +67,7 @@ function formatFecha(iso) {
 
 export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
   const { user, logout } = useAuth()
+  const { lang, setLang, t } = useLanguage()
   const [declaraciones, setDeclaraciones] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -105,11 +108,11 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
   const handlePwSubmit = async e => {
     e.preventDefault()
     const errs = {}
-    if (!pwForm.oldPassword) errs.oldPassword = 'Introduce la contraseña actual'
-    if (!pwForm.newPassword || pwForm.newPassword.length < MIN_PASSWORD_LENGTH) errs.newPassword = `La nueva contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`
-    if (pwForm.newPassword !== pwForm.confirmPassword) errs.confirmPassword = 'Las contraseñas no coinciden'
+    if (!pwForm.oldPassword) errs.oldPassword = t('errOldPasswordRequired')
+    if (!pwForm.newPassword || pwForm.newPassword.length < MIN_PASSWORD_LENGTH) errs.newPassword = `${t('errNewPasswordLength')} ${MIN_PASSWORD_LENGTH} ${t('errNewPasswordLengthSuffix')}`
+    if (pwForm.newPassword !== pwForm.confirmPassword) errs.confirmPassword = t('errPasswordsNoMatch')
     if (Object.keys(errs).length) { setPwErrors(errs); return }
-    if (!changePasswordFn) { setPwErrors({ global: 'Función no disponible' }); return }
+    if (!changePasswordFn) { setPwErrors({ global: t('errFnNotAvailable') }); return }
     setPwLoading(true)
     const { error: apiError } = await changePasswordFn({
       dniNie: user.dniNie,
@@ -127,15 +130,25 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
       <header>
         <div className="logo">AEAT</div>
         <div className="header-text">
-          <h1>Mi Perfil</h1>
-          <p>Campaña Renta 2025 · Impuesto sobre la Renta de las Personas Físicas (IRPF)</p>
+          <h1>{t('profileTitle')}</h1>
+          <p>{t('headerSubtitle')}</p>
         </div>
         <nav className="header-nav">
+          <select
+            className="lang-select"
+            value={lang}
+            onChange={e => setLang(e.target.value)}
+            aria-label={t('langLabel')}
+          >
+            {LANGUAGES.map(l => (
+              <option key={l.code} value={l.code}>{l.label}</option>
+            ))}
+          </select>
           <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/')}>
-            📋 Nuevo cuestionario
+            {t('navNewForm')}
           </button>
           <button type="button" className="btn btn-danger btn-sm" onClick={handleLogout}>
-            🚪 Cerrar sesión
+            {t('navLogout')}
           </button>
         </nav>
       </header>
@@ -148,24 +161,24 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
           </div>
         </div>
 
-        <div className="section-title">Mis declaraciones</div>
+        <div className="section-title">{t('profileDeclaraciones')}</div>
 
-        {loading && <div className="info-box">⏳ Cargando tus declaraciones…</div>}
+        {loading && <div className="info-box">{t('profileLoading')}</div>}
 
         {error && (
           <div className="info-box info-box-error">
-            ❌ No se pudieron cargar tus declaraciones: {error}
+            {t('profileLoadError')}{error}
           </div>
         )}
 
         {!loading && !error && declaraciones.length === 0 && (
           <div className="info-box">
-            <strong>📭 Sin declaraciones</strong>
-            Aún no has enviado ningún cuestionario. <button
+            <strong>{t('profileEmpty')}</strong>
+            {t('profileEmptyText')}<button
               type="button"
               className="link-btn"
               onClick={() => onNavigate('#/')}
-            >Haz clic aquí para empezar.</button>
+            >{t('profileEmptyLink')}</button>
           </div>
         )}
 
@@ -181,9 +194,9 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
                     </span>
                   </div>
                   <div className="declaracion-dates">
-                    <span>Enviado: {formatFecha(dec.creadoEn)}</span>
+                    <span>{t('profileSent')}{formatFecha(dec.creadoEn)}</span>
                     {dec.actualizadoEn && dec.actualizadoEn !== dec.creadoEn && (
-                      <span>Actualizado: {formatFecha(dec.actualizadoEn)}</span>
+                      <span>{t('profileUpdated')}{formatFecha(dec.actualizadoEn)}</span>
                     )}
                   </div>
                   <div className="declaracion-toggle">{expanded === dec.id ? '▲' : '▼'}</div>
@@ -215,7 +228,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
 
                     {dec.documentos?.length > 0 && (
                       <div>
-                        <div className="section-title">5. Documentación Adjunta</div>
+                        <div className="section-title">{t('section5')}</div>
                         <ul className="documentos-list">
                           {dec.documentos.map(doc => (
                             <li key={doc.id}>
@@ -251,7 +264,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
                         className="btn btn-primary"
                         onClick={() => handleEdit(dec)}
                       >
-                        ✏️ Modificar cuestionario
+                        {t('profileEdit')}
                       </button>
                     </div>
                   </div>
@@ -264,9 +277,9 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
 
       {changePasswordFn && (
       <div className="card">
-        <div className="section-title">🔑 Cambiar contraseña</div>
+        <div className="section-title">{t('changePasswordTitle')}</div>
         {pwSuccess && (
-          <div className="info-box">✅ Contraseña actualizada correctamente.</div>
+          <div className="info-box">{t('pwSuccess')}</div>
         )}
         {pwErrors.global && (
           <div className="info-box info-box-error">❌ {pwErrors.global}</div>
@@ -274,7 +287,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
         <form onSubmit={handlePwSubmit} noValidate>
           <div className="form-grid">
             <div className="field">
-              <label>Contraseña actual</label>
+              <label>{t('fieldOldPassword')}</label>
               <input
                 type="password"
                 name="oldPassword"
@@ -285,7 +298,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
               {pwErrors.oldPassword && <span className="field-error">{pwErrors.oldPassword}</span>}
             </div>
             <div className="field">
-              <label>Nueva contraseña</label>
+              <label>{t('fieldNewPassword')}</label>
               <input
                 type="password"
                 name="newPassword"
@@ -296,7 +309,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
               {pwErrors.newPassword && <span className="field-error">{pwErrors.newPassword}</span>}
             </div>
             <div className="field">
-              <label>Confirmar nueva contraseña</label>
+              <label>{t('fieldConfirmPassword')}</label>
               <input
                 type="password"
                 name="confirmPassword"
@@ -309,7 +322,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
           </div>
           <div className="btn-row">
             <button type="submit" className="btn btn-primary" disabled={pwLoading}>
-              {pwLoading ? '⏳ Guardando…' : '💾 Actualizar contraseña'}
+              {pwLoading ? t('btnUpdatingPassword') : t('btnUpdatePassword')}
             </button>
           </div>
         </form>
@@ -317,9 +330,9 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
       )}
 
       <footer>
-        <p>Este formulario es meramente informativo y no constituye una presentación oficial ante la AEAT.</p>
-        <p>Agencia Tributaria · <a href="https://www.agenciatributaria.es" target="_blank" rel="noreferrer">www.agenciatributaria.es</a> · Campaña de la Renta 2025</p>
-        <p><a href="#/api-docs">📄 API Docs (Swagger UI)</a></p>
+        <p>{t('footerDisclaimer')}</p>
+        <p>Agencia Tributaria · <a href="https://www.agenciatributaria.es" target="_blank" rel="noreferrer">www.agenciatributaria.es</a> · {t('campaignName')}</p>
+        <p><a href="#/api-docs">{t('footerApiDocs')}</a></p>
       </footer>
     </>
   )
