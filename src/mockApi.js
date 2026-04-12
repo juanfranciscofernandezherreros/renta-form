@@ -23,6 +23,9 @@ import {
   persistPassword,
   persistUser,
   codigosAccesoStore,
+  idiomasStore,
+  translationsStore,
+  generarIdiomaId,
 } from './demoData.js'
 
 /** Simula un pequeño retardo de red (ms). */
@@ -847,4 +850,122 @@ export async function setUserSecciones(options) {
   }
   userSeccionesStore.set(dniNie, [...seccionIds])
   return { data: { success: true }, error: null }
+}
+
+// ---------------------------------------------------------------------------
+// Idiomas – CRUD + gestión de contenido de traducciones
+// ---------------------------------------------------------------------------
+
+/**
+ * Lista los idiomas disponibles (con paginación opcional).
+ */
+export async function listIdiomasAdmin(options) {
+  await delay(300)
+  const { activo, page = 1, limit = 10 } = options?.query ?? {}
+  let resultado = [...idiomasStore]
+  if (activo !== undefined && activo !== '') {
+    const flag = activo === true || activo === 'true'
+    resultado = resultado.filter(i => i.activo === flag)
+  }
+  const total = resultado.length
+  const start = (page - 1) * limit
+  const data = resultado.slice(start, start + limit)
+  return { data: { data, total, page, limit }, error: null }
+}
+
+/**
+ * Crea un nuevo idioma.
+ */
+export async function createIdiomaAdmin(options) {
+  await delay(300)
+  const body = options?.body ?? {}
+  const { code, label } = body
+  if (!code?.trim() || !label?.trim()) {
+    return { data: null, error: { message: 'El código y la etiqueta son obligatorios' } }
+  }
+  if (idiomasStore.find(i => i.code === code.trim())) {
+    return { data: null, error: { message: `Ya existe un idioma con el código "${code}"` } }
+  }
+  const ahora = new Date().toISOString()
+  const nuevo = {
+    id: generarIdiomaId(),
+    code: code.trim(),
+    label: label.trim(),
+    activo: body.activo !== false,
+    creadoEn: ahora,
+    actualizadoEn: ahora,
+  }
+  idiomasStore.push(nuevo)
+  if (!translationsStore[nuevo.code]) {
+    translationsStore[nuevo.code] = {}
+  }
+  return { data: nuevo, error: null }
+}
+
+/**
+ * Actualiza los metadatos de un idioma (label, activo).
+ */
+export async function updateIdiomaAdmin(options) {
+  await delay(300)
+  const id = options?.path?.id
+  const body = options?.body ?? {}
+  const idx = idiomasStore.findIndex(i => i.id === id)
+  if (idx === -1) {
+    return { data: null, error: { message: 'Idioma no encontrado' } }
+  }
+  const { label, activo } = body
+  const ahora = new Date().toISOString()
+  idiomasStore[idx] = {
+    ...idiomasStore[idx],
+    ...(label !== undefined && { label: label.trim() }),
+    ...(activo !== undefined && { activo }),
+    actualizadoEn: ahora,
+  }
+  return { data: idiomasStore[idx], error: null }
+}
+
+/**
+ * Elimina un idioma (no se puede eliminar el idioma por defecto 'es').
+ */
+export async function deleteIdiomaAdmin(options) {
+  await delay(300)
+  const id = options?.path?.id
+  const idx = idiomasStore.findIndex(i => i.id === id)
+  if (idx === -1) {
+    return { data: null, error: { message: 'Idioma no encontrado' } }
+  }
+  if (idiomasStore[idx].code === 'es') {
+    return { data: null, error: { message: 'No se puede eliminar el idioma por defecto (es)' } }
+  }
+  idiomasStore.splice(idx, 1)
+  return { data: { success: true }, error: null }
+}
+
+/**
+ * Obtiene el contenido (traducciones) de un idioma.
+ */
+export async function getIdiomaContent(options) {
+  await delay(200)
+  const id = options?.path?.id
+  const idioma = idiomasStore.find(i => i.id === id)
+  if (!idioma) {
+    return { data: null, error: { message: 'Idioma no encontrado' } }
+  }
+  const content = translationsStore[idioma.code] ?? {}
+  return { data: { code: idioma.code, content }, error: null }
+}
+
+/**
+ * Actualiza el contenido (traducciones) de un idioma.
+ */
+export async function updateIdiomaContent(options) {
+  await delay(300)
+  const id = options?.path?.id
+  const body = options?.body ?? {}
+  const idioma = idiomasStore.find(i => i.id === id)
+  if (!idioma) {
+    return { data: null, error: { message: 'Idioma no encontrado' } }
+  }
+  translationsStore[idioma.code] = { ...(translationsStore[idioma.code] ?? {}), ...body.content }
+  return { data: { code: idioma.code, content: translationsStore[idioma.code] }, error: null }
 }

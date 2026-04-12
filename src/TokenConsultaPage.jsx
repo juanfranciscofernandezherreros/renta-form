@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { getDeclaracionByToken as getDeclaracionByTokenMock } from './mockApi.js'
 import { DEMO_MODE } from './constants.js'
 import { useLanguage } from './LanguageContext.jsx'
-import { LANGUAGES } from './i18n.js'
 import { generateDeclaracionPDF } from './pdfUtils.js'
 
 const TOKENS_STORAGE_KEY = 'renta_form_tokens'
@@ -42,7 +41,7 @@ function loadHistory() {
 }
 
 export default function TokenConsultaPage({ onNavigate, onEditDeclaracion }) {
-  const { lang, setLang, t } = useLanguage()
+  const { lang, setLang, t, availableLanguages } = useLanguage()
   const [token, setToken] = useState('')
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -92,7 +91,7 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion }) {
             onChange={e => setLang(e.target.value)}
             aria-label={t('langLabel')}
           >
-            {LANGUAGES.map(l => (
+            {availableLanguages.map(l => (
               <option key={l.code} value={l.code}>{l.label}</option>
             ))}
           </select>

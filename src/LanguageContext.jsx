@@ -1,14 +1,21 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState } from 'react'
-import translations from './i18n.js'
+import { createContext, useContext, useState, useCallback } from 'react'
+import { translationsStore, idiomasStore } from './demoData.js'
 
 const LanguageContext = createContext(null)
 
 export function LanguageProvider({ children }) {
   const [lang, setLang] = useState('es')
-  const t = key => translations[lang]?.[key] ?? translations['es'][key] ?? key
+  const [, forceUpdate] = useState(0)
+
+  const reloadTranslations = useCallback(() => forceUpdate(n => n + 1), [])
+
+  const t = key => translationsStore[lang]?.[key] ?? translationsStore['es']?.[key] ?? key
+
+  const availableLanguages = idiomasStore.filter(i => i.activo).map(i => ({ code: i.code, label: i.label }))
+
   return (
-    <LanguageContext.Provider value={{ lang, setLang, t }}>
+    <LanguageContext.Provider value={{ lang, setLang, t, reloadTranslations, availableLanguages }}>
       {children}
     </LanguageContext.Provider>
   )
