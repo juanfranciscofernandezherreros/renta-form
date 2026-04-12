@@ -5,6 +5,7 @@ import { listDeclaraciones as listDeclaracionesMock, changePassword as changePas
 import { DEMO_MODE } from './constants.js'
 import { useLanguage } from './LanguageContext.jsx'
 import { LANGUAGES } from './i18n.js'
+import Footer from './Footer.jsx'
 
 const listDeclaraciones = DEMO_MODE ? listDeclaracionesMock : listDeclaracionesReal
 const changePasswordFn = DEMO_MODE ? changePasswordMock : null
@@ -338,11 +339,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
       </div>
       )}
 
-      <footer>
-        <p>{t('footerDisclaimer')}</p>
-        <p>Agencia Tributaria · <a href="https://www.agenciatributaria.es" target="_blank" rel="noreferrer">www.agenciatributaria.es</a> · {t('campaignName')}</p>
-        <p><a href="#/api-docs">{t('footerApiDocs')}</a></p>
-      </footer>
+      <Footer showApiDocs />
     </>
   )
 }

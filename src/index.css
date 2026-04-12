@@ -249,13 +249,132 @@ header .header-text p  { font-size: 0.9rem; opacity: .85; margin-top: 4px; }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Footer */
+/* ── Footer ── */
 footer {
   max-width: 920px;
   margin: 16px auto 0;
   text-align: center;
   font-size: .75rem;
   color: #888;
+}
+
+/* ── Footer enhanced ── */
+.footer-enhanced {
+  max-width: 920px;
+  margin: 24px auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.footer-section-how {
+  background: #fff;
+  border-radius: 10px 10px 0 0;
+  border: 1.5px solid #e4eaf4;
+  border-bottom: none;
+  overflow: hidden;
+}
+
+.footer-how-toggle {
+  width: 100%;
+  background: #f0f5ff;
+  border: none;
+  border-bottom: 1.5px solid #e4eaf4;
+  padding: 14px 24px;
+  font-size: .9rem;
+  font-weight: 700;
+  color: #003087;
+  cursor: pointer;
+  text-align: left;
+  transition: background .15s;
+}
+.footer-how-toggle:hover { background: #e4eeff; }
+
+.footer-how-content {
+  padding: 24px;
+}
+
+.footer-how-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #003087;
+  margin-bottom: 20px;
+}
+
+.footer-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.footer-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 16px;
+  background: #f8fafd;
+  border-radius: 8px;
+  border: 1px solid #e4eaf4;
+}
+
+.footer-step-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+.footer-step-body {
+  flex: 1;
+}
+
+.footer-step-title {
+  display: block;
+  font-size: .92rem;
+  font-weight: 700;
+  color: #003087;
+  margin-bottom: 4px;
+}
+
+.footer-step-text {
+  font-size: .85rem;
+  color: #444;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.footer-section-contact {
+  background: #fff;
+  border: 1.5px solid #e4eaf4;
+  border-radius: 0 0 10px 10px;
+  padding: 28px 28px 24px;
+}
+
+.footer-contact-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #003087;
+  margin-bottom: 18px;
+  border-left: 4px solid #003087;
+  padding-left: 10px;
+}
+
+.footer-contact-form .btn-row {
+  margin-top: 20px;
+  justify-content: flex-start;
+}
+
+.footer-contact-success {
+  background: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+  margin-bottom: 16px;
+}
+
+@media (max-width: 600px) {
+  .footer-how-content { padding: 16px; }
+  .footer-section-contact { padding: 18px 14px; }
+  .footer-step { padding: 12px; }
 }
 
 /* ── Language selector */
