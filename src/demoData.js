@@ -108,7 +108,7 @@ export const CATALOGO_PREGUNTAS = {
 /** @type {import('./api/types.gen').Declaracion[]} */
 const declaracionesIniciales = [
   // ── Usuario 1: María García López ──────────────────────────────────────
-  // Inquilina, sin propiedad en propiedad, familia numerosa, ingresos por inversiones.
+  // Inquilina, sin vivienda en propiedad, familia numerosa, ingresos por inversiones.
   {
     id: 'a1b2c3d4-0001-0001-0001-000000000001',
     estado: 'en_revision',
@@ -227,6 +227,6 @@ let nextIdCounter = 5
 
 /** Genera un UUID fake basado en un contador incremental. */
 export function generarId() {
-  const n = String(nextIdCounter++).padStart(2, '0')
-  return `f5e6d7c8-00${n}-00${n}-00${n}-0000000000${n}`
+  const n = String(nextIdCounter++).padStart(8, '0')
+  return `f5e6d7c8-${n.slice(0, 4)}-${n.slice(4, 8)}-0000-${n}${n}`
 }
