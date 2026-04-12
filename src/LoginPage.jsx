@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from './AuthContext.jsx'
 import { loginUser as loginUserMock } from './mockApi.js'
-import { DEMO_MODE } from './constants.js'
+import { DEMO_MODE, ERROR_USER_BLOCKED } from './constants.js'
 import { useLanguage } from './LanguageContext.jsx'
 import { LANGUAGES } from './i18n.js'
 
@@ -50,7 +50,7 @@ export default function LoginPage({ onNavigate }) {
     const { data, error } = await loginFn({ dniNie, password: form.password })
     setLoading(false)
     if (error) {
-      setErrors({ global: error.message })
+      setErrors({ global: error.message === ERROR_USER_BLOCKED ? t('errUserBlocked') : error.message })
       return
     }
     login({ dniNie: data.dniNie, role: data.role })

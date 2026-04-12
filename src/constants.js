@@ -10,3 +10,5 @@ export const API_DECLARACIONES_URL =
 
 export const API_PREGUNTAS_URL =
   `${API_BASE_URL}/irpf/preguntas`
+
+export const ERROR_USER_BLOCKED = 'USER_BLOCKED'
