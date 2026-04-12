@@ -1,0 +1,558 @@
+openapi: 3.0.3
+
+info:
+  title: Renta Form API
+  description: |
+    API para la gestión de cuestionarios de la Campaña de la Renta 2025 (IRPF).
+
+    Permite:
+    - Consultar el catálogo de preguntas estructuradas por secciones.
+    - Enviar un cuestionario completo con documentación adjunta.
+  version: 1.0.0
+  contact:
+    name: Soporte Renta Form
+    url: https://www.agenciatributaria.es
+
+servers:
+  - url: https://api.renta-form.example/v1
+    description: Servidor de producción
+  - url: http://localhost:3001/v1
+    description: Servidor de desarrollo local
+
+tags:
+  - name: Preguntas
+    description: Catálogo de preguntas del cuestionario
+  - name: Declaraciones
+    description: Gestión de cuestionarios enviados
+
+paths:
+  /irpf/preguntas:
+    get:
+      operationId: getPreguntas
+      tags: [Preguntas]
+      summary: Obtiene el catálogo de preguntas
+      description: |
+        Devuelve todas las secciones del cuestionario con sus preguntas
+        ordenadas, incluyendo condiciones de visibilidad condicional.
+      responses:
+        '200':
+          description: Catálogo de preguntas obtenido correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogoPreguntas'
+              example:
+                secciones:
+                  - id: seccion-vivienda
+                    numero: 2
+                    titulo: Situación de Vivienda
+                    preguntas:
+                      - id: viviendaAlquiler
+                        texto: '¿Vive de alquiler?'
+                        indentada: false
+                      - id: alquilerMenos35
+                        texto: '¿El alquiler es inferior a 35 años?'
+                        indentada: true
+                        condicion:
+                          campo: viviendaAlquiler
+                          valor: si
+        '503':
+          description: Servicio no disponible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /irpf/declaraciones:
+    post:
+      operationId: createDeclaracion
+      tags: [Declaraciones]
+      summary: Envía un cuestionario fiscal completo
+      description: |
+        Recibe el cuestionario IRPF relleno junto con la documentación
+        adjunta en formato `multipart/form-data`. Crea una nueva declaración
+        en estado `recibido`.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DeclaracionInput'
+      responses:
+        '201':
+          description: Declaración creada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeclaracionCreada'
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorValidacion'
+        '422':
+          description: Entidad no procesable (restricciones de negocio)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Servicio no disponible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      operationId: listDeclaraciones
+      tags: [Declaraciones]
+      summary: Lista las declaraciones registradas
+      description: Devuelve una lista paginada de declaraciones (uso interno/administración).
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+        - name: estado
+          in: query
+          description: Filtra por estado del expediente
+          schema:
+            $ref: '#/components/schemas/EstadoExpediente'
+        - name: dniNie
+          in: query
+          description: Filtra por DNI/NIE del contribuyente
+          schema:
+            type: string
+            pattern: '^[0-9XYZ][0-9]{7}[A-Z]$'
+      responses:
+        '200':
+          description: Lista de declaraciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaDeclaraciones'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /irpf/declaraciones/{id}:
+    get:
+      operationId: getDeclaracion
+      tags: [Declaraciones]
+      summary: Obtiene el detalle de una declaración
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Detalle de la declaración
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Declaracion'
+        '404':
+          description: Declaración no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    patch:
+      operationId: updateEstadoDeclaracion
+      tags: [Declaraciones]
+      summary: Actualiza el estado de una declaración
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [estado]
+              properties:
+                estado:
+                  $ref: '#/components/schemas/EstadoExpediente'
+      responses:
+        '200':
+          description: Estado actualizado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Declaracion'
+        '404':
+          description: Declaración no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      description: UUID de la declaración
+      schema:
+        type: string
+        format: uuid
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    LimitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+
+    # ------------------------------------------------------------------
+    # Enumerados
+    # ------------------------------------------------------------------
+    RespuestaYN:
+      type: string
+      enum: [si, no]
+      description: Respuesta de tipo Sí/No
+
+    EstadoExpediente:
+      type: string
+      enum:
+        - recibido
+        - en_revision
+        - documentacion_pendiente
+        - completado
+        - archivado
+
+    TipoDocumento:
+      type: string
+      enum:
+        - dni_anverso
+        - dni_reverso
+        - adicional
+
+    # ------------------------------------------------------------------
+    # Catálogo de Preguntas
+    # ------------------------------------------------------------------
+    CondicionVisibilidad:
+      type: object
+      required: [campo, valor]
+      description: La pregunta sólo se muestra si el campo indicado tiene el valor especificado
+      properties:
+        campo:
+          type: string
+          description: Nombre del campo del formulario que actúa como condición
+          example: viviendaAlquiler
+        valor:
+          type: string
+          description: Valor que debe tener el campo para mostrar esta pregunta
+          example: si
+
+    Pregunta:
+      type: object
+      required: [id, texto, indentada]
+      properties:
+        id:
+          type: string
+          description: Identificador único (coincide con el nombre del campo en el formulario)
+          example: alquilerMenos35
+        texto:
+          type: string
+          description: Texto de la pregunta que se muestra al usuario
+          example: '¿El importe del alquiler es inferior al 35 % de los ingresos?'
+        indentada:
+          type: boolean
+          description: Si es true, la pregunta se muestra con sangría (es subpregunta de otra)
+          default: false
+        condicion:
+          $ref: '#/components/schemas/CondicionVisibilidad'
+
+    Seccion:
+      type: object
+      required: [id, numero, titulo, preguntas]
+      properties:
+        id:
+          type: string
+          example: seccion-vivienda
+        numero:
+          type: integer
+          minimum: 1
+          example: 2
+        titulo:
+          type: string
+          example: Situación de Vivienda
+        preguntas:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pregunta'
+
+    CatalogoPreguntas:
+      type: object
+      required: [secciones]
+      properties:
+        secciones:
+          type: array
+          items:
+            $ref: '#/components/schemas/Seccion'
+
+    # ------------------------------------------------------------------
+    # Declaración – Input (multipart/form-data)
+    # ------------------------------------------------------------------
+    DeclaracionInput:
+      type: object
+      required:
+        - nombre
+        - apellidos
+        - dniNie
+        - email
+        - telefono
+        - viviendaAlquiler
+        - viviendaPropiedad
+        - pisosAlquiladosTerceros
+        - segundaResidencia
+        - familiaNumerosa
+        - ayudasGobierno
+        - mayores65ACargo
+        - hijosMenores26
+        - ingresosJuego
+        - ingresosInversiones
+      properties:
+        # 1. Identificación
+        nombre:
+          type: string
+          maxLength: 100
+          example: María
+        apellidos:
+          type: string
+          maxLength: 200
+          example: García López
+        dniNie:
+          type: string
+          pattern: '^[0-9XYZ][0-9]{7}[A-Z]$'
+          example: 12345678A
+        email:
+          type: string
+          format: email
+          example: maria.garcia@ejemplo.es
+        telefono:
+          type: string
+          maxLength: 20
+          example: '600123456'
+        # 2. Vivienda
+        viviendaAlquiler:
+          $ref: '#/components/schemas/RespuestaYN'
+        alquilerMenos35:
+          $ref: '#/components/schemas/RespuestaYN'
+          description: Obligatorio cuando viviendaAlquiler = si
+        viviendaPropiedad:
+          $ref: '#/components/schemas/RespuestaYN'
+        propiedadAntes2013:
+          $ref: '#/components/schemas/RespuestaYN'
+          description: Obligatorio cuando viviendaPropiedad = si
+        pisosAlquiladosTerceros:
+          $ref: '#/components/schemas/RespuestaYN'
+        segundaResidencia:
+          $ref: '#/components/schemas/RespuestaYN'
+        # 3. Familia
+        familiaNumerosa:
+          $ref: '#/components/schemas/RespuestaYN'
+        ayudasGobierno:
+          $ref: '#/components/schemas/RespuestaYN'
+        mayores65ACargo:
+          $ref: '#/components/schemas/RespuestaYN'
+        mayoresConviven:
+          $ref: '#/components/schemas/RespuestaYN'
+          description: Obligatorio cuando mayores65ACargo = si
+        hijosMenores26:
+          $ref: '#/components/schemas/RespuestaYN'
+        # 4. Ingresos
+        ingresosJuego:
+          $ref: '#/components/schemas/RespuestaYN'
+        ingresosInversiones:
+          $ref: '#/components/schemas/RespuestaYN'
+        # 5. Documentación
+        docDniAnverso:
+          type: string
+          format: binary
+          description: Anverso del DNI/NIE (PDF, JPG, PNG; máx. 5 MB)
+        docDniReverso:
+          type: string
+          format: binary
+          description: Reverso del DNI/NIE (PDF, JPG, PNG; máx. 5 MB)
+        docAdicional:
+          type: array
+          items:
+            type: string
+            format: binary
+          description: Documentación adicional (nóminas, certificados, etc.)
+        # 6. Información adicional
+        comentarios:
+          type: string
+          description: Situaciones especiales a tener en cuenta
+
+    # ------------------------------------------------------------------
+    # Declaración – Output
+    # ------------------------------------------------------------------
+    DeclaracionCreada:
+      type: object
+      required: [id, estado, creadoEn]
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+        estado:
+          $ref: '#/components/schemas/EstadoExpediente'
+        creadoEn:
+          type: string
+          format: date-time
+
+    Documento:
+      type: object
+      required: [id, tipo, nombreOriginal, mimeType, tamanyo, subidoEn]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tipo:
+          $ref: '#/components/schemas/TipoDocumento'
+        nombreOriginal:
+          type: string
+        mimeType:
+          type: string
+        tamanyo:
+          type: integer
+          description: Tamaño en bytes
+        url:
+          type: string
+          description: URL de acceso al documento (si se almacena externamente)
+        subidoEn:
+          type: string
+          format: date-time
+
+    Declaracion:
+      allOf:
+        - $ref: '#/components/schemas/DeclaracionCreada'
+        - type: object
+          required:
+            - nombre
+            - apellidos
+            - dniNie
+            - email
+            - telefono
+            - viviendaAlquiler
+            - viviendaPropiedad
+            - pisosAlquiladosTerceros
+            - segundaResidencia
+            - familiaNumerosa
+            - ayudasGobierno
+            - mayores65ACargo
+            - hijosMenores26
+            - ingresosJuego
+            - ingresosInversiones
+            - actualizadoEn
+            - documentos
+          properties:
+            nombre:
+              type: string
+            apellidos:
+              type: string
+            dniNie:
+              type: string
+            email:
+              type: string
+              format: email
+            telefono:
+              type: string
+            viviendaAlquiler:
+              $ref: '#/components/schemas/RespuestaYN'
+            alquilerMenos35:
+              $ref: '#/components/schemas/RespuestaYN'
+            viviendaPropiedad:
+              $ref: '#/components/schemas/RespuestaYN'
+            propiedadAntes2013:
+              $ref: '#/components/schemas/RespuestaYN'
+            pisosAlquiladosTerceros:
+              $ref: '#/components/schemas/RespuestaYN'
+            segundaResidencia:
+              $ref: '#/components/schemas/RespuestaYN'
+            familiaNumerosa:
+              $ref: '#/components/schemas/RespuestaYN'
+            ayudasGobierno:
+              $ref: '#/components/schemas/RespuestaYN'
+            mayores65ACargo:
+              $ref: '#/components/schemas/RespuestaYN'
+            mayoresConviven:
+              $ref: '#/components/schemas/RespuestaYN'
+            hijosMenores26:
+              $ref: '#/components/schemas/RespuestaYN'
+            ingresosJuego:
+              $ref: '#/components/schemas/RespuestaYN'
+            ingresosInversiones:
+              $ref: '#/components/schemas/RespuestaYN'
+            comentarios:
+              type: string
+            actualizadoEn:
+              type: string
+              format: date-time
+            documentos:
+              type: array
+              items:
+                $ref: '#/components/schemas/Documento'
+
+    ListaDeclaraciones:
+      type: object
+      required: [data, total, page, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Declaracion'
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    # ------------------------------------------------------------------
+    # Errores
+    # ------------------------------------------------------------------
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: SERVICE_UNAVAILABLE
+        message:
+          type: string
+          example: El servicio no está disponible en este momento
+
+    ErrorValidacion:
+      allOf:
+        - $ref: '#/components/schemas/Error'
+        - type: object
+          properties:
+            errores:
+              type: array
+              items:
+                type: object
+                required: [campo, mensaje]
+                properties:
+                  campo:
+                    type: string
+                    example: dniNie
+                  mensaje:
+                    type: string
+                    example: El formato del DNI/NIE no es válido

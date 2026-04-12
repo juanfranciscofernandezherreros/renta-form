@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
-import { API_DECLARACIONES_URL, API_PREGUNTAS_URL } from './constants'
+import { getPreguntas, createDeclaracion } from './api/index.ts'
 
 const INITIAL_STATE = {
   // 1. Datos de identificación
@@ -60,13 +60,10 @@ export default function App() {
   const topRef = useRef(null)
 
   useEffect(() => {
-    fetch(API_PREGUNTAS_URL, { headers: { Accept: 'application/json' } })
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        return res.json()
-      })
-      .then(data => {
-        setSecciones(data.secciones ?? [])
+    getPreguntas()
+      .then(({ data, error }) => {
+        if (error) throw new Error(error.message ?? 'Error desconocido')
+        setSecciones(data?.secciones ?? [])
         setLoadingPreguntas(false)
       })
       .catch(err => {
@@ -103,58 +100,47 @@ export default function App() {
   const handleSubmit = async e => {
     e.preventDefault()
 
-    const payload = new FormData()
-
-    // Identification
-    payload.append('nombre', form.nombre)
-    payload.append('apellidos', form.apellidos)
-    payload.append('dniNie', form.dniNie)
-    payload.append('email', form.email)
-    payload.append('telefono', form.telefono)
-
-    // Housing
-    payload.append('viviendaAlquiler', form.viviendaAlquiler)
-    if (form.viviendaAlquiler === 'si') payload.append('alquilerMenos35', form.alquilerMenos35)
-    payload.append('viviendaPropiedad', form.viviendaPropiedad)
-    if (form.viviendaPropiedad === 'si') payload.append('propiedadAntes2013', form.propiedadAntes2013)
-    payload.append('pisosAlquiladosTerceros', form.pisosAlquiladosTerceros)
-    payload.append('segundaResidencia', form.segundaResidencia)
-
-    // Family
-    payload.append('familiaNumerosa', form.familiaNumerosa)
-    payload.append('ayudasGobierno', form.ayudasGobierno)
-    payload.append('mayores65ACargo', form.mayores65ACargo)
-    if (form.mayores65ACargo === 'si') payload.append('mayoresConviven', form.mayoresConviven)
-    payload.append('hijosMenores26', form.hijosMenores26)
-
-    // Extraordinary income
-    payload.append('ingresosJuego', form.ingresosJuego)
-    payload.append('ingresosInversiones', form.ingresosInversiones)
-
-    // Documents
-    if (form.docDniAnverso) payload.append('docDniAnverso', form.docDniAnverso)
-    if (form.docDniReverso) payload.append('docDniReverso', form.docDniReverso)
-    if (form.docAdicional) {
-      for (const file of form.docAdicional) {
-        payload.append('docAdicional', file)
-      }
+    /** @type {import('./api/types.gen').DeclaracionInput} */
+    const body = {
+      // Identification
+      nombre: form.nombre,
+      apellidos: form.apellidos,
+      dniNie: form.dniNie,
+      email: form.email,
+      telefono: form.telefono,
+      // Housing
+      viviendaAlquiler: form.viviendaAlquiler,
+      ...(form.viviendaAlquiler === 'si' && { alquilerMenos35: form.alquilerMenos35 }),
+      viviendaPropiedad: form.viviendaPropiedad,
+      ...(form.viviendaPropiedad === 'si' && { propiedadAntes2013: form.propiedadAntes2013 }),
+      pisosAlquiladosTerceros: form.pisosAlquiladosTerceros,
+      segundaResidencia: form.segundaResidencia,
+      // Family
+      familiaNumerosa: form.familiaNumerosa,
+      ayudasGobierno: form.ayudasGobierno,
+      mayores65ACargo: form.mayores65ACargo,
+      ...(form.mayores65ACargo === 'si' && { mayoresConviven: form.mayoresConviven }),
+      hijosMenores26: form.hijosMenores26,
+      // Extraordinary income
+      ingresosJuego: form.ingresosJuego,
+      ingresosInversiones: form.ingresosInversiones,
+      // Documents
+      ...(form.docDniAnverso && { docDniAnverso: form.docDniAnverso }),
+      ...(form.docDniReverso && { docDniReverso: form.docDniReverso }),
+      ...(form.docAdicional && { docAdicional: Array.from(form.docAdicional) }),
+      // Comments
+      comentarios: form.comentarios,
     }
-
-    // Comments
-    payload.append('comentarios', form.comentarios)
 
     setSubmitting(true)
     try {
-      const response = await fetch(API_DECLARACIONES_URL, {
-        method: 'POST',
-        body: payload,
-      })
-      if (response.ok) {
+      const { data, error, response } = await createDeclaracion({ body })
+      if (data) {
         setSubmitted(true)
         showToast('✅ Cuestionario enviado correctamente. Nos pondremos en contacto contigo en breve.', 'success')
         setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
       } else {
-        showToast(`❌ Error al enviar el cuestionario (HTTP ${response.status}). Inténtelo de nuevo.`, 'error')
+        showToast(`❌ Error al enviar el cuestionario (HTTP ${response?.status ?? '?'}): ${error?.message ?? 'Error desconocido'}. Inténtelo de nuevo.`, 'error')
       }
     } catch {
       showToast('❌ No se pudo conectar con el servidor. Compruebe su conexión e inténtelo de nuevo.', 'error')
@@ -311,6 +297,7 @@ export default function App() {
       <footer>
         <p>Este formulario es meramente informativo y no constituye una presentación oficial ante la AEAT.</p>
         <p>Agencia Tributaria · <a href="https://www.agenciatributaria.es" target="_blank" rel="noreferrer">www.agenciatributaria.es</a> · Campaña de la Renta 2025</p>
+        <p><a href="#/api-docs">📄 API Docs (Swagger UI)</a></p>
       </footer>
 
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}

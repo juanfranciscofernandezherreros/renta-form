@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "generate": "openapi-ts",
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
@@ -14,12 +15,15 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@hey-api/client-fetch": "^0.13.1",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "serve": "^14.2.6"
+    "serve": "^14.2.6",
+    "swagger-ui-react": "^5.32.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
+    "@hey-api/openapi-ts": "^0.95.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.1",

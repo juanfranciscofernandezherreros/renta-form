@@ -1,5 +1,8 @@
+export const API_BASE_URL =
+  'https://api.renta-form.example/v1'
+
 export const API_DECLARACIONES_URL =
-  'https://api.renta-form.example/v1/irpf/declaraciones'
+  `${API_BASE_URL}/irpf/declaraciones`
 
 export const API_PREGUNTAS_URL =
-  'https://api.renta-form.example/v1/irpf/preguntas'
+  `${API_BASE_URL}/irpf/preguntas`
