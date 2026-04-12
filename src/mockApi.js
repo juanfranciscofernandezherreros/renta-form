@@ -534,3 +534,18 @@ export async function getSeccionDeclaraciones(options) {
 
   return { data: { data: declaraciones, total: declaraciones.length }, error: null }
 }
+
+/**
+ * Mock de getSeccionPreguntas – devuelve las preguntas adicionales asignadas a una sección.
+ * @param {{ path: { id: string } }} options
+ * @returns {Promise<{ data: { data: object[], total: number } | null, error: { message: string } | null }>}
+ */
+export async function getSeccionPreguntas(options) {
+  await delay()
+  const id = options?.path?.id
+  const seccion = seccionesStore.find(s => s.id === id)
+  if (!seccion) return { data: null, error: { message: 'Sección no encontrada' } }
+
+  const preguntas = preguntasAdicionalesStore.filter(p => p.seccion === seccion.nombre)
+  return { data: { data: preguntas, total: preguntas.length }, error: null }
+}

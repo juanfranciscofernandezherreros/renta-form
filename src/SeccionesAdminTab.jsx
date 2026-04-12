@@ -5,6 +5,7 @@ import {
   updateSeccionAdmin,
   deleteSeccionAdmin,
   getSeccionDeclaraciones,
+  getSeccionPreguntas,
 } from './mockApi.js'
 
 const EMPTY_FORM = { nombre: '', orden: 1, activa: true }
@@ -27,6 +28,7 @@ export default function SeccionesAdminTab({ showToast }) {
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [seccionDeclaraciones, setSeccionDeclaraciones] = useState({}) // { seccionId: [{ id, dniNie, nombre }] }
+  const [seccionPreguntas, setSeccionPreguntas] = useState({}) // { seccionId: [{ id, texto, tipoRespuesta }] }
 
   const refresh = useCallback(() => setRefreshKey(k => k + 1), [])
 
@@ -62,6 +64,25 @@ export default function SeccionesAdminTab({ showToast }) {
       const map = {}
       results.forEach(r => { map[r.id] = r.declaraciones })
       setSeccionDeclaraciones(map)
+    })
+    return () => { cancelled = true }
+  }, [secciones])
+
+  // Load questions linked to each section
+  useEffect(() => {
+    if (secciones.length === 0) return
+    let cancelled = false
+    Promise.all(
+      secciones.map(s =>
+        getSeccionPreguntas({ path: { id: s.id } })
+          .then(({ data }) => ({ id: s.id, preguntas: data?.data ?? [] }))
+          .catch(() => ({ id: s.id, preguntas: [] }))
+      )
+    ).then(results => {
+      if (cancelled) return
+      const map = {}
+      results.forEach(r => { map[r.id] = r.preguntas })
+      setSeccionPreguntas(map)
     })
     return () => { cancelled = true }
   }, [secciones])
@@ -155,6 +176,7 @@ export default function SeccionesAdminTab({ showToast }) {
                 <th>Nombre</th>
                 <th>Orden</th>
                 <th>Estado</th>
+                <th>Preguntas</th>
                 <th>Declaraciones</th>
                 <th>Creada</th>
                 <th style={{ textAlign: 'right' }}>Acciones</th>
@@ -171,6 +193,24 @@ export default function SeccionesAdminTab({ showToast }) {
                     <span className={`estado-badge ${s.activa ? 'badge-activa' : 'badge-inactiva'}`}>
                       {s.activa ? 'Activa' : 'Inactiva'}
                     </span>
+                  </td>
+                  <td>
+                    {(seccionPreguntas[s.id] ?? []).length === 0 ? (
+                      <span style={{ color: '#aaa', fontSize: '.8rem' }}>—</span>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {(seccionPreguntas[s.id] ?? []).map(p => (
+                          <span
+                            key={p.id}
+                            className={`estado-badge ${p.activa ? 'badge-activa' : 'badge-inactiva'}`}
+                            style={{ fontSize: '.72rem', cursor: 'default' }}
+                            title={p.texto}
+                          >
+                            {p.texto.length > 50 ? `${p.texto.slice(0, 50)}…` : p.texto}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </td>
                   <td>
                     {(seccionDeclaraciones[s.id] ?? []).length === 0 ? (
