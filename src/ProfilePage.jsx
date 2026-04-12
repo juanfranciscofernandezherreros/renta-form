@@ -264,13 +264,17 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
                     </div>
 
                     <div className="btn-row">
-                      <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={() => handleEdit(dec)}
-                      >
-                        {t('profileEdit')}
-                      </button>
+                      {dec.estado === 'completado' ? (
+                        <span className="info-box" style={{ margin: 0 }}>{t('profileEditLocked')}</span>
+                      ) : (
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={() => handleEdit(dec)}
+                        >
+                          {t('profileEdit')}
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}

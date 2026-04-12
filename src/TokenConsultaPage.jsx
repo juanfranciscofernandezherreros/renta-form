@@ -171,13 +171,17 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion }) {
                 </table>
                 {onEditDeclaracion && (
                   <div className="btn-row" style={{ marginTop: '12px' }}>
-                    <button
-                      type="button"
-                      className="btn btn-primary btn-sm"
-                      onClick={() => { onEditDeclaracion(result); onNavigate('#/') }}
-                    >
-                      {t('profileEdit')}
-                    </button>
+                    {result.estado === 'completado' ? (
+                      <span className="info-box" style={{ margin: 0 }}>{t('profileEditLocked')}</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn btn-primary btn-sm"
+                        onClick={() => { onEditDeclaracion(result); onNavigate('#/') }}
+                      >
+                        {t('profileEdit')}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
