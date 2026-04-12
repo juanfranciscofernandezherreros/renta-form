@@ -203,13 +203,13 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
           ingresosInversiones: form.ingresosInversiones,
           comentarios: form.comentarios,
         }
-        const { data, error } = await updateDeclaracion({ path: { id: editData.id }, body: updateBody })
+        const { data, error, response } = await updateDeclaracion({ path: { id: editData.id }, body: updateBody })
         if (data) {
           setSubmitted(true)
           showToast(t('toastSuccess'), 'success')
           setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
         } else {
-          showToast(`${t('toastErrorHttp')} ?${t('toastErrorHttpSuffix')} ${error?.message ?? ''}`, 'error')
+          showToast(`${t('toastErrorHttp')} ${response?.status ?? '?'}${t('toastErrorHttpSuffix')} ${error?.message ?? ''}`, 'error')
         }
       } else {
         const { data, error, response } = await createDeclaracion({ body })
