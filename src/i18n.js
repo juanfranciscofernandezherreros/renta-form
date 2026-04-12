@@ -592,7 +592,7 @@ const translations = {
     footerStep3Title: '3. Envia i rep el teu codi',
     footerStep3Text: 'Un cop enviat, rebràs un codi de seguiment únic. Guarda\'l per consultar l\'estat del teu expedient en qualsevol moment.',
     footerStep4Title: '4. Seguiment de l\'expedient',
-    footerStep4Text: 'Des del teu perfil pots consultar l\'estat del teu expedient: rebut, en revisió, documentació pending o completat.',
+    footerStep4Text: 'Des del teu perfil pots consultar l\'estat del teu expedient: rebut, en revisió, documentació pendent o completat.',
     footerStep5Title: '5. Contacta\'ns',
     footerStep5Text: 'Si tens algún dubte o necessites ajuda, utilitza el formulari de contacte i el nostre equip et respondrà el més aviat possible.',
     footerContactTitle: '📬 Contactar amb l\'administrador',

@@ -122,7 +122,7 @@ export default function Footer({ showApiDocs = false }) {
                   name="email"
                   value={contactForm.email}
                   onChange={handleContactChange}
-                  placeholder="ejemplo@correo.es"
+                  placeholder="name@example.com"
                   required
                 />
                 {contactErrors.email && <span className="field-error">{contactErrors.email}</span>}
