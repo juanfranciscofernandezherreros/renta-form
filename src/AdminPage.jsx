@@ -5,6 +5,9 @@ import {
   updateEstadoDeclaracion,
   deleteDeclaracion,
   sendEmailDeclaracion,
+  updateDeclaracion,
+  assignUserAccount,
+  getUserByDniNie,
 } from './mockApi.js'
 import PreguntasAdminTab from './PreguntasAdminTab.jsx'
 import SeccionesAdminTab from './SeccionesAdminTab.jsx'
@@ -159,6 +162,18 @@ export default function AdminPage({ onNavigate }) {
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
+  // Edit declaration modal
+  const [editModal, setEditModal] = useState(null) // declaration object being edited
+  const [editForm, setEditForm] = useState({})
+  const [editSaving, setEditSaving] = useState(false)
+
+  // Assign user account modal
+  const [assignModal, setAssignModal] = useState(null) // declaration object
+  const [assignPassword, setAssignPassword] = useState('')
+  const [assignPassword2, setAssignPassword2] = useState('')
+  const [assignExistingUser, setAssignExistingUser] = useState(null)
+  const [assignSaving, setAssignSaving] = useState(false)
+
   const showToast = useCallback((msg, type = 'success') => {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 4000)
@@ -221,6 +236,72 @@ export default function AdminPage({ onNavigate }) {
     setEmailMsg('')
     if (apiErr) { showToast(`Error al enviar email: ${apiErr.message}`, 'error'); return }
     showToast(`📧 Email enviado a ${emailModal.email}`)
+  }
+
+  const openEditModal = (dec) => {
+    setEditForm({
+      nombre: dec.nombre ?? '',
+      apellidos: dec.apellidos ?? '',
+      dniNie: dec.dniNie ?? '',
+      email: dec.email ?? '',
+      telefono: dec.telefono ?? '',
+      viviendaAlquiler: dec.viviendaAlquiler ?? '',
+      alquilerMenos35: dec.alquilerMenos35 ?? '',
+      viviendaPropiedad: dec.viviendaPropiedad ?? '',
+      propiedadAntes2013: dec.propiedadAntes2013 ?? '',
+      pisosAlquiladosTerceros: dec.pisosAlquiladosTerceros ?? '',
+      segundaResidencia: dec.segundaResidencia ?? '',
+      familiaNumerosa: dec.familiaNumerosa ?? '',
+      ayudasGobierno: dec.ayudasGobierno ?? '',
+      mayores65ACargo: dec.mayores65ACargo ?? '',
+      mayoresConviven: dec.mayoresConviven ?? '',
+      hijosMenores26: dec.hijosMenores26 ?? '',
+      ingresosJuego: dec.ingresosJuego ?? '',
+      ingresosInversiones: dec.ingresosInversiones ?? '',
+      comentarios: dec.comentarios ?? '',
+    })
+    setEditModal(dec)
+  }
+
+  const handleEditSave = async () => {
+    if (!editModal) return
+    setEditSaving(true)
+    const { data, error: apiErr } = await updateDeclaracion({
+      path: { id: editModal.id },
+      body: editForm,
+    })
+    setEditSaving(false)
+    if (apiErr) { showToast(`Error al guardar: ${apiErr.message}`, 'error'); return }
+    setDeclaraciones(prev => prev.map(d => d.id === editModal.id ? { ...d, ...data } : d))
+    setEditModal(null)
+    showToast('Declaración actualizada correctamente')
+  }
+
+  const openAssignModal = async (dec) => {
+    setAssignPassword('')
+    setAssignPassword2('')
+    setAssignExistingUser(null)
+    setAssignModal(dec)
+    const { data } = await getUserByDniNie({ dniNie: dec.dniNie })
+    setAssignExistingUser(data)
+  }
+
+  const handleAssignSave = async () => {
+    if (!assignModal) return
+    if (!assignPassword) { showToast('La contraseña no puede estar vacía', 'error'); return }
+    if (assignPassword !== assignPassword2) { showToast('Las contraseñas no coinciden', 'error'); return }
+    setAssignSaving(true)
+    const { data, error: apiErr } = await assignUserAccount({
+      dniNie: assignModal.dniNie,
+      password: assignPassword,
+      declaracionId: assignModal.id,
+    })
+    setAssignSaving(false)
+    if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
+    setAssignModal(null)
+    showToast(data?.created
+      ? `✅ Cuenta creada para ${assignModal.dniNie}`
+      : `🔑 Contraseña actualizada para ${assignModal.dniNie}`)
   }
 
   return (
@@ -425,6 +506,22 @@ export default function AdminPage({ onNavigate }) {
                       <button
                         type="button"
                         className="btn btn-secondary"
+                        onClick={() => openEditModal(dec)}
+                        title="Editar datos del cuestionario"
+                      >
+                        ✏️ Editar
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
+                        onClick={() => openAssignModal(dec)}
+                        title="Asignar perfil de usuario y contraseña"
+                      >
+                        👤 Asignar perfil
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-secondary"
                         onClick={() => downloadDeclaracionPdf(dec)}
                         title="Abrir vista imprimible / Descargar PDF"
                       >
@@ -506,6 +603,151 @@ export default function AdminPage({ onNavigate }) {
               </button>
               <button type="button" className="btn btn-danger" onClick={() => handleDelete(confirmDelete)}>
                 🗑️ Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit declaration modal */}
+      {editModal && (
+        <div className="admin-modal-overlay" onClick={() => setEditModal(null)}>
+          <div className="admin-modal" style={{ maxWidth: 640 }} onClick={e => e.stopPropagation()}>
+            <h2 className="admin-modal-title">✏️ Editar declaración</h2>
+            <p className="admin-modal-desc">
+              Declaración <strong>#{editModal.id.slice(0, 8)}…</strong>
+            </p>
+            <div className="form-grid">
+              {[
+                { name: 'nombre', label: 'Nombre', type: 'text' },
+                { name: 'apellidos', label: 'Apellidos', type: 'text' },
+                { name: 'dniNie', label: 'DNI / NIE', type: 'text' },
+                { name: 'email', label: 'Correo electrónico', type: 'email' },
+                { name: 'telefono', label: 'Teléfono', type: 'tel' },
+              ].map(({ name, label, type }) => (
+                <div className="field" key={name}>
+                  <label>{label}</label>
+                  <input
+                    type={type}
+                    value={editForm[name] ?? ''}
+                    onChange={e => setEditForm(prev => ({ ...prev, [name]: e.target.value }))}
+                  />
+                </div>
+              ))}
+            </div>
+            {[
+              { name: 'viviendaAlquiler', label: '¿Vive de alquiler?' },
+              { name: 'alquilerMenos35', label: '¿Alquiler inferior al 35% de ingresos?' },
+              { name: 'viviendaPropiedad', label: '¿Tiene vivienda en propiedad?' },
+              { name: 'propiedadAntes2013', label: '¿Adquirida antes de 2013?' },
+              { name: 'pisosAlquiladosTerceros', label: '¿Tiene pisos alquilados a terceros?' },
+              { name: 'segundaResidencia', label: '¿Tiene segunda residencia?' },
+              { name: 'familiaNumerosa', label: '¿Familia numerosa?' },
+              { name: 'ayudasGobierno', label: '¿Ha recibido ayudas del gobierno?' },
+              { name: 'mayores65ACargo', label: '¿Tiene mayores de 65 años a cargo?' },
+              { name: 'mayoresConviven', label: '¿Conviven con usted?' },
+              { name: 'hijosMenores26', label: '¿Tiene hijos menores de 26 años?' },
+              { name: 'ingresosJuego', label: '¿Ha obtenido ingresos por juego?' },
+              { name: 'ingresosInversiones', label: '¿Ha obtenido ingresos por inversiones?' },
+            ].map(({ name, label }) => (
+              <div className="question-row" key={name}>
+                <span className="question-text" style={{ flex: 1 }}>{label}</span>
+                <div className="radio-group">
+                  <label className="radio-label">
+                    <input
+                      type="radio"
+                      name={`edit-${name}`}
+                      value="si"
+                      checked={editForm[name] === 'si'}
+                      onChange={() => setEditForm(prev => ({ ...prev, [name]: 'si' }))}
+                    /> Sí
+                  </label>
+                  <label className="radio-label">
+                    <input
+                      type="radio"
+                      name={`edit-${name}`}
+                      value="no"
+                      checked={editForm[name] === 'no'}
+                      onChange={() => setEditForm(prev => ({ ...prev, [name]: 'no' }))}
+                    /> No
+                  </label>
+                </div>
+              </div>
+            ))}
+            <div className="field" style={{ marginTop: 12 }}>
+              <label>Comentarios</label>
+              <textarea
+                value={editForm.comentarios ?? ''}
+                onChange={e => setEditForm(prev => ({ ...prev, comentarios: e.target.value }))}
+                rows={3}
+              />
+            </div>
+            <div className="btn-row" style={{ marginTop: 16 }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setEditModal(null)}>
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={editSaving}
+                onClick={handleEditSave}
+              >
+                {editSaving ? 'Guardando…' : '💾 Guardar cambios'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign user account modal */}
+      {assignModal && (
+        <div className="admin-modal-overlay" onClick={() => setAssignModal(null)}>
+          <div className="admin-modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
+            <h2 className="admin-modal-title">👤 Asignar perfil de usuario</h2>
+            <p className="admin-modal-desc">
+              Declaración de <strong>{assignModal.nombre} {assignModal.apellidos}</strong><br />
+              DNI / NIE (usuario): <strong>{assignModal.dniNie}</strong>
+            </p>
+            {assignExistingUser ? (
+              <div className="info-box" style={{ marginBottom: 12 }}>
+                ℹ️ Este DNI/NIE ya tiene una cuenta activa. Puedes cambiar su contraseña.
+              </div>
+            ) : (
+              <div className="info-box" style={{ marginBottom: 12 }}>
+                ✨ Se creará una cuenta nueva para <strong>{assignModal.dniNie}</strong>.
+              </div>
+            )}
+            <div className="field">
+              <label>{assignExistingUser ? 'Nueva contraseña' : 'Contraseña'}</label>
+              <input
+                type="password"
+                value={assignPassword}
+                onChange={e => setAssignPassword(e.target.value)}
+                placeholder="Introduce la contraseña…"
+                autoComplete="new-password"
+              />
+            </div>
+            <div className="field">
+              <label>Repetir contraseña</label>
+              <input
+                type="password"
+                value={assignPassword2}
+                onChange={e => setAssignPassword2(e.target.value)}
+                placeholder="Repite la contraseña…"
+                autoComplete="new-password"
+              />
+            </div>
+            <div className="btn-row" style={{ marginTop: 16 }}>
+              <button type="button" className="btn btn-secondary" onClick={() => setAssignModal(null)}>
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={assignSaving}
+                onClick={handleAssignSave}
+              >
+                {assignSaving ? 'Guardando…' : assignExistingUser ? '🔑 Actualizar contraseña' : '✅ Crear cuenta'}
               </button>
             </div>
           </div>
