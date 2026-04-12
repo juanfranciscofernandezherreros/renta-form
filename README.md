@@ -6,11 +6,8 @@ Formulario de la Declaración de la Renta construido con **React + Vite**.
 
 - Formulario completo de IRPF con todos los apartados (datos personales, rendimientos, deducciones, situación familiar, pagos fraccionados).
 - Cálculo estimado en tiempo real (base imponible, cuota íntegra, cuota líquida y resultado).
-- Al pulsar **Enviar declaración** se hace un `POST` con todos los datos al endpoint:
-  ```
-  POST https://api.aeat.gob.es/v1/irpf/declaraciones
-  Content-Type: application/json
-  ```
+- Las preguntas Sí/No se cargan dinámicamente desde el endpoint de preguntas al iniciar la aplicación.
+- Al pulsar **Enviar declaración** se hace un `POST` con todos los datos al endpoint de declaraciones.
 - Notificación visual (toast) con el resultado del envío.
 
 ## Desarrollo
@@ -26,3 +23,174 @@ npm run dev
 npm run build
 npm run preview
 ```
+
+---
+
+## API — Endpoint de preguntas
+
+### Request
+
+```
+GET https://api.renta-form.example/v1/irpf/preguntas
+Accept: application/json
+```
+
+No requiere cuerpo ni parámetros. La respuesta contiene las secciones y preguntas que se muestran en el formulario.
+
+### Response `200 OK`
+
+```json
+{
+  "secciones": [
+    {
+      "id": "vivienda",
+      "numero": 2,
+      "titulo": "Situación de Vivienda",
+      "preguntas": [
+        {
+          "id": "viviendaAlquiler",
+          "texto": "¿Vives actualmente de alquiler?",
+          "tipo": "si_no",
+          "indentada": false,
+          "condicion": null
+        },
+        {
+          "id": "alquilerMenos35",
+          "texto": "En caso de vivir de alquiler, ¿tienes menos de 35 años?",
+          "tipo": "si_no",
+          "indentada": true,
+          "condicion": { "campo": "viviendaAlquiler", "valor": "si" }
+        },
+        {
+          "id": "viviendaPropiedad",
+          "texto": "¿Tu vivienda habitual es de propiedad?",
+          "tipo": "si_no",
+          "indentada": false,
+          "condicion": null
+        },
+        {
+          "id": "propiedadAntes2013",
+          "texto": "En caso de ser de propiedad, ¿la compraste antes del 1 de enero de 2013?",
+          "tipo": "si_no",
+          "indentada": true,
+          "condicion": { "campo": "viviendaPropiedad", "valor": "si" }
+        },
+        {
+          "id": "pisosAlquiladosTerceros",
+          "texto": "¿Tienes otros pisos de tu propiedad que estén alquilados a terceros?",
+          "tipo": "si_no",
+          "indentada": false,
+          "condicion": null
+        },
+        {
+          "id": "segundaResidencia",
+          "texto": "¿Tienes una segunda residencia para tu propio uso y disfrute?",
+          "tipo": "si_no",
+          "indentada": false,
+          "condicion": null
+        }
+      ]
+    },
+    {
+      "id": "familia",
+      "numero": 3,
+      "titulo": "Cargas Familiares y Ayudas Públicas",
+      "preguntas": [
+        {
+          "id": "familiaNumerosa",
+          "texto": "¿Tienes el título de familia numerosa?",
+          "tipo": "si_no",
+          "indentada": false,
+          "condicion": null
+        },
+        {
+          "id": "ayudasGobierno",
+          "texto": "¿Has recibido alguna ayuda o subvención del gobierno durante el año 2025?",
+          "tipo": "si_no",
+          "indentada": false,
+          "condicion": null
+        },
+        {
+          "id": "mayores65ACargo",
+          "texto": "¿Tienes personas mayores de 65 años a tu cargo?",
+          "tipo": "si_no",
+          "indentada": false,
+          "condicion": null
+        },
+        {
+          "id": "mayoresConviven",
+          "texto": "En caso de tener mayores a cargo, ¿viven contigo en el mismo domicilio?",
+          "tipo": "si_no",
+          "indentada": true,
+          "condicion": { "campo": "mayores65ACargo", "valor": "si" }
+        },
+        {
+          "id": "hijosMenores26",
+          "texto": "¿Tienes hijos menores de 26 años a tu cargo?",
+          "tipo": "si_no",
+          "indentada": false,
+          "condicion": null
+        }
+      ]
+    },
+    {
+      "id": "ingresos",
+      "numero": 4,
+      "titulo": "Ingresos Extraordinarios e Inversiones",
+      "preguntas": [
+        {
+          "id": "ingresosJuego",
+          "texto": "¿Has recibido ingresos procedentes del juego o apuestas (online o presenciales) durante el año 2025?",
+          "tipo": "si_no",
+          "indentada": false,
+          "condicion": null
+        },
+        {
+          "id": "ingresosInversiones",
+          "texto": "¿Has recibido ingresos procedentes de depósitos bancarios, fondos de inversión, venta de acciones en bolsa o similares?",
+          "tipo": "si_no",
+          "indentada": false,
+          "condicion": null
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Descripción de campos
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `secciones` | `array` | Lista de secciones de preguntas |
+| `secciones[].id` | `string` | Identificador único de la sección |
+| `secciones[].numero` | `number` | Número de sección que se muestra en el encabezado |
+| `secciones[].titulo` | `string` | Título visible de la sección |
+| `secciones[].preguntas` | `array` | Lista de preguntas de la sección |
+| `preguntas[].id` | `string` | Identificador único del campo (se usa como clave en el payload de envío) |
+| `preguntas[].texto` | `string` | Texto de la pregunta que se muestra al usuario |
+| `preguntas[].tipo` | `string` | Tipo de pregunta. Por ahora solo `"si_no"` |
+| `preguntas[].indentada` | `boolean` | Si es `true`, la pregunta aparece con sangría (pregunta dependiente) |
+| `preguntas[].condicion` | `object\|null` | Si no es `null`, la pregunta solo se muestra cuando `form[campo] === valor` |
+
+### Respuestas de error
+
+| Código | Descripción |
+|---|---|
+| `500 Internal Server Error` | Error en el servidor al recuperar las preguntas |
+| `503 Service Unavailable` | Servicio no disponible temporalmente |
+
+En caso de error el formulario muestra un aviso inline y el usuario no puede continuar hasta que las preguntas carguen correctamente.
+
+---
+
+## API — Endpoint de declaraciones
+
+### Request
+
+```
+POST https://api.renta-form.example/v1/irpf/declaraciones
+Content-Type: multipart/form-data
+```
+
+Envía todos los campos del formulario como `multipart/form-data`. Los campos de las preguntas dinámicas se incluyen usando el `id` de cada pregunta como nombre de campo con valor `"si"` o `"no"`.

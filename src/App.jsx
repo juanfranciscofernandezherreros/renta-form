@@ -1,6 +1,6 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import './App.css'
-import { API_DECLARACIONES_URL } from './constants'
+import { API_DECLARACIONES_URL, API_PREGUNTAS_URL } from './constants'
 
 const INITIAL_STATE = {
   // 1. Datos de identificación
@@ -54,7 +54,26 @@ export default function App() {
   const [toast, setToast] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [secciones, setSecciones] = useState([])
+  const [loadingPreguntas, setLoadingPreguntas] = useState(true)
+  const [errorPreguntas, setErrorPreguntas] = useState(null)
   const topRef = useRef(null)
+
+  useEffect(() => {
+    fetch(API_PREGUNTAS_URL, { headers: { Accept: 'application/json' } })
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        return res.json()
+      })
+      .then(data => {
+        setSecciones(data.secciones ?? [])
+        setLoadingPreguntas(false)
+      })
+      .catch(err => {
+        setErrorPreguntas(err.message)
+        setLoadingPreguntas(false)
+      })
+  }, [])
 
   const handleChange = e => {
     const { name, value, type } = e.target
@@ -207,81 +226,35 @@ export default function App() {
                 </div>
               </div>
 
-              {/* 2. Situación de vivienda */}
-              <div className="section-title">2. Situación de Vivienda</div>
-              <div className="questions-list">
-                <YesNoField
-                  id="viviendaAlquiler" name="viviendaAlquiler" value={form.viviendaAlquiler} onChange={handleChange}
-                  label="¿Vives actualmente de alquiler?"
-                />
-                {form.viviendaAlquiler === 'si' && (
-                  <YesNoField
-                    id="alquilerMenos35" name="alquilerMenos35" value={form.alquilerMenos35} onChange={handleChange}
-                    label="En caso de vivir de alquiler, ¿tienes menos de 35 años?"
-                    indent
-                  />
-                )}
-                <YesNoField
-                  id="viviendaPropiedad" name="viviendaPropiedad" value={form.viviendaPropiedad} onChange={handleChange}
-                  label="¿Tu vivienda habitual es de propiedad?"
-                />
-                {form.viviendaPropiedad === 'si' && (
-                  <YesNoField
-                    id="propiedadAntes2013" name="propiedadAntes2013" value={form.propiedadAntes2013} onChange={handleChange}
-                    label="En caso de ser de propiedad, ¿la compraste antes del 1 de enero de 2013?"
-                    indent
-                  />
-                )}
-                <YesNoField
-                  id="pisosAlquiladosTerceros" name="pisosAlquiladosTerceros" value={form.pisosAlquiladosTerceros} onChange={handleChange}
-                  label="¿Tienes otros pisos de tu propiedad que estén alquilados a terceros?"
-                />
-                <YesNoField
-                  id="segundaResidencia" name="segundaResidencia" value={form.segundaResidencia} onChange={handleChange}
-                  label="¿Tienes una segunda residencia para tu propio uso y disfrute?"
-                />
-              </div>
-
-              {/* 3. Cargas familiares y ayudas públicas */}
-              <div className="section-title">3. Cargas Familiares y Ayudas Públicas</div>
-              <div className="questions-list">
-                <YesNoField
-                  id="familiaNumerosa" name="familiaNumerosa" value={form.familiaNumerosa} onChange={handleChange}
-                  label="¿Tienes el título de familia numerosa?"
-                />
-                <YesNoField
-                  id="ayudasGobierno" name="ayudasGobierno" value={form.ayudasGobierno} onChange={handleChange}
-                  label="¿Has recibido alguna ayuda o subvención del gobierno durante el año 2025?"
-                />
-                <YesNoField
-                  id="mayores65ACargo" name="mayores65ACargo" value={form.mayores65ACargo} onChange={handleChange}
-                  label="¿Tienes personas mayores de 65 años a tu cargo?"
-                />
-                {form.mayores65ACargo === 'si' && (
-                  <YesNoField
-                    id="mayoresConviven" name="mayoresConviven" value={form.mayoresConviven} onChange={handleChange}
-                    label="En caso de tener mayores a cargo, ¿viven contigo en el mismo domicilio?"
-                    indent
-                  />
-                )}
-                <YesNoField
-                  id="hijosMenores26" name="hijosMenores26" value={form.hijosMenores26} onChange={handleChange}
-                  label="¿Tienes hijos menores de 26 años a tu cargo?"
-                />
-              </div>
-
-              {/* 4. Ingresos extraordinarios e inversiones */}
-              <div className="section-title">4. Ingresos Extraordinarios e Inversiones</div>
-              <div className="questions-list">
-                <YesNoField
-                  id="ingresosJuego" name="ingresosJuego" value={form.ingresosJuego} onChange={handleChange}
-                  label="¿Has recibido ingresos procedentes del juego o apuestas (online o presenciales) durante el año 2025?"
-                />
-                <YesNoField
-                  id="ingresosInversiones" name="ingresosInversiones" value={form.ingresosInversiones} onChange={handleChange}
-                  label="¿Has recibido ingresos procedentes de depósitos bancarios, fondos de inversión, venta de acciones en bolsa o similares?"
-                />
-              </div>
+              {/* 2–4. Preguntas dinámicas cargadas desde el endpoint */}
+              {loadingPreguntas && (
+                <div className="info-box">⏳ Cargando preguntas…</div>
+              )}
+              {errorPreguntas && (
+                <div className="info-box">❌ No se pudieron cargar las preguntas: {errorPreguntas}</div>
+              )}
+              {!loadingPreguntas && !errorPreguntas && secciones.map(seccion => (
+                <div key={seccion.id}>
+                  <div className="section-title">{seccion.numero}. {seccion.titulo}</div>
+                  <div className="questions-list">
+                    {seccion.preguntas.map(pregunta => {
+                      const visible = !pregunta.condicion ||
+                        form[pregunta.condicion.campo] === pregunta.condicion.valor
+                      if (!visible) return null
+                      return (
+                        <YesNoField
+                          key={pregunta.id}
+                          name={pregunta.id}
+                          value={form[pregunta.id] ?? ''}
+                          onChange={handleChange}
+                          label={pregunta.texto}
+                          indent={pregunta.indentada}
+                        />
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
 
               {/* 5. Documentación adjunta */}
               <div className="section-title">5. Documentación Adjunta</div>
