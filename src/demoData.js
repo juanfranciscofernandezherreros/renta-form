@@ -355,14 +355,15 @@ function loadSavedPasswords() {
 }
 
 /**
- * Persiste la contraseña de un usuario en localStorage.
+ * Persiste la contraseña (ya hasheada) de un usuario en localStorage.
+ * El valor recibido debe ser el hash producido por hashPassword() en mockApi.js.
  * @param {string} dniNie
- * @param {string} password
+ * @param {string} hashedPassword
  */
-export function persistPassword(dniNie, password) {
+export function persistPassword(dniNie, hashedPassword) {
   try {
     const stored = loadSavedPasswords().filter(p => p.dniNie !== dniNie)
-    stored.push({ dniNie, password })
+    stored.push({ dniNie, password: hashedPassword })
     localStorage.setItem(DEMO_PASSWORDS_KEY, JSON.stringify(stored))
   } catch {
     // localStorage no disponible
