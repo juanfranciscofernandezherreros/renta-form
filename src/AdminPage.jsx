@@ -9,6 +9,7 @@ import {
 import PreguntasAdminTab from './PreguntasAdminTab.jsx'
 import SeccionesAdminTab from './SeccionesAdminTab.jsx'
 import DeclaracionPreguntasPanel from './DeclaracionPreguntasPanel.jsx'
+import UsuariosAdminTab from './UsuariosAdminTab.jsx'
 
 const ESTADOS = ['recibido', 'en_revision', 'documentacion_pendiente', 'completado', 'archivado']
 
@@ -264,6 +265,13 @@ export default function AdminPage({ onNavigate }) {
           >
             📂 Secciones
           </button>
+          <button
+            type="button"
+            className={`admin-tab${activeTab === 'usuarios' ? ' active' : ''}`}
+            onClick={() => setActiveTab('usuarios')}
+          >
+            👥 Usuarios
+          </button>
         </div>
 
         {activeTab === 'preguntas' && (
@@ -272,6 +280,10 @@ export default function AdminPage({ onNavigate }) {
 
         {activeTab === 'secciones' && (
           <SeccionesAdminTab showToast={showToast} />
+        )}
+
+        {activeTab === 'usuarios' && (
+          <UsuariosAdminTab showToast={showToast} />
         )}
 
         {activeTab === 'declaraciones' && (
