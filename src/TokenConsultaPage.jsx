@@ -40,7 +40,7 @@ function loadHistory() {
   }
 }
 
-export default function TokenConsultaPage({ onNavigate }) {
+export default function TokenConsultaPage({ onNavigate, onEditDeclaracion }) {
   const { lang, setLang, t } = useLanguage()
   const [token, setToken] = useState('')
   const [error, setError] = useState(null)
@@ -169,6 +169,17 @@ export default function TokenConsultaPage({ onNavigate }) {
                     </tr>
                   </tbody>
                 </table>
+                {onEditDeclaracion && (
+                  <div className="btn-row" style={{ marginTop: '12px' }}>
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={() => { onEditDeclaracion(result); onNavigate('#/') }}
+                    >
+                      {t('profileEdit')}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

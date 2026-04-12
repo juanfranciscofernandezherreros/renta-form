@@ -38,7 +38,7 @@ export default function Router() {
   }
 
   if (hash === '#/consulta') {
-    return <TokenConsultaPage onNavigate={navigate} />
+    return <TokenConsultaPage onNavigate={navigate} onEditDeclaracion={handleEditDeclaracion} />
   }
 
   if (hash === '#/login') {
