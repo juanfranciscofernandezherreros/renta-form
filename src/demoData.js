@@ -346,3 +346,133 @@ export function generarId() {
   const n = String(nextIdCounter++).padStart(8, '0')
   return `f5e6d7c8-${n.slice(0, 4)}-${n.slice(4, 8)}-0000-${n}${n}`
 }
+
+// ---------------------------------------------------------------------------
+// Preguntas adicionales (CRUD admin) – datos iniciales
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {{ id: string, texto: string, seccion: string, tipoRespuesta: 'yn'|'texto'|'numero', orden: number, activa: boolean, creadaEn: string, actualizadaEn: string }} PreguntaAdicional
+ */
+
+/** @type {PreguntaAdicional[]} */
+const preguntasAdicionalesIniciales = [
+  {
+    id: 'pa000001-0001-0001-0001-000000000001',
+    texto: '¿Ha declarado bienes en el extranjero (modelo 720)?',
+    seccion: 'Ingresos Extraordinarios e Inversiones',
+    tipoRespuesta: 'yn',
+    orden: 0,
+    activa: true,
+    creadaEn: '2025-03-01T10:00:00.000Z',
+    actualizadaEn: '2025-03-01T10:00:00.000Z',
+  },
+  {
+    id: 'pa000002-0002-0002-0002-000000000002',
+    texto: '¿Ha recibido herencias o donaciones en 2025?',
+    seccion: 'Ingresos Extraordinarios e Inversiones',
+    tipoRespuesta: 'yn',
+    orden: 1,
+    activa: true,
+    creadaEn: '2025-03-01T10:00:00.000Z',
+    actualizadaEn: '2025-03-01T10:00:00.000Z',
+  },
+  {
+    id: 'pa000003-0003-0003-0003-000000000003',
+    texto: '¿Cuál es el importe total de ingresos por alquiler en 2025?',
+    seccion: 'Situación de Vivienda',
+    tipoRespuesta: 'numero',
+    orden: 0,
+    activa: true,
+    creadaEn: '2025-03-15T09:00:00.000Z',
+    actualizadaEn: '2025-03-15T09:00:00.000Z',
+  },
+  {
+    id: 'pa000004-0004-0004-0004-000000000004',
+    texto: 'Indique el país donde se encuentran los bienes en el extranjero',
+    seccion: 'Información Adicional',
+    tipoRespuesta: 'texto',
+    orden: 0,
+    activa: false,
+    creadaEn: '2025-04-01T11:00:00.000Z',
+    actualizadaEn: '2025-04-01T11:00:00.000Z',
+  },
+]
+
+/** @type {PreguntaAdicional[]} */
+export const preguntasAdicionalesStore = [...preguntasAdicionalesIniciales]
+
+// ---------------------------------------------------------------------------
+// Asignaciones declaración ↔ pregunta (many-to-many) – datos iniciales
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {{ id: string, declaracionId: string, preguntaId: string, respuesta: string|null, asignadaEn: string, respondidaEn: string|null }} DeclaracionPregunta
+ */
+
+/** @type {DeclaracionPregunta[]} */
+const declaracionPreguntaIniciales = [
+  // María García López → ¿Ha declarado bienes en el extranjero?
+  {
+    id: 'dp000001-0001-0001-0001-000000000001',
+    declaracionId: 'a1b2c3d4-0001-0001-0001-000000000001',
+    preguntaId: 'pa000001-0001-0001-0001-000000000001',
+    respuesta: 'si',
+    asignadaEn: '2025-04-05T12:00:00.000Z',
+    respondidaEn: '2025-04-05T12:00:00.000Z',
+  },
+  // María García López → ¿Cuál es el importe total de ingresos por alquiler?
+  {
+    id: 'dp000002-0002-0002-0002-000000000002',
+    declaracionId: 'a1b2c3d4-0001-0001-0001-000000000001',
+    preguntaId: 'pa000003-0003-0003-0003-000000000003',
+    respuesta: null,
+    asignadaEn: '2025-04-06T09:00:00.000Z',
+    respondidaEn: null,
+  },
+  // Carlos Martínez Ruiz → ¿Cuál es el importe total de ingresos por alquiler?
+  {
+    id: 'dp000003-0003-0003-0003-000000000003',
+    declaracionId: 'b2c3d4e5-0002-0002-0002-000000000002',
+    preguntaId: 'pa000003-0003-0003-0003-000000000003',
+    respuesta: '12500',
+    asignadaEn: '2025-04-08T10:00:00.000Z',
+    respondidaEn: '2025-04-08T10:30:00.000Z',
+  },
+  // Pedro Fernández González → ¿Ha declarado bienes en el extranjero?
+  {
+    id: 'dp000004-0004-0004-0004-000000000004',
+    declaracionId: 'd4e5f6a7-0004-0004-0004-000000000004',
+    preguntaId: 'pa000001-0001-0001-0001-000000000001',
+    respuesta: 'no',
+    asignadaEn: '2025-04-01T11:00:00.000Z',
+    respondidaEn: '2025-04-01T11:00:00.000Z',
+  },
+  // Pedro Fernández González → ¿Ha recibido herencias o donaciones en 2025?
+  {
+    id: 'dp000005-0005-0005-0005-000000000005',
+    declaracionId: 'd4e5f6a7-0004-0004-0004-000000000004',
+    preguntaId: 'pa000002-0002-0002-0002-000000000002',
+    respuesta: 'no',
+    asignadaEn: '2025-04-01T11:00:00.000Z',
+    respondidaEn: '2025-04-01T11:00:00.000Z',
+  },
+]
+
+/** @type {DeclaracionPregunta[]} */
+export const declaracionPreguntaStore = [...declaracionPreguntaIniciales]
+
+let nextPreguntaIdCounter = 5
+let nextDpIdCounter = 6
+
+/** Genera un UUID fake para preguntas adicionales. */
+export function generarPreguntaId() {
+  const n = String(nextPreguntaIdCounter++).padStart(8, '0')
+  return `pa${n.slice(0, 6)}-${n.slice(0, 4)}-${n.slice(0, 4)}-${n.slice(0, 4)}-${n}${n}${n}`
+}
+
+/** Genera un UUID fake para asignaciones declaración-pregunta. */
+export function generarDpId() {
+  const n = String(nextDpIdCounter++).padStart(8, '0')
+  return `dp${n.slice(0, 6)}-${n.slice(0, 4)}-${n.slice(0, 4)}-${n.slice(0, 4)}-${n}${n}${n}`
+}

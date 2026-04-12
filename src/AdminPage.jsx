@@ -6,6 +6,8 @@ import {
   deleteDeclaracion,
   sendEmailDeclaracion,
 } from './mockApi.js'
+import PreguntasAdminTab from './PreguntasAdminTab.jsx'
+import DeclaracionPreguntasPanel from './DeclaracionPreguntasPanel.jsx'
 
 const ESTADOS = ['recibido', 'en_revision', 'documentacion_pendiente', 'completado', 'archivado']
 
@@ -140,6 +142,7 @@ function downloadDeclaracionPdf(dec) {
 
 export default function AdminPage({ onNavigate }) {
   const { user, logout } = useAuth()
+  const [activeTab, setActiveTab] = useState('declaraciones')
   const [declaraciones, setDeclaraciones] = useState([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -237,6 +240,30 @@ export default function AdminPage({ onNavigate }) {
       </header>
 
       <div className="card">
+        {/* Tabs */}
+        <div className="admin-tabs">
+          <button
+            type="button"
+            className={`admin-tab${activeTab === 'declaraciones' ? ' active' : ''}`}
+            onClick={() => setActiveTab('declaraciones')}
+          >
+            📋 Declaraciones
+          </button>
+          <button
+            type="button"
+            className={`admin-tab${activeTab === 'preguntas' ? ' active' : ''}`}
+            onClick={() => setActiveTab('preguntas')}
+          >
+            ❓ Preguntas adicionales
+          </button>
+        </div>
+
+        {activeTab === 'preguntas' && (
+          <PreguntasAdminTab showToast={showToast} />
+        )}
+
+        {activeTab === 'declaraciones' && (
+          <>
         <div className="admin-toolbar">
           <div className="admin-stats">
             <span className="admin-stat-badge">{total} declaración{total !== 1 ? 'es' : ''}</span>
@@ -365,6 +392,10 @@ export default function AdminPage({ onNavigate }) {
                       )
                     })()}
 
+                    {/* Section 7: Additional questions (many-to-many) */}
+                    <div className="section-title">7. Preguntas Adicionales</div>
+                    <DeclaracionPreguntasPanel declaracionId={dec.id} showToast={showToast} />
+
                     {/* Actions */}
                     <div className="btn-row admin-action-row">
                       <button
@@ -397,6 +428,8 @@ export default function AdminPage({ onNavigate }) {
               </div>
             ))}
           </div>
+        )}
+          </>
         )}
       </div>
 

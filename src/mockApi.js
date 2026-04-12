@@ -2,7 +2,17 @@
 // MOCK API – implementaciones en memoria para el modo demo
 // Reemplaza las llamadas reales a la API cuando DEMO_MODE está activado.
 // ---------------------------------------------------------------------------
-import { CATALOGO_PREGUNTAS, declaracionesStore, passwordsStore, rolesStore, generarId } from './demoData.js'
+import {
+  CATALOGO_PREGUNTAS,
+  declaracionesStore,
+  passwordsStore,
+  rolesStore,
+  generarId,
+  preguntasAdicionalesStore,
+  declaracionPreguntaStore,
+  generarPreguntaId,
+  generarDpId,
+} from './demoData.js'
 
 /** Simula un pequeño retardo de red (ms). */
 const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms))
@@ -206,4 +216,192 @@ export async function sendEmailDeclaracion({ declaracionId, email, mensaje }) {
   await delay(600)
   console.info(`[MOCK EMAIL] → ${email} (declaracion: ${declaracionId}): ${mensaje ?? 'Notificación enviada.'}`)
   return { data: { success: true, to: email }, error: null }
+}
+
+// ---------------------------------------------------------------------------
+// Preguntas adicionales – CRUD admin
+// ---------------------------------------------------------------------------
+
+/**
+ * Mock de listPreguntasAdmin – devuelve todas las preguntas adicionales.
+ * @param {{ query?: { activa?: boolean } }} options
+ * @returns {Promise<{ data: { data: object[], total: number }, error: null }>}
+ */
+export async function listPreguntasAdmin(options) {
+  await delay()
+  let resultado = [...preguntasAdicionalesStore]
+  const { activa } = options?.query ?? {}
+  if (activa !== undefined) {
+    resultado = resultado.filter(p => p.activa === activa)
+  }
+  return { data: { data: resultado, total: resultado.length }, error: null }
+}
+
+/**
+ * Mock de createPreguntaAdmin – crea una nueva pregunta adicional.
+ * @param {{ body: { texto: string, seccion: string, tipoRespuesta: string, orden?: number, activa?: boolean } }} options
+ * @returns {Promise<{ data: object | null, error: { message: string } | null, response: { status: number } }>}
+ */
+export async function createPreguntaAdmin(options) {
+  await delay(300)
+  const body = options?.body ?? {}
+  if (!body.texto || !body.seccion || !body.tipoRespuesta) {
+    return { data: null, error: { message: 'texto, seccion y tipoRespuesta son obligatorios' }, response: { status: 400 } }
+  }
+  const ahora = new Date().toISOString()
+  const nueva = {
+    id: generarPreguntaId(),
+    texto: body.texto,
+    seccion: body.seccion,
+    tipoRespuesta: body.tipoRespuesta,
+    orden: body.orden ?? 0,
+    activa: body.activa !== undefined ? body.activa : true,
+    creadaEn: ahora,
+    actualizadaEn: ahora,
+  }
+  preguntasAdicionalesStore.push(nueva)
+  return { data: nueva, error: null, response: { status: 201 } }
+}
+
+/**
+ * Mock de getPreguntaAdmin – obtiene una pregunta adicional por id.
+ * @param {{ path: { id: string } }} options
+ * @returns {Promise<{ data: object | null, error: { message: string } | null }>}
+ */
+export async function getPreguntaAdmin(options) {
+  await delay()
+  const id = options?.path?.id
+  const p = preguntasAdicionalesStore.find(p => p.id === id)
+  if (!p) return { data: null, error: { message: 'Pregunta no encontrada' } }
+  return { data: p, error: null }
+}
+
+/**
+ * Mock de updatePreguntaAdmin – actualiza una pregunta adicional.
+ * @param {{ path: { id: string }, body: object }} options
+ * @returns {Promise<{ data: object | null, error: { message: string } | null }>}
+ */
+export async function updatePreguntaAdmin(options) {
+  await delay(300)
+  const id = options?.path?.id
+  const body = options?.body ?? {}
+  const idx = preguntasAdicionalesStore.findIndex(p => p.id === id)
+  if (idx === -1) return { data: null, error: { message: 'Pregunta no encontrada' } }
+  preguntasAdicionalesStore[idx] = {
+    ...preguntasAdicionalesStore[idx],
+    ...body,
+    id,
+    actualizadaEn: new Date().toISOString(),
+  }
+  return { data: preguntasAdicionalesStore[idx], error: null }
+}
+
+/**
+ * Mock de deletePreguntaAdmin – elimina una pregunta adicional.
+ * @param {{ path: { id: string } }} options
+ * @returns {Promise<{ data: { success: boolean } | null, error: { message: string } | null }>}
+ */
+export async function deletePreguntaAdmin(options) {
+  await delay(300)
+  const id = options?.path?.id
+  const idx = preguntasAdicionalesStore.findIndex(p => p.id === id)
+  if (idx === -1) return { data: null, error: { message: 'Pregunta no encontrada' } }
+  preguntasAdicionalesStore.splice(idx, 1)
+  // Remove all assignments linked to this question
+  const dpIdx = declaracionPreguntaStore.filter(dp => dp.preguntaId === id)
+  dpIdx.forEach(dp => {
+    const i = declaracionPreguntaStore.findIndex(x => x.id === dp.id)
+    if (i !== -1) declaracionPreguntaStore.splice(i, 1)
+  })
+  return { data: { success: true }, error: null }
+}
+
+// ---------------------------------------------------------------------------
+// Asignaciones declaración ↔ pregunta (many-to-many)
+// ---------------------------------------------------------------------------
+
+/**
+ * Mock de getDeclaracionPreguntas – obtiene preguntas y respuestas de una declaración.
+ * @param {{ path: { id: string } }} options
+ * @returns {Promise<{ data: { data: object[], total: number } | null, error: { message: string } | null }>}
+ */
+export async function getDeclaracionPreguntas(options) {
+  await delay()
+  const id = options?.path?.id
+  const dec = declaracionesStore.find(d => d.id === id)
+  if (!dec) return { data: null, error: { message: 'Declaración no encontrada' } }
+
+  const asignaciones = declaracionPreguntaStore
+    .filter(dp => dp.declaracionId === id)
+    .map(dp => ({
+      ...dp,
+      pregunta: preguntasAdicionalesStore.find(p => p.id === dp.preguntaId) ?? null,
+    }))
+
+  return { data: { data: asignaciones, total: asignaciones.length }, error: null }
+}
+
+/**
+ * Mock de upsertDeclaracionPreguntas – crea o actualiza asignaciones de preguntas.
+ * @param {{ path: { id: string }, body: { asignaciones: Array<{ preguntaId: string, respuesta?: string }> } }} options
+ * @returns {Promise<{ data: { data: object[], total: number } | null, error: { message: string } | null }>}
+ */
+export async function upsertDeclaracionPreguntas(options) {
+  await delay(400)
+  const id = options?.path?.id
+  const { asignaciones = [] } = options?.body ?? {}
+
+  const dec = declaracionesStore.find(d => d.id === id)
+  if (!dec) return { data: null, error: { message: 'Declaración no encontrada' } }
+
+  for (const a of asignaciones) {
+    const preguntaExiste = preguntasAdicionalesStore.some(p => p.id === a.preguntaId)
+    if (!preguntaExiste) return { data: null, error: { message: `Pregunta ${a.preguntaId} no encontrada` } }
+
+    const existente = declaracionPreguntaStore.find(
+      dp => dp.declaracionId === id && dp.preguntaId === a.preguntaId
+    )
+    const ahora = new Date().toISOString()
+
+    if (existente) {
+      existente.respuesta = a.respuesta ?? existente.respuesta
+      if (a.respuesta !== undefined && a.respuesta !== null) {
+        existente.respondidaEn = ahora
+      }
+    } else {
+      declaracionPreguntaStore.push({
+        id: generarDpId(),
+        declaracionId: id,
+        preguntaId: a.preguntaId,
+        respuesta: a.respuesta ?? null,
+        asignadaEn: ahora,
+        respondidaEn: a.respuesta !== null && a.respuesta !== undefined ? ahora : null,
+      })
+    }
+  }
+
+  const resultado = declaracionPreguntaStore
+    .filter(dp => dp.declaracionId === id)
+    .map(dp => ({
+      ...dp,
+      pregunta: preguntasAdicionalesStore.find(p => p.id === dp.preguntaId) ?? null,
+    }))
+
+  return { data: { data: resultado, total: resultado.length }, error: null }
+}
+
+/**
+ * Mock de removeDeclaracionPregunta – desasigna una pregunta de una declaración.
+ * @param {{ path: { id: string, preguntaId: string } }} options
+ * @returns {Promise<{ data: { success: boolean } | null, error: { message: string } | null }>}
+ */
+export async function removeDeclaracionPregunta(options) {
+  await delay(300)
+  const { id, preguntaId } = options?.path ?? {}
+  const idx = declaracionPreguntaStore.findIndex(
+    dp => dp.declaracionId === id && dp.preguntaId === preguntaId
+  )
+  if (idx === -1) return { data: null, error: { message: 'Asignación no encontrada' } }
+  declaracionPreguntaStore.splice(idx, 1)
+  return { data: { success: true }, error: null }
 }
