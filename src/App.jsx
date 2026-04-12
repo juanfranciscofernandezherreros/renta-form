@@ -284,7 +284,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
               )}
               {!loadingPreguntas && !errorPreguntas && secciones.map(seccion => (
                 <div key={seccion.id}>
-                  <div className="section-title">{seccion.numero}. {seccion.titulo}</div>
+                  <div className="section-title">{seccion.numero}. {seccion.titulos?.[lang] ?? seccion.titulo}</div>
                   <div className="questions-list">
                     {seccion.preguntas.map(pregunta => {
                       const visible = !pregunta.condicion ||
@@ -296,7 +296,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                           name={pregunta.id}
                           value={form[pregunta.id] ?? ''}
                           onChange={handleChange}
-                          label={pregunta.texto}
+                          label={pregunta.textos?.[lang] ?? pregunta.texto}
                           indent={pregunta.indentada}
                           t={t}
                         />
