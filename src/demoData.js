@@ -320,6 +320,8 @@ const declaracionesIniciales = [
 // ---------------------------------------------------------------------------
 
 const DEMO_SUBMISSIONS_KEY = 'renta_form_demo_submissions'
+const DEMO_PASSWORDS_KEY = 'renta_form_demo_passwords'
+const DEMO_USERS_KEY = 'renta_form_demo_users'
 
 /** Carga los envíos de usuario guardados en localStorage. */
 function loadSubmissions() {
@@ -337,6 +339,55 @@ export function persistSubmission(declaracion) {
     const stored = loadSubmissions()
     stored.push(declaracion)
     localStorage.setItem(DEMO_SUBMISSIONS_KEY, JSON.stringify(stored.slice(-50)))
+  } catch {
+    // localStorage no disponible
+  }
+}
+
+/** Carga las contraseñas guardadas en localStorage. */
+function loadSavedPasswords() {
+  try {
+    const stored = localStorage.getItem(DEMO_PASSWORDS_KEY)
+    return stored ? JSON.parse(stored) : []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Persiste la contraseña de un usuario en localStorage.
+ * @param {string} dniNie
+ * @param {string} password
+ */
+export function persistPassword(dniNie, password) {
+  try {
+    const stored = loadSavedPasswords().filter(p => p.dniNie !== dniNie)
+    stored.push({ dniNie, password })
+    localStorage.setItem(DEMO_PASSWORDS_KEY, JSON.stringify(stored))
+  } catch {
+    // localStorage no disponible
+  }
+}
+
+/** Carga los usuarios guardados en localStorage. */
+function loadSavedUsers() {
+  try {
+    const stored = localStorage.getItem(DEMO_USERS_KEY)
+    return stored ? JSON.parse(stored) : []
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Persiste un usuario en localStorage.
+ * @param {{ dniNie: string, nombre: string, apellidos: string, email: string, telefono: string, role: string, creadoEn: string }} user
+ */
+export function persistUser(user) {
+  try {
+    const stored = loadSavedUsers().filter(u => u.dniNie !== user.dniNie)
+    stored.push(user)
+    localStorage.setItem(DEMO_USERS_KEY, JSON.stringify(stored))
   } catch {
     // localStorage no disponible
   }
@@ -369,20 +420,28 @@ export const codigosAccesoStore = [
 // ---------------------------------------------------------------------------
 // Contraseñas – contraseña inicial: renta2025
 // Admin: admin / admin
+// Las contraseñas modificadas se persisten en localStorage.
 // ---------------------------------------------------------------------------
+const _savedPasswords = loadSavedPasswords()
+const _savedPasswordsMap = new Map(_savedPasswords.map(p => [p.dniNie, p.password]))
+
 /** @type {Map<string, string>} */
 export const passwordsStore = new Map([
   ...declaracionesIniciales.map(d => [d.dniNie, 'renta2025']),
   ['ADMIN', 'admin'],
+  ..._savedPasswordsMap,
 ])
 
 // ---------------------------------------------------------------------------
 // Roles – 'admin' | 'user'
 // ---------------------------------------------------------------------------
+const _savedUsersList = loadSavedUsers()
+
 /** @type {Map<string, string>} */
 export const rolesStore = new Map([
   ...declaracionesIniciales.map(d => [d.dniNie, 'user']),
   ['ADMIN', 'admin'],
+  ..._savedUsersList.map(u => [u.dniNie, u.role ?? 'user']),
 ])
 
 // ---------------------------------------------------------------------------
@@ -393,8 +452,7 @@ export const rolesStore = new Map([
  * @typedef {{ dniNie: string, nombre: string, apellidos: string, email: string, telefono: string, role: string, creadoEn: string }} Usuario
  */
 
-/** @type {Usuario[]} */
-export const usersStore = declaracionesIniciales.map(d => ({
+const _initialUsersMap = new Map(declaracionesIniciales.map(d => [d.dniNie, {
   dniNie: d.dniNie,
   nombre: d.nombre,
   apellidos: d.apellidos,
@@ -402,19 +460,35 @@ export const usersStore = declaracionesIniciales.map(d => ({
   telefono: d.telefono ?? '',
   role: 'user',
   creadoEn: d.creadoEn,
-}))
+}]))
+const _savedUsersMap = new Map(_savedUsersList.map(u => [u.dniNie, u]))
+
+/** @type {Usuario[]} */
+export const usersStore = [...new Map([..._initialUsersMap, ..._savedUsersMap]).values()]
 
 /** @type {Map<string, boolean>} Mapa DNI/NIE → bloqueado */
-export const blockedStore = new Map(declaracionesIniciales.map(d => [d.dniNie, false]))
+export const blockedStore = new Map([
+  ...declaracionesIniciales.map(d => [d.dniNie, false]),
+  ..._savedUsersList.map(u => [u.dniNie, false]),
+])
 
 /** @type {Map<string, boolean>} Mapa DNI/NIE → denunciado */
-export const reportedStore = new Map(declaracionesIniciales.map(d => [d.dniNie, false]))
+export const reportedStore = new Map([
+  ...declaracionesIniciales.map(d => [d.dniNie, false]),
+  ..._savedUsersList.map(u => [u.dniNie, false]),
+])
 
 /** @type {Map<string, string[]>} Mapa DNI/NIE → IDs de preguntas asignadas */
-export const userPreguntasStore = new Map(declaracionesIniciales.map(d => [d.dniNie, []]))
+export const userPreguntasStore = new Map([
+  ...declaracionesIniciales.map(d => [d.dniNie, []]),
+  ..._savedUsersList.map(u => [u.dniNie, []]),
+])
 
 /** @type {Map<string, string[]>} Mapa DNI/NIE → IDs de secciones asignadas */
-export const userSeccionesStore = new Map(declaracionesIniciales.map(d => [d.dniNie, []]))
+export const userSeccionesStore = new Map([
+  ...declaracionesIniciales.map(d => [d.dniNie, []]),
+  ..._savedUsersList.map(u => [u.dniNie, []]),
+])
 
 let nextIdCounter = 5
 

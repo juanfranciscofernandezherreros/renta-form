@@ -20,6 +20,8 @@ import {
   userPreguntasStore,
   userSeccionesStore,
   persistSubmission,
+  persistPassword,
+  persistUser,
   codigosAccesoStore,
 } from './demoData.js'
 
@@ -161,6 +163,7 @@ export async function changePassword({ dniNie, oldPassword, newPassword }) {
     return { data: null, error: { message: 'La contraseña actual es incorrecta' } }
   }
   passwordsStore.set(dniNie, newPassword)
+  persistPassword(dniNie, newPassword)
   return { data: { success: true }, error: null }
 }
 
@@ -286,7 +289,7 @@ export async function assignUserAccount({ dniNie, password, declaracionId }) {
   const isNew = !existing
   if (isNew) {
     const ahora = new Date().toISOString()
-    usersStore.push({
+    const newUser = {
       dniNie,
       nombre: dec?.nombre ?? '',
       apellidos: dec?.apellidos ?? '',
@@ -294,14 +297,17 @@ export async function assignUserAccount({ dniNie, password, declaracionId }) {
       telefono: dec?.telefono ?? '',
       role: 'user',
       creadoEn: ahora,
-    })
+    }
+    usersStore.push(newUser)
     blockedStore.set(dniNie, false)
     reportedStore.set(dniNie, false)
     userPreguntasStore.set(dniNie, [])
     userSeccionesStore.set(dniNie, [])
     rolesStore.set(dniNie, 'user')
+    persistUser(newUser)
   }
   passwordsStore.set(dniNie, password)
+  persistPassword(dniNie, password)
   return { data: { created: isNew, dniNie }, error: null }
 }
 
