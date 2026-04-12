@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from './AuthContext.jsx'
-import { listDeclaraciones } from './api/index.ts'
+import { listDeclaraciones as listDeclaracionesReal } from './api/index.ts'
+import { listDeclaraciones as listDeclaracionesMock } from './mockApi.js'
+import { DEMO_MODE } from './constants.js'
+
+const listDeclaraciones = DEMO_MODE ? listDeclaracionesMock : listDeclaracionesReal
 
 const ESTADO_LABELS = {
   recibido: 'Recibido',

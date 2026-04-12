@@ -1,7 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
-import { getPreguntas, createDeclaracion } from './api/index.ts'
+import { getPreguntas as getPreguntasReal, createDeclaracion as createDeclaracionReal } from './api/index.ts'
+import { getPreguntas as getPreguntasMock, createDeclaracion as createDeclaracionMock } from './mockApi.js'
+import { DEMO_MODE } from './constants.js'
 import { useAuth } from './AuthContext.jsx'
+
+const getPreguntas = DEMO_MODE ? getPreguntasMock : getPreguntasReal
+const createDeclaracion = DEMO_MODE ? createDeclaracionMock : createDeclaracionReal
 
 const INITIAL_STATE = {
   // 1. Datos de identificación
