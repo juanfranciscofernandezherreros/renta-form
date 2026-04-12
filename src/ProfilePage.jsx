@@ -147,6 +147,11 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
           <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/')}>
             {t('navNewForm')}
           </button>
+          {user?.role === 'admin' && (
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/admin')}>
+              🛡️ Admin
+            </button>
+          )}
           <button type="button" className="btn btn-danger btn-sm" onClick={handleLogout}>
             {t('navLogout')}
           </button>

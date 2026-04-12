@@ -2,6 +2,7 @@ import { lazy, Suspense, useState, useEffect, useCallback } from 'react'
 import App from './App.jsx'
 import LoginPage from './LoginPage.jsx'
 import ProfilePage from './ProfilePage.jsx'
+import AdminPage from './AdminPage.jsx'
 import { useAuth } from './AuthContext.jsx'
 
 const ApiDocs = lazy(() => import('./ApiDocs.jsx'))
@@ -36,6 +37,18 @@ export default function Router() {
 
   if (hash === '#/login') {
     return <LoginPage onNavigate={navigate} />
+  }
+
+  if (hash === '#/admin') {
+    if (!user) {
+      navigate('#/login')
+      return null
+    }
+    if (user.role !== 'admin') {
+      navigate('#/')
+      return null
+    }
+    return <AdminPage onNavigate={navigate} />
   }
 
   if (hash === '#/perfil') {

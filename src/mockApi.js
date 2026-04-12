@@ -2,7 +2,7 @@
 // MOCK API – implementaciones en memoria para el modo demo
 // Reemplaza las llamadas reales a la API cuando DEMO_MODE está activado.
 // ---------------------------------------------------------------------------
-import { CATALOGO_PREGUNTAS, declaracionesStore, passwordsStore, generarId } from './demoData.js'
+import { CATALOGO_PREGUNTAS, declaracionesStore, passwordsStore, rolesStore, generarId } from './demoData.js'
 
 /** Simula un pequeño retardo de red (ms). */
 const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms))
@@ -94,7 +94,7 @@ export async function createDeclaracion(options) {
 /**
  * Mock de loginUser – valida DNI/NIE y contraseña.
  * @param {{ dniNie: string, password: string }} options
- * @returns {Promise<{ data: { dniNie: string } | null, error: { message: string } | null }>}
+ * @returns {Promise<{ data: { dniNie: string, role: string } | null, error: { message: string } | null }>}
  */
 export async function loginUser({ dniNie, password }) {
   await delay()
@@ -105,7 +105,8 @@ export async function loginUser({ dniNie, password }) {
   if (storedPassword !== password) {
     return { data: null, error: { message: 'Contraseña incorrecta' } }
   }
-  return { data: { dniNie }, error: null }
+  const role = rolesStore.get(dniNie) ?? 'user'
+  return { data: { dniNie, role }, error: null }
 }
 
 /**
@@ -124,4 +125,85 @@ export async function changePassword({ dniNie, oldPassword, newPassword }) {
   }
   passwordsStore.set(dniNie, newPassword)
   return { data: { success: true }, error: null }
+}
+
+/**
+ * Mock de listDeclaracionesAll – devuelve todas las declaraciones (uso admin).
+ * @param {{ query?: { estado?: string, dniNie?: string, page?: number, limit?: number } }} options
+ * @returns {Promise<{ data: import('./api/types.gen').ListaDeclaraciones, error: null }>}
+ */
+export async function listDeclaracionesAll(options) {
+  await delay()
+  const { dniNie, estado, page = 1, limit = 20 } = options?.query ?? {}
+  let resultado = [...declaracionesStore]
+
+  if (dniNie) {
+    resultado = resultado.filter(d => d.dniNie.toLowerCase().includes(dniNie.toLowerCase()))
+  }
+  if (estado) {
+    resultado = resultado.filter(d => d.estado === estado)
+  }
+
+  const total = resultado.length
+  const start = (page - 1) * limit
+  const data = resultado.slice(start, start + limit)
+
+  return { data: { data, total, page, limit }, error: null }
+}
+
+/**
+ * Mock de getDeclaracion – obtiene el detalle de una declaración por id.
+ * @param {{ path: { id: string } }} options
+ * @returns {Promise<{ data: import('./api/types.gen').Declaracion | null, error: { message: string } | null }>}
+ */
+export async function getDeclaracion(options) {
+  await delay()
+  const id = options?.path?.id
+  const dec = declaracionesStore.find(d => d.id === id)
+  if (!dec) return { data: null, error: { message: 'Declaración no encontrada' } }
+  return { data: dec, error: null }
+}
+
+/**
+ * Mock de updateEstadoDeclaracion – actualiza el estado de una declaración.
+ * @param {{ path: { id: string }, body: { estado: string } }} options
+ * @returns {Promise<{ data: import('./api/types.gen').Declaracion | null, error: { message: string } | null }>}
+ */
+export async function updateEstadoDeclaracion(options) {
+  await delay()
+  const id = options?.path?.id
+  const estado = options?.body?.estado
+  const idx = declaracionesStore.findIndex(d => d.id === id)
+  if (idx === -1) return { data: null, error: { message: 'Declaración no encontrada' } }
+  declaracionesStore[idx] = {
+    ...declaracionesStore[idx],
+    estado,
+    actualizadoEn: new Date().toISOString(),
+  }
+  return { data: declaracionesStore[idx], error: null }
+}
+
+/**
+ * Mock de deleteDeclaracion – elimina una declaración del almacén.
+ * @param {{ path: { id: string } }} options
+ * @returns {Promise<{ data: { success: boolean } | null, error: { message: string } | null }>}
+ */
+export async function deleteDeclaracion(options) {
+  await delay()
+  const id = options?.path?.id
+  const idx = declaracionesStore.findIndex(d => d.id === id)
+  if (idx === -1) return { data: null, error: { message: 'Declaración no encontrada' } }
+  declaracionesStore.splice(idx, 1)
+  return { data: { success: true }, error: null }
+}
+
+/**
+ * Mock de sendEmailDeclaracion – simula el envío de un email al contribuyente.
+ * @param {{ declaracionId: string, email: string, mensaje?: string }} options
+ * @returns {Promise<{ data: { success: boolean, to: string } | null, error: null }>}
+ */
+export async function sendEmailDeclaracion({ declaracionId, email, mensaje }) {
+  await delay(600)
+  console.info(`[MOCK EMAIL] → ${email} (declaracion: ${declaracionId}): ${mensaje ?? 'Notificación enviada.'}`)
+  return { data: { success: true, to: email }, error: null }
 }
