@@ -11,8 +11,10 @@ import {
   listSeccionesAdmin,
 } from './mockApi.js'
 import { declaracionesStore } from './demoData.js'
+import Pagination from './Pagination.jsx'
 
 // Re-use the same PDF logic as AdminPage
+const MAX_ITEMS_FOR_DROPDOWN = 1000
 const ESTADOS_LABELS = {
   recibido: 'Recibido',
   en_revision: 'En revisión',
@@ -145,6 +147,8 @@ export default function UsuariosAdminTab({ showToast }) {
   const [error, setError] = useState(null)
   const [filtroBloqueado, setFiltroBloqueado] = useState('')
   const [filtroDenunciado, setFiltroDenunciado] = useState('')
+  const [page, setPage] = useState(1)
+  const limit = 10
   const [refreshKey, setRefreshKey] = useState(0)
 
   // Modals
@@ -168,7 +172,7 @@ export default function UsuariosAdminTab({ showToast }) {
     let cancelled = false
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
-    const query = {}
+    const query = { page, limit }
     if (filtroBloqueado !== '') query.bloqueado = filtroBloqueado === 'true'
     if (filtroDenunciado !== '') query.denunciado = filtroDenunciado === 'true'
     listUsersAdmin({ query })
@@ -182,12 +186,12 @@ export default function UsuariosAdminTab({ showToast }) {
       .catch(err => { if (!cancelled) setError(err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [filtroBloqueado, filtroDenunciado, refreshKey])
+  }, [filtroBloqueado, filtroDenunciado, page, refreshKey])
 
   // Load all questions & sections once (for modals)
   useEffect(() => {
-    listPreguntasAdmin({}).then(({ data }) => setAllPreguntas(data?.data ?? []))
-    listSeccionesAdmin({}).then(({ data }) => setAllSecciones(data?.data ?? []))
+    listPreguntasAdmin({ query: { page: 1, limit: MAX_ITEMS_FOR_DROPDOWN } }).then(({ data }) => setAllPreguntas(data?.data ?? []))
+    listSeccionesAdmin({ query: { page: 1, limit: MAX_ITEMS_FOR_DROPDOWN } }).then(({ data }) => setAllSecciones(data?.data ?? []))
   }, [])
 
   const handleBlock = async (user) => {
@@ -288,7 +292,7 @@ export default function UsuariosAdminTab({ showToast }) {
           <select
             className="admin-filter-select"
             value={filtroBloqueado}
-            onChange={e => setFiltroBloqueado(e.target.value)}
+            onChange={e => { setFiltroBloqueado(e.target.value); setPage(1) }}
           >
             <option value="">Todos (bloqueo)</option>
             <option value="true">Bloqueados</option>
@@ -297,7 +301,7 @@ export default function UsuariosAdminTab({ showToast }) {
           <select
             className="admin-filter-select"
             value={filtroDenunciado}
-            onChange={e => setFiltroDenunciado(e.target.value)}
+            onChange={e => { setFiltroDenunciado(e.target.value); setPage(1) }}
           >
             <option value="">Todos (denuncia)</option>
             <option value="true">Denunciados</option>
@@ -431,6 +435,12 @@ export default function UsuariosAdminTab({ showToast }) {
           </table>
         </div>
       )}
+
+      <Pagination
+        page={page}
+        totalPages={Math.ceil(total / limit)}
+        onPageChange={setPage}
+      />
 
       {/* Email modal */}
       {emailModal && (

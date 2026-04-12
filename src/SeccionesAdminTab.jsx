@@ -7,6 +7,7 @@ import {
   getSeccionDeclaraciones,
   getSeccionPreguntas,
 } from './mockApi.js'
+import Pagination from './Pagination.jsx'
 
 const EMPTY_FORM = { nombre: '', orden: 1, activa: true }
 
@@ -21,6 +22,8 @@ export default function SeccionesAdminTab({ showToast }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filtroActiva, setFiltroActiva] = useState('')
+  const [page, setPage] = useState(1)
+  const limit = 10
   const [modal, setModal] = useState(null) // null | 'create' | 'edit'
   const [editando, setEditando] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
@@ -35,7 +38,7 @@ export default function SeccionesAdminTab({ showToast }) {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    const query = filtroActiva !== '' ? { activa: filtroActiva === 'true' } : {}
+    const query = { page, limit, ...(filtroActiva !== '' ? { activa: filtroActiva === 'true' } : {}) }
     listSeccionesAdmin({ query })
       .then(({ data, error: apiErr }) => {
         if (cancelled) return
@@ -47,7 +50,7 @@ export default function SeccionesAdminTab({ showToast }) {
       .catch(err => { if (!cancelled) setError(err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [filtroActiva, refreshKey])
+  }, [filtroActiva, page, refreshKey])
 
   // Load declaration identifiers linked to each section
   useEffect(() => {
@@ -88,7 +91,8 @@ export default function SeccionesAdminTab({ showToast }) {
   }, [secciones])
 
   const openCreate = () => {
-    setForm({ ...EMPTY_FORM, orden: (secciones.length > 0 ? Math.max(...secciones.map(s => s.orden)) + 1 : 1) })
+    // Default orden to total + 1 as a sensible suggestion (user can change it)
+    setForm({ ...EMPTY_FORM, orden: total + 1 })
     setEditando(null)
     setModal('create')
   }
@@ -149,7 +153,7 @@ export default function SeccionesAdminTab({ showToast }) {
           <select
             className="admin-filter-select"
             value={filtroActiva}
-            onChange={e => setFiltroActiva(e.target.value)}
+            onChange={e => { setFiltroActiva(e.target.value); setPage(1) }}
           >
             <option value="">Todas</option>
             <option value="true">Activas</option>
@@ -257,6 +261,12 @@ export default function SeccionesAdminTab({ showToast }) {
           </table>
         </div>
       )}
+
+      <Pagination
+        page={page}
+        totalPages={Math.ceil(total / limit)}
+        onPageChange={setPage}
+      />
 
       {/* Create / Edit modal */}
       {modal && (
