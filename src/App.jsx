@@ -6,6 +6,7 @@ import { DEMO_MODE } from './constants.js'
 import { useAuth } from './AuthContext.jsx'
 import { useLanguage } from './LanguageContext.jsx'
 import { LANGUAGES } from './i18n.js'
+import Footer from './Footer.jsx'
 
 const getPreguntas = DEMO_MODE ? getPreguntasMock : getPreguntasReal
 const createDeclaracion = DEMO_MODE ? createDeclaracionMock : createDeclaracionReal
@@ -446,11 +447,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
         )}
       </div>
 
-      <footer>
-        <p>{t('footerDisclaimer')}</p>
-        <p>Agencia Tributaria · <a href="https://www.agenciatributaria.es" target="_blank" rel="noreferrer">www.agenciatributaria.es</a> · {t('campaignName')}</p>
-        <p><a href="#/api-docs">{t('footerApiDocs')}</a></p>
-      </footer>
+      <Footer showApiDocs />
 
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
     </>
