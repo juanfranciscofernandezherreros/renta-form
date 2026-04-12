@@ -261,6 +261,7 @@ export async function assignUserAccount({ dniNie, password, declaracionId }) {
     return { data: null, error: { message: 'DNI/NIE y contraseña son obligatorios' } }
   }
   const dec = declaracionesStore.find(d => d.id === declaracionId)
+  if (!dec) return { data: null, error: { message: 'Declaración no encontrada' } }
   const existing = usersStore.find(u => u.dniNie === dniNie)
   const isNew = !existing
   if (isNew) {

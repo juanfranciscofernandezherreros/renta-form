@@ -272,7 +272,7 @@ export default function AdminPage({ onNavigate }) {
     })
     setEditSaving(false)
     if (apiErr) { showToast(`Error al guardar: ${apiErr.message}`, 'error'); return }
-    setDeclaraciones(prev => prev.map(d => d.id === editModal.id ? { ...d, ...data } : d))
+    setDeclaraciones(prev => prev.map(d => d.id === editModal.id ? data : d))
     setEditModal(null)
     showToast('Declaración actualizada correctamente')
   }
