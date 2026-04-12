@@ -349,6 +349,24 @@ const savedSubmissions = loadSubmissions().filter(d => !initialIds.has(d.id))
 export const declaracionesStore = [...savedSubmissions, ...declaracionesIniciales]
 
 // ---------------------------------------------------------------------------
+// Códigos de acceso a la intranet – tabla codigos_acceso
+// ---------------------------------------------------------------------------
+/**
+ * @typedef {{ id: string, codigo: string, descripcion: string, activo: boolean, creadoEn: string }} CodigoAcceso
+ */
+
+/** @type {CodigoAcceso[]} */
+export const codigosAccesoStore = [
+  {
+    id: 'ca000001-0001-0001-0001-000000000001',
+    codigo: 'intranet2025',
+    descripcion: 'Código de acceso campaña Renta 2025',
+    activo: true,
+    creadoEn: '2025-01-01T00:00:00.000Z',
+  },
+]
+
+// ---------------------------------------------------------------------------
 // Contraseñas – contraseña inicial: renta2025
 // Admin: admin / admin
 // ---------------------------------------------------------------------------
