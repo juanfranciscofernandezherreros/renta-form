@@ -2,11 +2,11 @@
 // DEMO DATA – datos en memoria para la demo al cliente
 // ---------------------------------------------------------------------------
 // Cuatro usuarios con situaciones fiscales distintas.
-// Credenciales de acceso (DNI/NIE + contraseña por defecto renta2025<PrimerApellido>):
-//   · 12345678A  /  renta2025García
-//   · 87654321B  /  renta2025Martínez
-//   · 11223344C  /  renta2025López
-//   · 44332211D  /  renta2025Fernández
+// Credenciales de acceso (DNI/NIE + contraseña por defecto renta2025):
+//   · 12345678A  /  renta2025
+//   · 87654321B  /  renta2025
+//   · 11223344C  /  renta2025
+//   · 44332211D  /  renta2025
 // ---------------------------------------------------------------------------
 
 /** @type {import('./api/types.gen').CatalogoPreguntas} */
@@ -223,14 +223,11 @@ const declaracionesIniciales = [
 export const declaracionesStore = [...declaracionesIniciales]
 
 // ---------------------------------------------------------------------------
-// Contraseñas – contraseña inicial: renta2025 + primer apellido
+// Contraseñas – contraseña inicial: renta2025
 // ---------------------------------------------------------------------------
 /** @type {Map<string, string>} */
 export const passwordsStore = new Map(
-  declaracionesIniciales.map(d => [
-    d.dniNie,
-    'renta2025' + d.apellidos.split(' ')[0],
-  ])
+  declaracionesIniciales.map(d => [d.dniNie, 'renta2025'])
 )
 
 let nextIdCounter = 5

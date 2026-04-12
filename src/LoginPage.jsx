@@ -67,7 +67,7 @@ export default function LoginPage({ onNavigate }) {
         <div className="info-box">
           <strong>🔒 Acceso a tu expediente</strong>
           Introduce tu DNI/NIE y contraseña para consultar y modificar tu cuestionario fiscal.
-          La contraseña inicial es <strong>renta2025</strong> seguida de tu primer apellido.
+          La contraseña es <strong>renta2025</strong>.
         </div>
 
         <form onSubmit={handleSubmit} noValidate>
@@ -96,7 +96,7 @@ export default function LoginPage({ onNavigate }) {
                 name="password"
                 value={form.password}
                 onChange={handleChange}
-                placeholder="renta2025Apellido"
+                placeholder="renta2025"
                 required
               />
               {errors.password && <span className="field-error">{errors.password}</span>}
