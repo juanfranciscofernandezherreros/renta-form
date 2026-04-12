@@ -428,6 +428,13 @@ export async function listSeccionesAdmin(options) {
   return { data: { data: resultado, total: resultado.length }, error: null }
 }
 
+/** Comprueba si ya existe una sección con el mismo nombre (case-insensitive), excluyendo opcionalmente un índice. */
+function findDuplicateSeccion(nombre, excludeIdx = -1) {
+  return seccionesStore.find(
+    (s, i) => i !== excludeIdx && s.nombre.toLowerCase() === nombre.trim().toLowerCase()
+  )
+}
+
 /**
  * Mock de createSeccionAdmin – crea una nueva sección.
  * @param {{ body: { nombre: string, orden?: number, activa?: boolean } }} options
@@ -439,8 +446,7 @@ export async function createSeccionAdmin(options) {
   if (!body.nombre || !body.nombre.trim()) {
     return { data: null, error: { message: 'El nombre es obligatorio' }, response: { status: 400 } }
   }
-  const duplicate = seccionesStore.find(s => s.nombre.toLowerCase() === body.nombre.trim().toLowerCase())
-  if (duplicate) {
+  if (findDuplicateSeccion(body.nombre)) {
     return { data: null, error: { message: 'Ya existe una sección con ese nombre' }, response: { status: 409 } }
   }
   const ahora = new Date().toISOString()
@@ -467,13 +473,8 @@ export async function updateSeccionAdmin(options) {
   const body = options?.body ?? {}
   const idx = seccionesStore.findIndex(s => s.id === id)
   if (idx === -1) return { data: null, error: { message: 'Sección no encontrada' } }
-  if (body.nombre !== undefined) {
-    const duplicate = seccionesStore.find(
-      (s, i) => i !== idx && s.nombre.toLowerCase() === body.nombre.trim().toLowerCase()
-    )
-    if (duplicate) {
-      return { data: null, error: { message: 'Ya existe una sección con ese nombre' } }
-    }
+  if (body.nombre !== undefined && findDuplicateSeccion(body.nombre, idx)) {
+    return { data: null, error: { message: 'Ya existe una sección con ese nombre' } }
   }
   seccionesStore[idx] = {
     ...seccionesStore[idx],
