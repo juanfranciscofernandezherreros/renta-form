@@ -5,7 +5,6 @@ import { getPreguntas as getPreguntasMock, createDeclaracion as createDeclaracio
 import { DEMO_MODE } from './constants.js'
 import { useAuth } from './AuthContext.jsx'
 import { useLanguage } from './LanguageContext.jsx'
-import { LANGUAGES } from './i18n.js'
 import Footer from './Footer.jsx'
 
 const getPreguntas = DEMO_MODE ? getPreguntasMock : getPreguntasReal
@@ -63,7 +62,7 @@ const YesNoField = ({ label, name, value, onChange, indent, t }) => (
 
 export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const { user, logout } = useAuth()
-  const { lang, setLang, t } = useLanguage()
+  const { lang, setLang, t, availableLanguages } = useLanguage()
   const [form, setForm] = useState(INITIAL_STATE)
   const [editId, setEditId] = useState(null)
   const [toast, setToast] = useState(null)
@@ -258,7 +257,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
             onChange={e => setLang(e.target.value)}
             aria-label={t('langLabel')}
           >
-            {LANGUAGES.map(l => (
+            {availableLanguages.map(l => (
               <option key={l.code} value={l.code}>{l.label}</option>
             ))}
           </select>

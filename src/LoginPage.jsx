@@ -3,13 +3,12 @@ import { useAuth } from './AuthContext.jsx'
 import { loginUser as loginUserMock } from './mockApi.js'
 import { DEMO_MODE, ERROR_USER_BLOCKED } from './constants.js'
 import { useLanguage } from './LanguageContext.jsx'
-import { LANGUAGES } from './i18n.js'
 
 const DNI_NIE_REGEX = /^[0-9XYZ][0-9]{7}[A-Z]$/
 
 export default function LoginPage({ onNavigate }) {
   const { login } = useAuth()
-  const { lang, setLang, t } = useLanguage()
+  const { lang, setLang, t, availableLanguages } = useLanguage()
   const [form, setForm] = useState({ dniNie: '', password: '' })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
@@ -72,7 +71,7 @@ export default function LoginPage({ onNavigate }) {
             onChange={e => setLang(e.target.value)}
             aria-label={t('langLabel')}
           >
-            {LANGUAGES.map(l => (
+            {availableLanguages.map(l => (
               <option key={l.code} value={l.code}>{l.label}</option>
             ))}
           </select>

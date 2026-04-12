@@ -4,7 +4,6 @@ import { listDeclaraciones as listDeclaracionesReal } from './api/index.ts'
 import { listDeclaraciones as listDeclaracionesMock, changePassword as changePasswordMock } from './mockApi.js'
 import { DEMO_MODE } from './constants.js'
 import { useLanguage } from './LanguageContext.jsx'
-import { LANGUAGES } from './i18n.js'
 import Footer from './Footer.jsx'
 import { generateDeclaracionPDF } from './pdfUtils.js'
 
@@ -69,7 +68,7 @@ function formatFecha(iso) {
 
 export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
   const { user, logout } = useAuth()
-  const { lang, setLang, t } = useLanguage()
+  const { lang, setLang, t, availableLanguages } = useLanguage()
   const [declaraciones, setDeclaraciones] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -142,7 +141,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
             onChange={e => setLang(e.target.value)}
             aria-label={t('langLabel')}
           >
-            {LANGUAGES.map(l => (
+            {availableLanguages.map(l => (
               <option key={l.code} value={l.code}>{l.label}</option>
             ))}
           </select>

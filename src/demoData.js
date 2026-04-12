@@ -10,6 +10,7 @@
 // Administrador (URL: /admin):
 //   · admin  /  admin
 // ---------------------------------------------------------------------------
+import staticTranslations, { LANGUAGES as STATIC_LANGUAGES } from './i18n.js'
 
 /** @type {import('./api/types.gen').CatalogoPreguntas} */
 export const CATALOGO_PREGUNTAS = {
@@ -684,3 +685,45 @@ export function generarSeccionId() {
   const n = String(nextSeccionIdCounter++).padStart(8, '0')
   return `sec${n.slice(0, 5)}-${n.slice(0, 4)}-${n.slice(0, 4)}-${n.slice(0, 4)}-${n}${n}${n}`
 }
+
+// ---------------------------------------------------------------------------
+// Idiomas
+// ---------------------------------------------------------------------------
+
+const IDIOMAS_BASE_DATE = '2025-01-01T00:00:00.000Z'
+
+let nextIdiomaIdCounter = 1
+
+/** Genera un ID fake para idiomas. */
+export function generarIdiomaId() {
+  const n = String(nextIdiomaIdCounter++).padStart(8, '0')
+  return `lang${n.slice(0, 4)}-${n.slice(4, 8)}-${n.slice(0, 4)}-${n.slice(4, 8)}-${n}${n}`
+}
+
+/** Genera un ID estático para un índice dado (usado en idiomasStore inicial). */
+function idiomaIdForIndex(idx) {
+  const n = String(idx + 1).padStart(8, '0')
+  return `lang${n.slice(0, 4)}-${n.slice(4, 8)}-${n.slice(0, 4)}-${n.slice(4, 8)}-${n}${n}`
+}
+
+/** Store de idiomas disponibles – inicializado a partir de LANGUAGES de i18n.js. */
+export const idiomasStore = STATIC_LANGUAGES.map((lang, idx) => ({
+  id: idiomaIdForIndex(idx),
+  code: lang.code,
+  label: lang.label,
+  activo: true,
+  creadoEn: IDIOMAS_BASE_DATE,
+  actualizadoEn: IDIOMAS_BASE_DATE,
+}))
+
+// Initialise counter above the static items so new IDs don't clash
+nextIdiomaIdCounter = STATIC_LANGUAGES.length + 1
+
+/**
+ * Store mutable de traducciones – inicializado a partir de las traducciones
+ * estáticas de i18n.js. Las claves son los códigos de idioma.
+ * @type {Record<string, Record<string, string>>}
+ */
+export const translationsStore = Object.fromEntries(
+  Object.entries(staticTranslations).map(([code, keys]) => [code, { ...keys }])
+)
