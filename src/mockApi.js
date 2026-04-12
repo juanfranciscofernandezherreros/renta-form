@@ -230,6 +230,73 @@ export async function deleteDeclaracion(options) {
 }
 
 /**
+ * Mock de updateDeclaracion – actualiza todos los campos editables de una declaración.
+ * @param {{ path: { id: string }, body: object }} options
+ * @returns {Promise<{ data: import('./api/types.gen').Declaracion | null, error: { message: string } | null }>}
+ */
+export async function updateDeclaracion(options) {
+  await delay(400)
+  const id = options?.path?.id
+  const body = options?.body ?? {}
+  const idx = declaracionesStore.findIndex(d => d.id === id)
+  if (idx === -1) return { data: null, error: { message: 'Declaración no encontrada' } }
+  declaracionesStore[idx] = {
+    ...declaracionesStore[idx],
+    ...body,
+    id,
+    actualizadoEn: new Date().toISOString(),
+  }
+  return { data: declaracionesStore[idx], error: null }
+}
+
+/**
+ * Mock de assignUserAccount – crea o actualiza las credenciales de usuario para una declaración.
+ * Si el DNI/NIE ya tiene cuenta, actualiza la contraseña. Si no, crea la cuenta.
+ * @param {{ dniNie: string, password: string, declaracionId: string }} options
+ * @returns {Promise<{ data: { created: boolean, dniNie: string } | null, error: { message: string } | null }>}
+ */
+export async function assignUserAccount({ dniNie, password, declaracionId }) {
+  await delay(400)
+  if (!dniNie || !password) {
+    return { data: null, error: { message: 'DNI/NIE y contraseña son obligatorios' } }
+  }
+  const dec = declaracionesStore.find(d => d.id === declaracionId)
+  if (!dec) return { data: null, error: { message: 'Declaración no encontrada' } }
+  const existing = usersStore.find(u => u.dniNie === dniNie)
+  const isNew = !existing
+  if (isNew) {
+    const ahora = new Date().toISOString()
+    usersStore.push({
+      dniNie,
+      nombre: dec?.nombre ?? '',
+      apellidos: dec?.apellidos ?? '',
+      email: dec?.email ?? '',
+      telefono: dec?.telefono ?? '',
+      role: 'user',
+      creadoEn: ahora,
+    })
+    blockedStore.set(dniNie, false)
+    reportedStore.set(dniNie, false)
+    userPreguntasStore.set(dniNie, [])
+    userSeccionesStore.set(dniNie, [])
+    rolesStore.set(dniNie, 'user')
+  }
+  passwordsStore.set(dniNie, password)
+  return { data: { created: isNew, dniNie }, error: null }
+}
+
+/**
+ * Mock de getUserByDniNie – comprueba si existe un usuario por DNI/NIE.
+ * @param {{ dniNie: string }} options
+ * @returns {Promise<{ data: object | null, error: null }>}
+ */
+export async function getUserByDniNie({ dniNie }) {
+  await delay(200)
+  const user = usersStore.find(u => u.dniNie === dniNie)
+  return { data: user ?? null, error: null }
+}
+
+/**
  * Mock de sendEmailDeclaracion – simula el envío de un email al contribuyente.
  * @param {{ declaracionId: string, email: string, mensaje?: string }} options
  * @returns {Promise<{ data: { success: boolean, to: string } | null, error: null }>}
