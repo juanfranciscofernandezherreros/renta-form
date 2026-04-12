@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
 import { getPreguntas as getPreguntasReal, createDeclaracion as createDeclaracionReal } from './api/index.ts'
-import { getPreguntas as getPreguntasMock, createDeclaracion as createDeclaracionMock } from './mockApi.js'
+import { getPreguntas as getPreguntasMock, createDeclaracion as createDeclaracionMock, updateDeclaracion as updateDeclaracionMock } from './mockApi.js'
 import { DEMO_MODE } from './constants.js'
 import { useAuth } from './AuthContext.jsx'
 import { useLanguage } from './LanguageContext.jsx'
@@ -9,6 +9,7 @@ import { LANGUAGES } from './i18n.js'
 
 const getPreguntas = DEMO_MODE ? getPreguntasMock : getPreguntasReal
 const createDeclaracion = DEMO_MODE ? createDeclaracionMock : createDeclaracionReal
+const updateDeclaracion = DEMO_MODE ? updateDeclaracionMock : null
 
 const TOKENS_STORAGE_KEY = 'renta_form_tokens'
 
@@ -179,23 +180,56 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
 
     setSubmitting(true)
     try {
-      const { data, error, response } = await createDeclaracion({ body })
-      if (data) {
-        setSubmitted(true)
-        if (!user) {
-          setSubmissionToken(data.id)
-          try {
-            const stored = JSON.parse(localStorage.getItem(TOKENS_STORAGE_KEY) ?? '[]')
-            stored.unshift({ id: data.id, creadoEn: data.creadoEn, dniNie: body.dniNie })
-            localStorage.setItem(TOKENS_STORAGE_KEY, JSON.stringify(stored.slice(0, 20)))
-          } catch {
-            // localStorage not available
-          }
+      if (editData?.id && updateDeclaracion) {
+        // Update existing declaration
+        const updateBody = {
+          nombre: form.nombre,
+          apellidos: form.apellidos,
+          dniNie: form.dniNie,
+          email: form.email,
+          telefono: form.telefono,
+          viviendaAlquiler: form.viviendaAlquiler,
+          ...(form.viviendaAlquiler === 'si' && { alquilerMenos35: form.alquilerMenos35 }),
+          viviendaPropiedad: form.viviendaPropiedad,
+          ...(form.viviendaPropiedad === 'si' && { propiedadAntes2013: form.propiedadAntes2013 }),
+          pisosAlquiladosTerceros: form.pisosAlquiladosTerceros,
+          segundaResidencia: form.segundaResidencia,
+          familiaNumerosa: form.familiaNumerosa,
+          ayudasGobierno: form.ayudasGobierno,
+          mayores65ACargo: form.mayores65ACargo,
+          ...(form.mayores65ACargo === 'si' && { mayoresConviven: form.mayoresConviven }),
+          hijosMenores26: form.hijosMenores26,
+          ingresosJuego: form.ingresosJuego,
+          ingresosInversiones: form.ingresosInversiones,
+          comentarios: form.comentarios,
         }
-        showToast(t('toastSuccess'), 'success')
-        setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+        const { data, error } = await updateDeclaracion({ path: { id: editData.id }, body: updateBody })
+        if (data) {
+          setSubmitted(true)
+          showToast(t('toastSuccess'), 'success')
+          setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+        } else {
+          showToast(`${t('toastErrorHttp')} ?${t('toastErrorHttpSuffix')} ${error?.message ?? ''}`, 'error')
+        }
       } else {
-        showToast(`${t('toastErrorHttp')} ${response?.status ?? '?'}${t('toastErrorHttpSuffix')} ${error?.message ?? ''}`, 'error')
+        const { data, error, response } = await createDeclaracion({ body })
+        if (data) {
+          setSubmitted(true)
+          if (!user) {
+            setSubmissionToken(data.id)
+            try {
+              const stored = JSON.parse(localStorage.getItem(TOKENS_STORAGE_KEY) ?? '[]')
+              stored.unshift({ id: data.id, creadoEn: data.creadoEn, dniNie: body.dniNie })
+              localStorage.setItem(TOKENS_STORAGE_KEY, JSON.stringify(stored.slice(0, 20)))
+            } catch {
+              // localStorage not available
+            }
+          }
+          showToast(t('toastSuccess'), 'success')
+          setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+        } else {
+          showToast(`${t('toastErrorHttp')} ${response?.status ?? '?'}${t('toastErrorHttpSuffix')} ${error?.message ?? ''}`, 'error')
+        }
       }
     } catch {
       showToast(t('toastErrorNetwork'), 'error')

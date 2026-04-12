@@ -753,6 +753,30 @@ footer {
   color: #888;
 }
 
+.admin-codigo-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 16px;
+  background: #f8f9fa;
+  border: 1px solid #e4eaf4;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.admin-codigo-label {
+  font-size: .82rem;
+  font-weight: 700;
+  color: #555;
+  white-space: nowrap;
+}
+.admin-codigo-value {
+  font-family: monospace;
+  font-size: .82rem;
+  color: #003087;
+  word-break: break-all;
+  flex: 1;
+}
 .admin-estado-row {
   display: flex;
   align-items: center;
