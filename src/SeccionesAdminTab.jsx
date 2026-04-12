@@ -4,6 +4,7 @@ import {
   createSeccionAdmin,
   updateSeccionAdmin,
   deleteSeccionAdmin,
+  getSeccionDeclaraciones,
 } from './mockApi.js'
 
 const EMPTY_FORM = { nombre: '', orden: 1, activa: true }
@@ -25,6 +26,7 @@ export default function SeccionesAdminTab({ showToast }) {
   const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [seccionDeclaraciones, setSeccionDeclaraciones] = useState({}) // { seccionId: [{ id, dniNie, nombre }] }
 
   const refresh = useCallback(() => setRefreshKey(k => k + 1), [])
 
@@ -44,6 +46,25 @@ export default function SeccionesAdminTab({ showToast }) {
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [filtroActiva, refreshKey])
+
+  // Load declaration identifiers linked to each section
+  useEffect(() => {
+    if (secciones.length === 0) return
+    let cancelled = false
+    Promise.all(
+      secciones.map(s =>
+        getSeccionDeclaraciones({ path: { id: s.id } })
+          .then(({ data }) => ({ id: s.id, declaraciones: data?.data ?? [] }))
+          .catch(() => ({ id: s.id, declaraciones: [] }))
+      )
+    ).then(results => {
+      if (cancelled) return
+      const map = {}
+      results.forEach(r => { map[r.id] = r.declaraciones })
+      setSeccionDeclaraciones(map)
+    })
+    return () => { cancelled = true }
+  }, [secciones])
 
   const openCreate = () => {
     setForm({ ...EMPTY_FORM, orden: (secciones.length > 0 ? Math.max(...secciones.map(s => s.orden)) + 1 : 1) })
@@ -134,6 +155,7 @@ export default function SeccionesAdminTab({ showToast }) {
                 <th>Nombre</th>
                 <th>Orden</th>
                 <th>Estado</th>
+                <th>Declaraciones</th>
                 <th>Creada</th>
                 <th style={{ textAlign: 'right' }}>Acciones</th>
               </tr>
@@ -149,6 +171,24 @@ export default function SeccionesAdminTab({ showToast }) {
                     <span className={`estado-badge ${s.activa ? 'badge-activa' : 'badge-inactiva'}`}>
                       {s.activa ? 'Activa' : 'Inactiva'}
                     </span>
+                  </td>
+                  <td>
+                    {(seccionDeclaraciones[s.id] ?? []).length === 0 ? (
+                      <span style={{ color: '#aaa', fontSize: '.8rem' }}>—</span>
+                    ) : (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                        {(seccionDeclaraciones[s.id] ?? []).map(d => (
+                          <span
+                            key={d.id}
+                            className="estado-badge badge-activa"
+                            style={{ fontSize: '.72rem', cursor: 'default' }}
+                            title={d.nombre}
+                          >
+                            {d.dniNie}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </td>
                   <td style={{ whiteSpace: 'nowrap' }}>{formatFecha(s.creadaEn)}</td>
                   <td>

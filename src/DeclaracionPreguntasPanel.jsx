@@ -6,7 +6,15 @@ import {
   listPreguntasAdmin,
 } from './mockApi.js'
 
-const TIPO_LABELS = { yn: 'Sí / No', texto: 'Texto libre', numero: 'Número' }
+const TIPO_LABELS = {
+  yn: 'Sí / No',
+  texto: 'Texto libre',
+  numero: 'Número',
+  fecha: 'Fecha',
+  importe: 'Importe (€)',
+  porcentaje: 'Porcentaje (%)',
+  multilinea: 'Texto largo',
+}
 
 export default function DeclaracionPreguntasPanel({ declaracionId, showToast }) {
   const [asignaciones, setAsignaciones] = useState([])
@@ -137,6 +145,38 @@ export default function DeclaracionPreguntasPanel({ declaracionId, showToast }) 
                     <option value="si">Sí</option>
                     <option value="no">No</option>
                   </select>
+                ) : p.tipoRespuesta === 'multilinea' ? (
+                  <textarea
+                    value={respuesta}
+                    placeholder="Respuesta…"
+                    rows={3}
+                    onChange={e => handleRespuestaChange(a.preguntaId, e.target.value)}
+                  />
+                ) : p.tipoRespuesta === 'fecha' ? (
+                  <input
+                    type="date"
+                    value={respuesta}
+                    onChange={e => handleRespuestaChange(a.preguntaId, e.target.value)}
+                  />
+                ) : p.tipoRespuesta === 'importe' ? (
+                  <input
+                    type="number"
+                    value={respuesta}
+                    placeholder="0.00"
+                    min={0}
+                    step="0.01"
+                    onChange={e => handleRespuestaChange(a.preguntaId, e.target.value)}
+                  />
+                ) : p.tipoRespuesta === 'porcentaje' ? (
+                  <input
+                    type="number"
+                    value={respuesta}
+                    placeholder="0"
+                    min={0}
+                    max={100}
+                    step="0.1"
+                    onChange={e => handleRespuestaChange(a.preguntaId, e.target.value)}
+                  />
                 ) : (
                   <input
                     type={p.tipoRespuesta === 'numero' ? 'number' : 'text'}
