@@ -7,6 +7,8 @@ import { DEMO_MODE } from './constants.js'
 const listDeclaraciones = DEMO_MODE ? listDeclaracionesMock : listDeclaracionesReal
 const changePasswordFn = DEMO_MODE ? changePasswordMock : null
 
+const MIN_PASSWORD_LENGTH = 6
+
 const ESTADO_LABELS = {
   recibido: 'Recibido',
   en_revision: 'En revisión',
@@ -104,7 +106,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
     e.preventDefault()
     const errs = {}
     if (!pwForm.oldPassword) errs.oldPassword = 'Introduce la contraseña actual'
-    if (!pwForm.newPassword || pwForm.newPassword.length < 6) errs.newPassword = 'La nueva contraseña debe tener al menos 6 caracteres'
+    if (!pwForm.newPassword || pwForm.newPassword.length < MIN_PASSWORD_LENGTH) errs.newPassword = `La nueva contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres`
     if (pwForm.newPassword !== pwForm.confirmPassword) errs.confirmPassword = 'Las contraseñas no coinciden'
     if (Object.keys(errs).length) { setPwErrors(errs); return }
     if (!changePasswordFn) { setPwErrors({ global: 'Función no disponible' }); return }
@@ -260,6 +262,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
         )}
       </div>
 
+      {changePasswordFn && (
       <div className="card">
         <div className="section-title">🔑 Cambiar contraseña</div>
         {pwSuccess && (
@@ -311,6 +314,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
           </div>
         </form>
       </div>
+      )}
 
       <footer>
         <p>Este formulario es meramente informativo y no constituye una presentación oficial ante la AEAT.</p>
