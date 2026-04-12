@@ -20,11 +20,49 @@ import {
   userPreguntasStore,
   userSeccionesStore,
   persistSubmission,
+  persistPassword,
+  persistUser,
   codigosAccesoStore,
 } from './demoData.js'
 
 /** Simula un pequeño retardo de red (ms). */
 const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms))
+
+// ---------------------------------------------------------------------------
+// Utilidades de contraseña
+// Prefijo que marca un valor almacenado como hash SHA-256 (no contraseña en claro).
+// ---------------------------------------------------------------------------
+const HASH_PREFIX = '$sha256$'
+
+/**
+ * Genera el hash SHA-256 de una contraseña y lo devuelve con prefijo.
+ * @param {string} password
+ * @returns {Promise<string>}
+ */
+async function hashPassword(password) {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(password)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashHex = Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+  return HASH_PREFIX + hashHex
+}
+
+/**
+ * Compara una contraseña en claro con el valor almacenado (hash o texto plano).
+ * Los valores almacenados que empiezan por HASH_PREFIX se comparan como hashes;
+ * los demás (contraseñas iniciales en memoria) se comparan directamente.
+ * @param {string} input
+ * @param {string} stored
+ * @returns {Promise<boolean>}
+ */
+async function verifyPassword(input, stored) {
+  if (stored.startsWith(HASH_PREFIX)) {
+    return (await hashPassword(input)) === stored
+  }
+  return input === stored
+}
 
 /**
  * Mock de getPreguntas – devuelve el catálogo estático de preguntas.
@@ -122,7 +160,7 @@ export async function loginUser({ dniNie, password }) {
   if (storedPassword === undefined) {
     return { data: null, error: { message: 'DNI/NIE no encontrado' } }
   }
-  if (storedPassword !== password) {
+  if (!(await verifyPassword(password, storedPassword))) {
     return { data: null, error: { message: 'Contraseña incorrecta' } }
   }
   const role = rolesStore.get(dniNie) ?? 'user'
@@ -157,10 +195,12 @@ export async function changePassword({ dniNie, oldPassword, newPassword }) {
   if (storedPassword === undefined) {
     return { data: null, error: { message: 'Usuario no encontrado' } }
   }
-  if (storedPassword !== oldPassword) {
+  if (!(await verifyPassword(oldPassword, storedPassword))) {
     return { data: null, error: { message: 'La contraseña actual es incorrecta' } }
   }
-  passwordsStore.set(dniNie, newPassword)
+  const hashed = await hashPassword(newPassword)
+  passwordsStore.set(dniNie, hashed)
+  persistPassword(dniNie, hashed)
   return { data: { success: true }, error: null }
 }
 
@@ -286,7 +326,7 @@ export async function assignUserAccount({ dniNie, password, declaracionId }) {
   const isNew = !existing
   if (isNew) {
     const ahora = new Date().toISOString()
-    usersStore.push({
+    const newUser = {
       dniNie,
       nombre: dec?.nombre ?? '',
       apellidos: dec?.apellidos ?? '',
@@ -294,14 +334,18 @@ export async function assignUserAccount({ dniNie, password, declaracionId }) {
       telefono: dec?.telefono ?? '',
       role: 'user',
       creadoEn: ahora,
-    })
+    }
+    usersStore.push(newUser)
     blockedStore.set(dniNie, false)
     reportedStore.set(dniNie, false)
     userPreguntasStore.set(dniNie, [])
     userSeccionesStore.set(dniNie, [])
     rolesStore.set(dniNie, 'user')
+    persistUser(newUser)
   }
-  passwordsStore.set(dniNie, password)
+  const hashed = await hashPassword(password)
+  passwordsStore.set(dniNie, hashed)
+  persistPassword(dniNie, hashed)
   return { data: { created: isNew, dniNie }, error: null }
 }
 
