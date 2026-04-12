@@ -88,7 +88,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
     setSubmitted(false)
     onEditDataConsumed?.()
     setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
-  }, [editData]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [editData, onEditDataConsumed])
 
   useEffect(() => {
     getPreguntas()

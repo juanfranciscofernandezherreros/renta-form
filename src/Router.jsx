@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState, useEffect } from 'react'
+import { lazy, Suspense, useState, useEffect, useCallback } from 'react'
 import App from './App.jsx'
 import LoginPage from './LoginPage.jsx'
 import ProfilePage from './ProfilePage.jsx'
@@ -23,6 +23,9 @@ export default function Router() {
     setHash(newHash)
   }
 
+  const handleEditDeclaracion = useCallback((dec) => setEditData(dec), [])
+  const handleEditDataConsumed = useCallback(() => setEditData(null), [])
+
   if (hash === '#/api-docs') {
     return (
       <Suspense fallback={<div style={{ padding: '32px', textAlign: 'center' }}>Cargando documentación…</div>}>
@@ -43,7 +46,7 @@ export default function Router() {
     return (
       <ProfilePage
         onNavigate={navigate}
-        onEditDeclaracion={(dec) => setEditData(dec)}
+        onEditDeclaracion={handleEditDeclaracion}
       />
     )
   }
@@ -52,7 +55,7 @@ export default function Router() {
     <App
       onNavigate={navigate}
       editData={editData}
-      onEditDataConsumed={() => setEditData(null)}
+      onEditDataConsumed={handleEditDataConsumed}
     />
   )
 }

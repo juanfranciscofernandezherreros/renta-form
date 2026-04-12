@@ -42,13 +42,14 @@ const CAMPOS_LABELS = {
   comentarios: 'Comentarios',
 }
 
-const SECCIONES = [
+const SECCIONES_ANTES_DOCS = [
   { titulo: '1. Datos de Identificación', campos: ['nombre', 'apellidos', 'dniNie', 'email', 'telefono'] },
   { titulo: '2. Situación de Vivienda', campos: ['viviendaAlquiler', 'alquilerMenos35', 'viviendaPropiedad', 'propiedadAntes2013', 'pisosAlquiladosTerceros', 'segundaResidencia'] },
   { titulo: '3. Cargas Familiares y Ayudas Públicas', campos: ['familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'mayoresConviven', 'hijosMenores26'] },
   { titulo: '4. Ingresos Extraordinarios e Inversiones', campos: ['ingresosJuego', 'ingresosInversiones'] },
-  { titulo: '6. Información Adicional', campos: ['comentarios'] },
 ]
+
+const SECCION_INFO_ADICIONAL = { titulo: '6. Información Adicional', campos: ['comentarios'] }
 
 function formatFecha(iso) {
   if (!iso) return '—'
@@ -153,7 +154,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
 
                 {expanded === dec.id && (
                   <div className="declaracion-body">
-                    {SECCIONES.map(seccion => (
+                    {SECCIONES_ANTES_DOCS.map(seccion => (
                       <div key={seccion.titulo}>
                         <div className="section-title">{seccion.titulo}</div>
                         <table className="respuestas-table">
@@ -188,6 +189,24 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
                         </ul>
                       </div>
                     )}
+
+                    <div key={SECCION_INFO_ADICIONAL.titulo}>
+                      <div className="section-title">{SECCION_INFO_ADICIONAL.titulo}</div>
+                      <table className="respuestas-table">
+                        <tbody>
+                          {SECCION_INFO_ADICIONAL.campos.map(campo => {
+                            const valor = dec[campo]
+                            if (valor === undefined || valor === null) return null
+                            return (
+                              <tr key={campo}>
+                                <td className="campo-label">{CAMPOS_LABELS[campo] ?? campo}</td>
+                                <td className="campo-valor">{YN_LABELS[valor] ?? valor}</td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
 
                     <div className="btn-row">
                       <button
