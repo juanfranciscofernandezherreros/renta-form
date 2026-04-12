@@ -51,6 +51,11 @@ export default function Router() {
     )
   }
 
+  if (!user) {
+    navigate('#/login')
+    return null
+  }
+
   return (
     <App
       onNavigate={navigate}
