@@ -1,17 +1,20 @@
 import { useState } from 'react'
 import { useAuth } from './AuthContext.jsx'
+import { loginUser as loginUserMock } from './mockApi.js'
+import { DEMO_MODE } from './constants.js'
 
 const DNI_NIE_REGEX = /^[0-9XYZ][0-9]{7}[A-Z]$/
 
 export default function LoginPage({ onNavigate }) {
   const { login } = useAuth()
-  const [form, setForm] = useState({ dniNie: '', email: '' })
+  const [form, setForm] = useState({ dniNie: '', password: '' })
   const [errors, setErrors] = useState({})
+  const [loading, setLoading] = useState(false)
 
   const handleChange = e => {
     const { name, value } = e.target
     setForm(prev => ({ ...prev, [name]: value }))
-    setErrors(prev => ({ ...prev, [name]: null }))
+    setErrors(prev => ({ ...prev, [name]: null, global: null }))
   }
 
   const validate = () => {
@@ -19,20 +22,34 @@ export default function LoginPage({ onNavigate }) {
     if (!DNI_NIE_REGEX.test(form.dniNie.trim().toUpperCase())) {
       errs.dniNie = 'Formato inválido. Ejemplo: 12345678A'
     }
-    if (!form.email.trim() || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(form.email.trim())) {
-      errs.email = 'Introduce un correo electrónico válido'
+    if (!form.password) {
+      errs.password = 'Introduce tu contraseña'
     }
     return errs
   }
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault()
     const errs = validate()
     if (Object.keys(errs).length) {
       setErrors(errs)
       return
     }
-    login({ dniNie: form.dniNie.trim().toUpperCase(), email: form.email.trim().toLowerCase() })
+    setLoading(true)
+    const dniNie = form.dniNie.trim().toUpperCase()
+    const loginFn = DEMO_MODE ? loginUserMock : null
+    if (!loginFn) {
+      setErrors({ global: 'Modo real no implementado aún' })
+      setLoading(false)
+      return
+    }
+    const { data, error } = await loginFn({ dniNie, password: form.password })
+    setLoading(false)
+    if (error) {
+      setErrors({ global: error.message })
+      return
+    }
+    login({ dniNie: data.dniNie })
     onNavigate('#/perfil')
   }
 
@@ -54,12 +71,15 @@ export default function LoginPage({ onNavigate }) {
       <div className="card">
         <div className="info-box">
           <strong>🔒 Acceso a tu expediente</strong>
-          Introduce tu DNI/NIE y correo electrónico para consultar y modificar tu cuestionario fiscal.
-          Estos datos deben coincidir con los que usaste al enviar el formulario.
+          Introduce tu DNI/NIE y contraseña para consultar y modificar tu cuestionario fiscal.
+          La contraseña inicial es <strong>renta2025</strong> seguida de tu primer apellido.
         </div>
 
         <form onSubmit={handleSubmit} noValidate>
           <div className="section-title">Identificación</div>
+          {errors.global && (
+            <div className="info-box info-box-error">❌ {errors.global}</div>
+          )}
           <div className="form-grid">
             <div className="field">
               <label>Número de DNI / NIE</label>
@@ -75,22 +95,22 @@ export default function LoginPage({ onNavigate }) {
               {errors.dniNie && <span className="field-error">{errors.dniNie}</span>}
             </div>
             <div className="field">
-              <label>Correo electrónico de contacto</label>
+              <label>Contraseña</label>
               <input
-                type="email"
-                name="email"
-                value={form.email}
+                type="password"
+                name="password"
+                value={form.password}
                 onChange={handleChange}
-                placeholder="ejemplo@correo.es"
+                placeholder="renta2025Apellido"
                 required
               />
-              {errors.email && <span className="field-error">{errors.email}</span>}
+              {errors.password && <span className="field-error">{errors.password}</span>}
             </div>
           </div>
 
           <div className="btn-row">
-            <button type="submit" className="btn btn-primary">
-              🔑 Acceder
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              {loading ? '⏳ Verificando…' : '🔑 Acceder'}
             </button>
           </div>
         </form>

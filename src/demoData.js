@@ -2,12 +2,11 @@
 // DEMO DATA – datos en memoria para la demo al cliente
 // ---------------------------------------------------------------------------
 // Cuatro usuarios con situaciones fiscales distintas.
-// Credenciales de acceso (en LoginPage sólo se valida formato, cualquier
-// combinación DNI/NIE + email válidos funciona):
-//   · 12345678A  /  maria.garcia@ejemplo.es
-//   · 87654321B  /  carlos.martinez@ejemplo.es
-//   · 11223344C  /  ana.lopez@ejemplo.es
-//   · 44332211D  /  pedro.fernandez@ejemplo.es
+// Credenciales de acceso (DNI/NIE + contraseña por defecto renta2025<PrimerApellido>):
+//   · 12345678A  /  renta2025García
+//   · 87654321B  /  renta2025Martínez
+//   · 11223344C  /  renta2025López
+//   · 44332211D  /  renta2025Fernández
 // ---------------------------------------------------------------------------
 
 /** @type {import('./api/types.gen').CatalogoPreguntas} */
@@ -222,6 +221,17 @@ const declaracionesIniciales = [
 // ---------------------------------------------------------------------------
 /** @type {import('./api/types.gen').Declaracion[]} */
 export const declaracionesStore = [...declaracionesIniciales]
+
+// ---------------------------------------------------------------------------
+// Contraseñas – contraseña inicial: renta2025 + primer apellido
+// ---------------------------------------------------------------------------
+/** @type {Map<string, string>} */
+export const passwordsStore = new Map(
+  declaracionesIniciales.map(d => [
+    d.dniNie,
+    'renta2025' + d.apellidos.split(' ')[0],
+  ])
+)
 
 let nextIdCounter = 5
 
