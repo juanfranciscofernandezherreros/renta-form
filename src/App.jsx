@@ -65,6 +65,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const { user, logout } = useAuth()
   const { lang, setLang, t } = useLanguage()
   const [form, setForm] = useState(INITIAL_STATE)
+  const [editId, setEditId] = useState(null)
   const [toast, setToast] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
@@ -77,6 +78,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
 
   useEffect(() => {
     if (!editData) return
+    setEditId(editData.id)
     setForm({
       ...INITIAL_STATE,
       nombre: editData.nombre ?? '',
@@ -133,6 +135,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const handleLimpiar = () => {
     if (window.confirm(t('confirmClear'))) {
       setForm(INITIAL_STATE)
+      setEditId(null)
       setSubmitted(false)
       setSubmissionToken(null)
       setTokenCopied(false)
@@ -181,7 +184,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
 
     setSubmitting(true)
     try {
-      if (editData?.id && updateDeclaracion) {
+      if (editId && updateDeclaracion) {
         // Update existing declaration (only available in DEMO_MODE; falls through to create otherwise)
         const updateBody = {
           nombre: form.nombre,
@@ -204,8 +207,9 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
           ingresosInversiones: form.ingresosInversiones,
           comentarios: form.comentarios,
         }
-        const { data, error, response } = await updateDeclaracion({ path: { id: editData.id }, body: updateBody })
+        const { data, error, response } = await updateDeclaracion({ path: { id: editId }, body: updateBody })
         if (data) {
+          setEditId(null)
           setSubmitted(true)
           showToast(t('toastSuccess'), 'success')
           setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
