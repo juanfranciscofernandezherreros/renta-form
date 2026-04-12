@@ -2,7 +2,7 @@
 // MOCK API – implementaciones en memoria para el modo demo
 // Reemplaza las llamadas reales a la API cuando DEMO_MODE está activado.
 // ---------------------------------------------------------------------------
-import { CATALOGO_PREGUNTAS, declaracionesStore, generarId } from './demoData.js'
+import { CATALOGO_PREGUNTAS, declaracionesStore, passwordsStore, generarId } from './demoData.js'
 
 /** Simula un pequeño retardo de red (ms). */
 const delay = (ms = 300) => new Promise(resolve => setTimeout(resolve, ms))
@@ -89,4 +89,39 @@ export async function createDeclaracion(options) {
     error: null,
     response: { status: 201 },
   }
+}
+
+/**
+ * Mock de loginUser – valida DNI/NIE y contraseña.
+ * @param {{ dniNie: string, password: string }} options
+ * @returns {Promise<{ data: { dniNie: string } | null, error: { message: string } | null }>}
+ */
+export async function loginUser({ dniNie, password }) {
+  await delay()
+  const storedPassword = passwordsStore.get(dniNie)
+  if (storedPassword === undefined) {
+    return { data: null, error: { message: 'DNI/NIE no encontrado' } }
+  }
+  if (storedPassword !== password) {
+    return { data: null, error: { message: 'Contraseña incorrecta' } }
+  }
+  return { data: { dniNie }, error: null }
+}
+
+/**
+ * Mock de changePassword – cambia la contraseña de un usuario.
+ * @param {{ dniNie: string, oldPassword: string, newPassword: string }} options
+ * @returns {Promise<{ data: { success: boolean } | null, error: { message: string } | null }>}
+ */
+export async function changePassword({ dniNie, oldPassword, newPassword }) {
+  await delay()
+  const storedPassword = passwordsStore.get(dniNie)
+  if (storedPassword === undefined) {
+    return { data: null, error: { message: 'Usuario no encontrado' } }
+  }
+  if (storedPassword !== oldPassword) {
+    return { data: null, error: { message: 'La contraseña actual es incorrecta' } }
+  }
+  passwordsStore.set(dniNie, newPassword)
+  return { data: { success: true }, error: null }
 }

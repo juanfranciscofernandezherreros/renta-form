@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from './AuthContext.jsx'
 import { listDeclaraciones as listDeclaracionesReal } from './api/index.ts'
-import { listDeclaraciones as listDeclaracionesMock } from './mockApi.js'
+import { listDeclaraciones as listDeclaracionesMock, changePassword as changePasswordMock } from './mockApi.js'
 import { DEMO_MODE } from './constants.js'
 
 const listDeclaraciones = DEMO_MODE ? listDeclaracionesMock : listDeclaracionesReal
+const changePasswordFn = DEMO_MODE ? changePasswordMock : null
 
 const ESTADO_LABELS = {
   recibido: 'Recibido',
@@ -66,6 +67,10 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [expanded, setExpanded] = useState(null)
+  const [pwForm, setPwForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' })
+  const [pwErrors, setPwErrors] = useState({})
+  const [pwSuccess, setPwSuccess] = useState(false)
+  const [pwLoading, setPwLoading] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -86,6 +91,33 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
   const handleEdit = (declaracion) => {
     onEditDeclaracion(declaracion)
     onNavigate('#/')
+  }
+
+  const handlePwChange = e => {
+    const { name, value } = e.target
+    setPwForm(prev => ({ ...prev, [name]: value }))
+    setPwErrors(prev => ({ ...prev, [name]: null, global: null }))
+    setPwSuccess(false)
+  }
+
+  const handlePwSubmit = async e => {
+    e.preventDefault()
+    const errs = {}
+    if (!pwForm.oldPassword) errs.oldPassword = 'Introduce la contraseña actual'
+    if (!pwForm.newPassword || pwForm.newPassword.length < 6) errs.newPassword = 'La nueva contraseña debe tener al menos 6 caracteres'
+    if (pwForm.newPassword !== pwForm.confirmPassword) errs.confirmPassword = 'Las contraseñas no coinciden'
+    if (Object.keys(errs).length) { setPwErrors(errs); return }
+    if (!changePasswordFn) { setPwErrors({ global: 'Función no disponible' }); return }
+    setPwLoading(true)
+    const { error: apiError } = await changePasswordFn({
+      dniNie: user.dniNie,
+      oldPassword: pwForm.oldPassword,
+      newPassword: pwForm.newPassword,
+    })
+    setPwLoading(false)
+    if (apiError) { setPwErrors({ global: apiError.message }); return }
+    setPwForm({ oldPassword: '', newPassword: '', confirmPassword: '' })
+    setPwSuccess(true)
   }
 
   return (
@@ -111,7 +143,6 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
           <div className="profile-avatar">👤</div>
           <div>
             <div className="profile-name">{user?.dniNie}</div>
-            <div className="profile-email">{user?.email}</div>
           </div>
         </div>
 
@@ -227,6 +258,58 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
             ))}
           </div>
         )}
+      </div>
+
+      <div className="card">
+        <div className="section-title">🔑 Cambiar contraseña</div>
+        {pwSuccess && (
+          <div className="info-box">✅ Contraseña actualizada correctamente.</div>
+        )}
+        {pwErrors.global && (
+          <div className="info-box info-box-error">❌ {pwErrors.global}</div>
+        )}
+        <form onSubmit={handlePwSubmit} noValidate>
+          <div className="form-grid">
+            <div className="field">
+              <label>Contraseña actual</label>
+              <input
+                type="password"
+                name="oldPassword"
+                value={pwForm.oldPassword}
+                onChange={handlePwChange}
+                required
+              />
+              {pwErrors.oldPassword && <span className="field-error">{pwErrors.oldPassword}</span>}
+            </div>
+            <div className="field">
+              <label>Nueva contraseña</label>
+              <input
+                type="password"
+                name="newPassword"
+                value={pwForm.newPassword}
+                onChange={handlePwChange}
+                required
+              />
+              {pwErrors.newPassword && <span className="field-error">{pwErrors.newPassword}</span>}
+            </div>
+            <div className="field">
+              <label>Confirmar nueva contraseña</label>
+              <input
+                type="password"
+                name="confirmPassword"
+                value={pwForm.confirmPassword}
+                onChange={handlePwChange}
+                required
+              />
+              {pwErrors.confirmPassword && <span className="field-error">{pwErrors.confirmPassword}</span>}
+            </div>
+          </div>
+          <div className="btn-row">
+            <button type="submit" className="btn btn-primary" disabled={pwLoading}>
+              {pwLoading ? '⏳ Guardando…' : '💾 Actualizar contraseña'}
+            </button>
+          </div>
+        </form>
       </div>
 
       <footer>
