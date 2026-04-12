@@ -212,6 +212,11 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/perfil')}>
                 {t('navProfile')}
               </button>
+              {user.role === 'admin' && (
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/admin')}>
+                  🛡️ Admin
+                </button>
+              )}
               <button type="button" className="btn btn-danger btn-sm" onClick={() => { logout(); onNavigate('#/') }}>
                 {t('navLogout')}
               </button>

@@ -89,6 +89,7 @@ export default function LoginPage({ onNavigate }) {
             <li><strong>87654321B</strong> – Carlos Martínez Ruiz</li>
             <li><strong>11223344C</strong> – Ana López Sánchez</li>
             <li><strong>44332211D</strong> – Pedro Fernández González</li>
+            <li><strong>ADMIN001</strong> – Administrador (contraseña: <strong>admin2025</strong>)</li>
           </ul>
           {t('loginTestPassword')}<strong>renta2025</strong>
         </div>

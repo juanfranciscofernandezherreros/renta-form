@@ -320,11 +320,22 @@ export const declaracionesStore = [...declaracionesIniciales]
 
 // ---------------------------------------------------------------------------
 // Contraseñas – contraseña inicial: renta2025
+// Admin: ADMIN001 / admin2025
 // ---------------------------------------------------------------------------
 /** @type {Map<string, string>} */
-export const passwordsStore = new Map(
-  declaracionesIniciales.map(d => [d.dniNie, 'renta2025'])
-)
+export const passwordsStore = new Map([
+  ...declaracionesIniciales.map(d => [d.dniNie, 'renta2025']),
+  ['ADMIN001', 'admin2025'],
+])
+
+// ---------------------------------------------------------------------------
+// Roles – 'admin' | 'user'
+// ---------------------------------------------------------------------------
+/** @type {Map<string, string>} */
+export const rolesStore = new Map([
+  ...declaracionesIniciales.map(d => [d.dniNie, 'user']),
+  ['ADMIN001', 'admin'],
+])
 
 let nextIdCounter = 5
 
