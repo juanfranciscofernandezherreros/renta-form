@@ -22,6 +22,8 @@ servers:
 tags:
   - name: Preguntas
     description: Catálogo de preguntas del cuestionario
+  - name: PreguntasAdmin
+    description: Gestión CRUD de preguntas adicionales (admin)
   - name: Declaraciones
     description: Gestión de cuestionarios enviados
 
@@ -188,14 +190,197 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-components:
+  /admin/preguntas:
+    get:
+      operationId: listPreguntasAdmin
+      tags: [PreguntasAdmin]
+      summary: Lista todas las preguntas adicionales
+      parameters:
+        - name: activa
+          in: query
+          schema:
+            type: boolean
+          description: Filtra por estado activa/inactiva
+      responses:
+        '200':
+          description: Lista de preguntas adicionales
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaPreguntasAdicionales'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  parameters:
+    post:
+      operationId: createPreguntaAdmin
+      tags: [PreguntasAdmin]
+      summary: Crea una nueva pregunta adicional
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreguntaAdicionalInput'
+      responses:
+        '201':
+          description: Pregunta creada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreguntaAdicional'
+        '400':
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/preguntas/{id}:
+    get:
+      operationId: getPreguntaAdmin
+      tags: [PreguntasAdmin]
+      summary: Obtiene una pregunta adicional por ID
+      parameters:
+        - $ref: '#/components/parameters/PreguntaIdParam'
+      responses:
+        '200':
+          description: Detalle de la pregunta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreguntaAdicional'
+        '404':
+          description: Pregunta no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      operationId: updatePreguntaAdmin
+      tags: [PreguntasAdmin]
+      summary: Actualiza una pregunta adicional
+      parameters:
+        - $ref: '#/components/parameters/PreguntaIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreguntaAdicionalInput'
+      responses:
+        '200':
+          description: Pregunta actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreguntaAdicional'
+        '404':
+          description: Pregunta no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      operationId: deletePreguntaAdmin
+      tags: [PreguntasAdmin]
+      summary: Elimina una pregunta adicional
+      parameters:
+        - $ref: '#/components/parameters/PreguntaIdParam'
+      responses:
+        '204':
+          description: Pregunta eliminada correctamente
+        '404':
+          description: Pregunta no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /irpf/declaraciones/{id}/preguntas:
+    get:
+      operationId: getDeclaracionPreguntas
+      tags: [Declaraciones]
+      summary: Obtiene las preguntas asignadas a una declaración con sus respuestas
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      responses:
+        '200':
+          description: Preguntas y respuestas de la declaración
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaDeclaracionPreguntas'
+        '404':
+          description: Declaración no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      operationId: upsertDeclaracionPreguntas
+      tags: [Declaraciones]
+      summary: Asigna o actualiza preguntas y respuestas en una declaración
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpsertDeclaracionPreguntasInput'
+      responses:
+        '200':
+          description: Preguntas y respuestas actualizadas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaDeclaracionPreguntas'
+        '404':
+          description: Declaración o pregunta no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /irpf/declaraciones/{id}/preguntas/{preguntaId}:
+    delete:
+      operationId: removeDeclaracionPregunta
+      tags: [Declaraciones]
+      summary: Desasigna una pregunta de una declaración
+      parameters:
+        - $ref: '#/components/parameters/IdParam'
+        - $ref: '#/components/parameters/PreguntaIdParam'
+      responses:
+        '204':
+          description: Pregunta desasignada correctamente
+        '404':
+          description: Asignación no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+
     IdParam:
       name: id
       in: path
       required: true
       description: UUID de la declaración
+      schema:
+        type: string
+        format: uuid
+    PreguntaIdParam:
+      name: id
+      in: path
+      required: true
+      description: UUID de la pregunta adicional
       schema:
         type: string
         format: uuid
@@ -556,3 +741,117 @@ components:
                   mensaje:
                     type: string
                     example: El formato del DNI/NIE no es válido
+
+    # ------------------------------------------------------------------
+    # Preguntas adicionales (CRUD admin)
+    # ------------------------------------------------------------------
+    TipoRespuesta:
+      type: string
+      enum: [yn, texto, numero]
+      description: Tipo de respuesta esperada para la pregunta
+
+    PreguntaAdicionalInput:
+      type: object
+      required: [texto, seccion, tipoRespuesta]
+      properties:
+        texto:
+          type: string
+          description: Texto de la pregunta
+          example: '¿Ha declarado bienes en el extranjero (modelo 720)?'
+        seccion:
+          type: string
+          description: Sección a la que pertenece la pregunta
+          example: Ingresos Extraordinarios
+        tipoRespuesta:
+          $ref: '#/components/schemas/TipoRespuesta'
+        orden:
+          type: integer
+          minimum: 0
+          default: 0
+        activa:
+          type: boolean
+          default: true
+
+    PreguntaAdicional:
+      allOf:
+        - $ref: '#/components/schemas/PreguntaAdicionalInput'
+        - type: object
+          required: [id, creadaEn, actualizadaEn]
+          properties:
+            id:
+              type: string
+              format: uuid
+            creadaEn:
+              type: string
+              format: date-time
+            actualizadaEn:
+              type: string
+              format: date-time
+
+    ListaPreguntasAdicionales:
+      type: object
+      required: [data, total]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/PreguntaAdicional'
+        total:
+          type: integer
+
+    # ------------------------------------------------------------------
+    # Asignación declaración ↔ pregunta (many-to-many)
+    # ------------------------------------------------------------------
+    DeclaracionPregunta:
+      type: object
+      required: [id, declaracionId, preguntaId, asignadaEn]
+      properties:
+        id:
+          type: string
+          format: uuid
+        declaracionId:
+          type: string
+          format: uuid
+        preguntaId:
+          type: string
+          format: uuid
+        pregunta:
+          $ref: '#/components/schemas/PreguntaAdicional'
+        respuesta:
+          type: string
+          nullable: true
+        asignadaEn:
+          type: string
+          format: date-time
+        respondidaEn:
+          type: string
+          format: date-time
+          nullable: true
+
+    ListaDeclaracionPreguntas:
+      type: object
+      required: [data, total]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeclaracionPregunta'
+        total:
+          type: integer
+
+    UpsertDeclaracionPreguntasInput:
+      type: object
+      required: [asignaciones]
+      properties:
+        asignaciones:
+          type: array
+          items:
+            type: object
+            required: [preguntaId]
+            properties:
+              preguntaId:
+                type: string
+                format: uuid
+              respuesta:
+                type: string
+                nullable: true
