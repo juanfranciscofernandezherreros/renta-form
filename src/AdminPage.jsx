@@ -126,7 +126,7 @@ function downloadDeclaracionPdf(dec) {
 </style>
 </head>
 <body>
-<h1>🏛️ AEAT – Cuestionario IRPF 2025</h1>
+<h1>🏛️ NH Gestión Integral – Cuestionario IRPF 2025</h1>
 <div class="meta">
   Declaración: <strong>${escHtml(dec.id)}</strong> &nbsp;·&nbsp;
   Estado: <strong>${escHtml(ESTADO_LABELS[dec.estado] ?? dec.estado)}</strong> &nbsp;·&nbsp;
@@ -307,7 +307,7 @@ export default function AdminPage({ onNavigate }) {
   return (
     <>
       <header>
-        <div className="logo">AEAT</div>
+        <div className="logo">NH Gestión Integral</div>
         <div className="header-text">
           <h1>Panel de Administración</h1>
           <p>Gestión de declaraciones IRPF 2025 · Usuario: {user?.dniNie}</p>

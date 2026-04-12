@@ -121,7 +121,7 @@ function downloadUserDeclaracionPdf(dniNie) {
 </style>
 </head>
 <body>
-<h1>🏛️ AEAT – Cuestionario IRPF 2025</h1>
+<h1>🏛️ NH Gestión Integral – Cuestionario IRPF 2025</h1>
 <div class="meta">
   Declaración: <strong>${escHtml(dec.id)}</strong> &nbsp;·&nbsp;
   Estado: <strong>${escHtml(ESTADOS_LABELS[dec.estado] ?? dec.estado)}</strong> &nbsp;·&nbsp;
