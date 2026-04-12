@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
 import { getPreguntas, createDeclaracion } from './api/index.ts'
+import { useAuth } from './AuthContext.jsx'
 
 const INITIAL_STATE = {
   // 1. Datos de identificación
@@ -49,7 +50,8 @@ const YesNoField = ({ label, name, value, onChange, indent }) => (
   </div>
 )
 
-export default function App() {
+export default function App({ onNavigate, editData, onEditDataConsumed }) {
+  const { user, logout } = useAuth()
   const [form, setForm] = useState(INITIAL_STATE)
   const [toast, setToast] = useState(null)
   const [submitting, setSubmitting] = useState(false)
@@ -58,6 +60,35 @@ export default function App() {
   const [loadingPreguntas, setLoadingPreguntas] = useState(true)
   const [errorPreguntas, setErrorPreguntas] = useState(null)
   const topRef = useRef(null)
+
+  useEffect(() => {
+    if (!editData) return
+    setForm({
+      ...INITIAL_STATE,
+      nombre: editData.nombre ?? '',
+      apellidos: editData.apellidos ?? '',
+      dniNie: editData.dniNie ?? '',
+      email: editData.email ?? '',
+      telefono: editData.telefono ?? '',
+      viviendaAlquiler: editData.viviendaAlquiler ?? '',
+      alquilerMenos35: editData.alquilerMenos35 ?? '',
+      viviendaPropiedad: editData.viviendaPropiedad ?? '',
+      propiedadAntes2013: editData.propiedadAntes2013 ?? '',
+      pisosAlquiladosTerceros: editData.pisosAlquiladosTerceros ?? '',
+      segundaResidencia: editData.segundaResidencia ?? '',
+      familiaNumerosa: editData.familiaNumerosa ?? '',
+      ayudasGobierno: editData.ayudasGobierno ?? '',
+      mayores65ACargo: editData.mayores65ACargo ?? '',
+      mayoresConviven: editData.mayoresConviven ?? '',
+      hijosMenores26: editData.hijosMenores26 ?? '',
+      ingresosJuego: editData.ingresosJuego ?? '',
+      ingresosInversiones: editData.ingresosInversiones ?? '',
+      comentarios: editData.comentarios ?? '',
+    })
+    setSubmitted(false)
+    onEditDataConsumed?.()
+    setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+  }, [editData, onEditDataConsumed])
 
   useEffect(() => {
     getPreguntas()
@@ -157,6 +188,22 @@ export default function App() {
           <h1>Cuestionario para Expediente Fiscal</h1>
           <p>Campaña Renta 2025 · Impuesto sobre la Renta de las Personas Físicas (IRPF)</p>
         </div>
+        <nav className="header-nav">
+          {user ? (
+            <>
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/perfil')}>
+                👤 Mi perfil
+              </button>
+              <button type="button" className="btn btn-danger btn-sm" onClick={() => { logout(); onNavigate('#/') }}>
+                🚪 Cerrar sesión
+              </button>
+            </>
+          ) : (
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/login')}>
+              🔑 Acceder
+            </button>
+          )}
+        </nav>
       </header>
 
       <div className="card">

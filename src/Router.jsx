@@ -1,10 +1,15 @@
-import { lazy, Suspense, useState, useEffect } from 'react'
+import { lazy, Suspense, useState, useEffect, useCallback } from 'react'
 import App from './App.jsx'
+import LoginPage from './LoginPage.jsx'
+import ProfilePage from './ProfilePage.jsx'
+import { useAuth } from './AuthContext.jsx'
 
 const ApiDocs = lazy(() => import('./ApiDocs.jsx'))
 
 export default function Router() {
   const [hash, setHash] = useState(window.location.hash)
+  const [editData, setEditData] = useState(null)
+  const { user } = useAuth()
 
   useEffect(() => {
     const onHashChange = () => setHash(window.location.hash)
@@ -12,11 +17,45 @@ export default function Router() {
     return () => window.removeEventListener('hashchange', onHashChange)
   }, [])
 
-  return hash === '#/api-docs' ? (
-    <Suspense fallback={<div style={{ padding: '32px', textAlign: 'center' }}>Cargando documentación…</div>}>
-      <ApiDocs />
-    </Suspense>
-  ) : (
-    <App />
+  const navigate = (newHash) => {
+    // eslint-disable-next-line react-hooks/immutability
+    window.location.hash = newHash
+    setHash(newHash)
+  }
+
+  const handleEditDeclaracion = useCallback((dec) => setEditData(dec), [])
+  const handleEditDataConsumed = useCallback(() => setEditData(null), [])
+
+  if (hash === '#/api-docs') {
+    return (
+      <Suspense fallback={<div style={{ padding: '32px', textAlign: 'center' }}>Cargando documentación…</div>}>
+        <ApiDocs />
+      </Suspense>
+    )
+  }
+
+  if (hash === '#/login') {
+    return <LoginPage onNavigate={navigate} />
+  }
+
+  if (hash === '#/perfil') {
+    if (!user) {
+      navigate('#/login')
+      return null
+    }
+    return (
+      <ProfilePage
+        onNavigate={navigate}
+        onEditDeclaracion={handleEditDeclaracion}
+      />
+    )
+  }
+
+  return (
+    <App
+      onNavigate={navigate}
+      editData={editData}
+      onEditDataConsumed={handleEditDataConsumed}
+    />
   )
 }
