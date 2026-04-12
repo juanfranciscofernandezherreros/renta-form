@@ -67,7 +67,15 @@ export default function LoginPage({ onNavigate }) {
         <div className="info-box">
           <strong>🔒 Acceso a tu expediente</strong>
           Introduce tu DNI/NIE y contraseña para consultar y modificar tu cuestionario fiscal.
-          La contraseña es <strong>renta2025</strong>.
+          <br /><br />
+          <strong>Usuarios de prueba disponibles:</strong>
+          <ul style={{ margin: '6px 0 0 0', paddingLeft: '1.4em' }}>
+            <li><strong>12345678A</strong> – María García López</li>
+            <li><strong>87654321B</strong> – Carlos Martínez Ruiz</li>
+            <li><strong>11223344C</strong> – Ana López Sánchez</li>
+            <li><strong>44332211D</strong> – Pedro Fernández González</li>
+          </ul>
+          Contraseña para todos: <strong>renta2025</strong>
         </div>
 
         <form onSubmit={handleSubmit} noValidate>
