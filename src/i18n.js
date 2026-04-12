@@ -134,6 +134,9 @@ const translations = {
     tokenMyTokens: '📋 Mis cuestionarios enviados',
     tokenNoHistory: 'No hay cuestionarios guardados en este dispositivo.',
     tokenClearHistory: '🗑 Limpiar historial',
+    tokenResultNombre: 'Nombre',
+    tokenResultDni: 'DNI/NIE',
+    tokenResultEmail: 'Correo electrónico',
   },
 
   fr: {
@@ -251,6 +254,9 @@ const translations = {
     tokenMyTokens: '📋 Mes questionnaires envoyés',
     tokenNoHistory: 'Aucun questionnaire enregistré sur cet appareil.',
     tokenClearHistory: '🗑 Effacer l\'historique',
+    tokenResultNombre: 'Prénom et nom',
+    tokenResultDni: 'DNI/NIE',
+    tokenResultEmail: 'Adresse e-mail',
   },
 
   en: {
@@ -366,6 +372,9 @@ const translations = {
     tokenMyTokens: '📋 My submitted questionnaires',
     tokenNoHistory: 'No questionnaires saved on this device.',
     tokenClearHistory: '🗑 Clear history',
+    tokenResultNombre: 'Name',
+    tokenResultDni: 'DNI/NIE',
+    tokenResultEmail: 'Email',
   },
 
   ca: {
@@ -483,6 +492,9 @@ const translations = {
     tokenMyTokens: '📋 Els meus qüestionaris enviats',
     tokenNoHistory: 'No hi ha qüestionaris desats en aquest dispositiu.',
     tokenClearHistory: '🗑 Netejar historial',
+    tokenResultNombre: 'Nom',
+    tokenResultDni: 'DNI/NIE',
+    tokenResultEmail: 'Correu electrònic',
   },
 }
 

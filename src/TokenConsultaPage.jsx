@@ -8,6 +8,8 @@ const TOKENS_STORAGE_KEY = 'renta_form_tokens'
 
 const getDeclaracionByToken = DEMO_MODE ? getDeclaracionByTokenMock : null
 
+const LOCALE_MAP = { es: 'es-ES', fr: 'fr-FR', en: 'en-GB', ca: 'ca-ES' }
+
 const ESTADO_LABELS = {
   recibido: 'Recibido',
   en_revision: 'En revisión',
@@ -24,9 +26,10 @@ const ESTADO_CLASS = {
   archivado: 'badge-gray',
 }
 
-function formatFecha(iso) {
+function formatFecha(iso, lang) {
   if (!iso) return '—'
-  return new Date(iso).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' })
+  const locale = LOCALE_MAP[lang] ?? 'es-ES'
+  return new Date(iso).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' })
 }
 
 function loadHistory() {
@@ -143,9 +146,9 @@ export default function TokenConsultaPage({ onNavigate }) {
                   </span>
                 </div>
                 <div className="declaracion-dates">
-                  <span>{t('profileSent')}{formatFecha(result.creadoEn)}</span>
+                  <span>{t('profileSent')}{formatFecha(result.creadoEn, lang)}</span>
                   {result.actualizadoEn && result.actualizadoEn !== result.creadoEn && (
-                    <span>{t('profileUpdated')}{formatFecha(result.actualizadoEn)}</span>
+                    <span>{t('profileUpdated')}{formatFecha(result.actualizadoEn, lang)}</span>
                   )}
                 </div>
               </div>
@@ -153,15 +156,15 @@ export default function TokenConsultaPage({ onNavigate }) {
                 <table className="respuestas-table">
                   <tbody>
                     <tr>
-                      <td className="campo-label">Nombre</td>
+                      <td className="campo-label">{t('tokenResultNombre')}</td>
                       <td className="campo-valor">{result.nombre} {result.apellidos}</td>
                     </tr>
                     <tr>
-                      <td className="campo-label">DNI/NIE</td>
+                      <td className="campo-label">{t('tokenResultDni')}</td>
                       <td className="campo-valor">{result.dniNie}</td>
                     </tr>
                     <tr>
-                      <td className="campo-label">Email</td>
+                      <td className="campo-label">{t('tokenResultEmail')}</td>
                       <td className="campo-valor">{result.email}</td>
                     </tr>
                   </tbody>
@@ -188,7 +191,7 @@ export default function TokenConsultaPage({ onNavigate }) {
                     {item.dniNie && <span style={{ fontSize: '0.85em', color: '#666' }}>{item.dniNie}</span>}
                   </div>
                   <div className="declaracion-dates">
-                    <span>{t('profileSent')}{formatFecha(item.creadoEn)}</span>
+                    <span>{t('profileSent')}{formatFecha(item.creadoEn, lang)}</span>
                   </div>
                 </div>
               </div>
