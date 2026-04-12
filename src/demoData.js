@@ -476,3 +476,58 @@ export function generarDpId() {
   const n = String(nextDpIdCounter++).padStart(8, '0')
   return `dp${n.slice(0, 6)}-${n.slice(0, 4)}-${n.slice(0, 4)}-${n.slice(0, 4)}-${n}${n}${n}`
 }
+
+// ---------------------------------------------------------------------------
+// Secciones (CRUD admin) – datos iniciales
+// ---------------------------------------------------------------------------
+
+/**
+ * @typedef {{ id: string, nombre: string, orden: number, activa: boolean, creadaEn: string, actualizadaEn: string }} Seccion
+ */
+
+/** @type {Seccion[]} */
+const seccionesIniciales = [
+  {
+    id: 'sec000001-0001-0001-0001-000000000001',
+    nombre: 'Situación de Vivienda',
+    orden: 1,
+    activa: true,
+    creadaEn: '2025-01-01T00:00:00.000Z',
+    actualizadaEn: '2025-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'sec000002-0002-0002-0002-000000000002',
+    nombre: 'Cargas Familiares y Ayudas Públicas',
+    orden: 2,
+    activa: true,
+    creadaEn: '2025-01-01T00:00:00.000Z',
+    actualizadaEn: '2025-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'sec000003-0003-0003-0003-000000000003',
+    nombre: 'Ingresos Extraordinarios e Inversiones',
+    orden: 3,
+    activa: true,
+    creadaEn: '2025-01-01T00:00:00.000Z',
+    actualizadaEn: '2025-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'sec000004-0004-0004-0004-000000000004',
+    nombre: 'Información Adicional',
+    orden: 4,
+    activa: true,
+    creadaEn: '2025-01-01T00:00:00.000Z',
+    actualizadaEn: '2025-01-01T00:00:00.000Z',
+  },
+]
+
+/** @type {Seccion[]} */
+export const seccionesStore = [...seccionesIniciales]
+
+let nextSeccionIdCounter = 5
+
+/** Genera un UUID fake para secciones. */
+export function generarSeccionId() {
+  const n = String(nextSeccionIdCounter++).padStart(8, '0')
+  return `sec${n.slice(0, 5)}-${n.slice(0, 4)}-${n.slice(0, 4)}-${n.slice(0, 4)}-${n}${n}${n}`
+}

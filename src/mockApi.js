@@ -12,6 +12,8 @@ import {
   declaracionPreguntaStore,
   generarPreguntaId,
   generarDpId,
+  seccionesStore,
+  generarSeccionId,
 } from './demoData.js'
 
 /** Simula un pequeño retardo de red (ms). */
@@ -403,5 +405,102 @@ export async function removeDeclaracionPregunta(options) {
   )
   if (idx === -1) return { data: null, error: { message: 'Asignación no encontrada' } }
   declaracionPreguntaStore.splice(idx, 1)
+  return { data: { success: true }, error: null }
+}
+
+// ---------------------------------------------------------------------------
+// Secciones – CRUD admin
+// ---------------------------------------------------------------------------
+
+/**
+ * Mock de listSeccionesAdmin – devuelve todas las secciones.
+ * @param {{ query?: { activa?: boolean } }} options
+ * @returns {Promise<{ data: { data: object[], total: number }, error: null }>}
+ */
+export async function listSeccionesAdmin(options) {
+  await delay()
+  let resultado = [...seccionesStore]
+  const { activa } = options?.query ?? {}
+  if (activa !== undefined) {
+    resultado = resultado.filter(s => s.activa === activa)
+  }
+  resultado.sort((a, b) => a.orden - b.orden)
+  return { data: { data: resultado, total: resultado.length }, error: null }
+}
+
+/** Comprueba si ya existe una sección con el mismo nombre (case-insensitive), excluyendo opcionalmente un índice. */
+function findDuplicateSeccion(nombre, excludeIdx = -1) {
+  return seccionesStore.find(
+    (s, i) => i !== excludeIdx && s.nombre.toLowerCase() === nombre.trim().toLowerCase()
+  )
+}
+
+/**
+ * Mock de createSeccionAdmin – crea una nueva sección.
+ * @param {{ body: { nombre: string, orden?: number, activa?: boolean } }} options
+ * @returns {Promise<{ data: object | null, error: { message: string } | null, response: { status: number } }>}
+ */
+export async function createSeccionAdmin(options) {
+  await delay(300)
+  const body = options?.body ?? {}
+  if (!body.nombre || !body.nombre.trim()) {
+    return { data: null, error: { message: 'El nombre es obligatorio' }, response: { status: 400 } }
+  }
+  if (findDuplicateSeccion(body.nombre)) {
+    return { data: null, error: { message: 'Ya existe una sección con ese nombre' }, response: { status: 409 } }
+  }
+  const ahora = new Date().toISOString()
+  const nueva = {
+    id: generarSeccionId(),
+    nombre: body.nombre.trim(),
+    orden: body.orden ?? seccionesStore.length + 1,
+    activa: body.activa !== undefined ? body.activa : true,
+    creadaEn: ahora,
+    actualizadaEn: ahora,
+  }
+  seccionesStore.push(nueva)
+  return { data: nueva, error: null, response: { status: 201 } }
+}
+
+/**
+ * Mock de updateSeccionAdmin – actualiza una sección.
+ * @param {{ path: { id: string }, body: object }} options
+ * @returns {Promise<{ data: object | null, error: { message: string } | null }>}
+ */
+export async function updateSeccionAdmin(options) {
+  await delay(300)
+  const id = options?.path?.id
+  const body = options?.body ?? {}
+  const idx = seccionesStore.findIndex(s => s.id === id)
+  if (idx === -1) return { data: null, error: { message: 'Sección no encontrada' } }
+  if (body.nombre !== undefined && findDuplicateSeccion(body.nombre, idx)) {
+    return { data: null, error: { message: 'Ya existe una sección con ese nombre' } }
+  }
+  seccionesStore[idx] = {
+    ...seccionesStore[idx],
+    ...body,
+    ...(body.nombre !== undefined && { nombre: body.nombre.trim() }),
+    id,
+    actualizadaEn: new Date().toISOString(),
+  }
+  return { data: seccionesStore[idx], error: null }
+}
+
+/**
+ * Mock de deleteSeccionAdmin – elimina una sección.
+ * @param {{ path: { id: string } }} options
+ * @returns {Promise<{ data: { success: boolean } | null, error: { message: string } | null }>}
+ */
+export async function deleteSeccionAdmin(options) {
+  await delay(300)
+  const id = options?.path?.id
+  const idx = seccionesStore.findIndex(s => s.id === id)
+  if (idx === -1) return { data: null, error: { message: 'Sección no encontrada' } }
+  const seccionNombre = seccionesStore[idx].nombre
+  const enUso = preguntasAdicionalesStore.some(p => p.seccion === seccionNombre)
+  if (enUso) {
+    return { data: null, error: { message: 'No se puede eliminar: hay preguntas asignadas a esta sección' } }
+  }
+  seccionesStore.splice(idx, 1)
   return { data: { success: true }, error: null }
 }

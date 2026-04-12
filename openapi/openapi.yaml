@@ -24,6 +24,8 @@ tags:
     description: Catálogo de preguntas del cuestionario
   - name: PreguntasAdmin
     description: Gestión CRUD de preguntas adicionales (admin)
+  - name: SeccionesAdmin
+    description: Gestión CRUD de secciones (admin)
   - name: Declaraciones
     description: Gestión de cuestionarios enviados
 
@@ -367,6 +369,110 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /admin/secciones:
+    get:
+      operationId: listSeccionesAdmin
+      tags: [SeccionesAdmin]
+      summary: Lista todas las secciones
+      parameters:
+        - name: activa
+          in: query
+          schema:
+            type: boolean
+          description: Filtra por estado activa/inactiva
+      responses:
+        '200':
+          description: Lista de secciones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaSecciones'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      operationId: createSeccionAdmin
+      tags: [SeccionesAdmin]
+      summary: Crea una nueva sección
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeccionInput'
+      responses:
+        '201':
+          description: Sección creada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Seccion'
+        '400':
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Ya existe una sección con ese nombre
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/secciones/{seccionId}:
+    put:
+      operationId: updateSeccionAdmin
+      tags: [SeccionesAdmin]
+      summary: Actualiza una sección
+      parameters:
+        - $ref: '#/components/parameters/SeccionIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeccionInput'
+      responses:
+        '200':
+          description: Sección actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Seccion'
+        '404':
+          description: Sección no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      operationId: deleteSeccionAdmin
+      tags: [SeccionesAdmin]
+      summary: Elimina una sección
+      parameters:
+        - $ref: '#/components/parameters/SeccionIdParam'
+      responses:
+        '204':
+          description: Sección eliminada correctamente
+        '404':
+          description: Sección no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: La sección tiene preguntas asignadas y no puede eliminarse
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
 
     IdParam:
       name: id
@@ -381,6 +487,14 @@ paths:
       in: path
       required: true
       description: UUID de la pregunta adicional
+      schema:
+        type: string
+        format: uuid
+    SeccionIdParam:
+      name: seccionId
+      in: path
+      required: true
+      description: UUID de la sección
       schema:
         type: string
         format: uuid
@@ -855,3 +969,49 @@ paths:
               respuesta:
                 type: string
                 nullable: true
+
+    # ------------------------------------------------------------------
+    # Secciones (CRUD admin)
+    # ------------------------------------------------------------------
+    SeccionInput:
+      type: object
+      required: [nombre]
+      properties:
+        nombre:
+          type: string
+          description: Nombre de la sección
+          example: Ingresos Extraordinarios e Inversiones
+        orden:
+          type: integer
+          minimum: 1
+          default: 1
+        activa:
+          type: boolean
+          default: true
+
+    Seccion:
+      allOf:
+        - $ref: '#/components/schemas/SeccionInput'
+        - type: object
+          required: [id, creadaEn, actualizadaEn]
+          properties:
+            id:
+              type: string
+              format: uuid
+            creadaEn:
+              type: string
+              format: date-time
+            actualizadaEn:
+              type: string
+              format: date-time
+
+    ListaSecciones:
+      type: object
+      required: [data, total]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Seccion'
+        total:
+          type: integer

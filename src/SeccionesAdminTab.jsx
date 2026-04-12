@@ -1,60 +1,42 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  listPreguntasAdmin,
-  createPreguntaAdmin,
-  updatePreguntaAdmin,
-  deletePreguntaAdmin,
   listSeccionesAdmin,
+  createSeccionAdmin,
+  updateSeccionAdmin,
+  deleteSeccionAdmin,
 } from './mockApi.js'
 
-const TIPO_LABELS = { yn: 'Sí / No', texto: 'Texto libre', numero: 'Número' }
-const TIPOS = ['yn', 'texto', 'numero']
-
-const EMPTY_FORM = { texto: '', seccion: '', tipoRespuesta: 'yn', orden: 0, activa: true }
+const EMPTY_FORM = { nombre: '', orden: 1, activa: true }
 
 function formatFecha(iso) {
   if (!iso) return '—'
   return new Date(iso).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
-export default function PreguntasAdminTab({ showToast }) {
-  const [preguntas, setPreguntas] = useState([])
+export default function SeccionesAdminTab({ showToast }) {
+  const [secciones, setSecciones] = useState([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filtroActiva, setFiltroActiva] = useState('')
   const [modal, setModal] = useState(null) // null | 'create' | 'edit'
-  const [editando, setEditando] = useState(null) // pregunta en edición
+  const [editando, setEditando] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
-  const [secciones, setSecciones] = useState([])
-  const [seccionesLoading, setSeccionesLoading] = useState(false)
 
   const refresh = useCallback(() => setRefreshKey(k => k + 1), [])
-
-  // Load active sections for the form dropdown
-  const loadSecciones = useCallback(() => {
-    setSeccionesLoading(true)
-    listSeccionesAdmin({ query: { activa: true } })
-      .then(({ data }) => setSecciones(data?.data ?? []))
-      .finally(() => setSeccionesLoading(false))
-  }, [])
-
-  useEffect(() => {
-    loadSecciones()
-  }, [loadSecciones])
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
     const query = filtroActiva !== '' ? { activa: filtroActiva === 'true' } : {}
-    listPreguntasAdmin({ query })
+    listSeccionesAdmin({ query })
       .then(({ data, error: apiErr }) => {
         if (cancelled) return
         if (apiErr) throw new Error(apiErr.message ?? 'Error desconocido')
-        setPreguntas(data?.data ?? [])
+        setSecciones(data?.data ?? [])
         setTotal(data?.total ?? 0)
         setError(null)
       })
@@ -64,20 +46,14 @@ export default function PreguntasAdminTab({ showToast }) {
   }, [filtroActiva, refreshKey])
 
   const openCreate = () => {
-    setForm(EMPTY_FORM)
+    setForm({ ...EMPTY_FORM, orden: (secciones.length > 0 ? Math.max(...secciones.map(s => s.orden)) + 1 : 1) })
     setEditando(null)
     setModal('create')
   }
 
-  const openEdit = (pregunta) => {
-    setForm({
-      texto: pregunta.texto,
-      seccion: pregunta.seccion,
-      tipoRespuesta: pregunta.tipoRespuesta,
-      orden: pregunta.orden,
-      activa: pregunta.activa,
-    })
-    setEditando(pregunta)
+  const openEdit = (seccion) => {
+    setForm({ nombre: seccion.nombre, orden: seccion.orden, activa: seccion.activa })
+    setEditando(seccion)
     setModal('edit')
   }
 
@@ -89,21 +65,21 @@ export default function PreguntasAdminTab({ showToast }) {
   }
 
   const handleSave = async () => {
-    if (!form.texto.trim() || !form.seccion.trim()) {
-      showToast('El texto y la sección son obligatorios', 'error')
+    if (!form.nombre.trim()) {
+      showToast('El nombre de la sección es obligatorio', 'error')
       return
     }
     setSaving(true)
     try {
       const body = { ...form, orden: Number(form.orden) }
       if (modal === 'create') {
-        const { data, error: apiErr } = await createPreguntaAdmin({ body })
+        const { data, error: apiErr } = await createSeccionAdmin({ body })
         if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
-        showToast(`Pregunta "${data.texto.slice(0, 40)}${data.texto.length > 40 ? '…' : ''}" creada`)
+        showToast(`Sección "${data.nombre}" creada correctamente`)
       } else {
-        const { error: apiErr } = await updatePreguntaAdmin({ path: { id: editando.id }, body })
+        const { error: apiErr } = await updateSeccionAdmin({ path: { id: editando.id }, body })
         if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
-        showToast('Pregunta actualizada correctamente')
+        showToast('Sección actualizada correctamente')
       }
       closeModal()
       refresh()
@@ -114,9 +90,9 @@ export default function PreguntasAdminTab({ showToast }) {
 
   const handleDelete = async (id) => {
     setConfirmDelete(null)
-    const { error: apiErr } = await deletePreguntaAdmin({ path: { id } })
+    const { error: apiErr } = await deleteSeccionAdmin({ path: { id } })
     if (apiErr) { showToast(`Error al eliminar: ${apiErr.message}`, 'error'); return }
-    showToast('Pregunta eliminada correctamente')
+    showToast('Sección eliminada correctamente')
     refresh()
   }
 
@@ -125,7 +101,7 @@ export default function PreguntasAdminTab({ showToast }) {
       {/* Toolbar */}
       <div className="admin-toolbar">
         <div className="admin-stats">
-          <span className="admin-stat-badge">{total} pregunta{total !== 1 ? 's' : ''}</span>
+          <span className="admin-stat-badge">{total} sección{total !== 1 ? 'es' : ''}</span>
         </div>
         <div className="admin-filters">
           <select
@@ -138,25 +114,24 @@ export default function PreguntasAdminTab({ showToast }) {
             <option value="false">Inactivas</option>
           </select>
           <button type="button" className="btn btn-primary btn-sm" onClick={openCreate}>
-            ➕ Nueva pregunta
+            ➕ Nueva sección
           </button>
         </div>
       </div>
 
-      {loading && <div className="info-box">⏳ Cargando preguntas…</div>}
+      {loading && <div className="info-box">⏳ Cargando secciones…</div>}
       {error && <div className="info-box info-box-error">❌ {error}</div>}
 
-      {!loading && !error && preguntas.length === 0 && (
-        <div className="info-box">No hay preguntas adicionales. Crea la primera con «Nueva pregunta».</div>
+      {!loading && !error && secciones.length === 0 && (
+        <div className="info-box">No hay secciones. Crea la primera con «Nueva sección».</div>
       )}
 
-      {!loading && !error && preguntas.length > 0 && (
+      {!loading && !error && secciones.length > 0 && (
         <div style={{ overflowX: 'auto' }}>
           <table className="preguntas-table">
             <thead>
               <tr>
-                <th>Pregunta</th>
-                <th>Tipo</th>
+                <th>Nombre</th>
                 <th>Orden</th>
                 <th>Estado</th>
                 <th>Creada</th>
@@ -164,35 +139,33 @@ export default function PreguntasAdminTab({ showToast }) {
               </tr>
             </thead>
             <tbody>
-              {preguntas.map(p => (
-                <tr key={p.id}>
+              {secciones.map(s => (
+                <tr key={s.id}>
                   <td>
-                    <div className="pregunta-texto">{p.texto}</div>
-                    <div className="pregunta-seccion">📂 {p.seccion}</div>
+                    <div className="pregunta-texto">{s.nombre}</div>
                   </td>
-                  <td>{TIPO_LABELS[p.tipoRespuesta] ?? p.tipoRespuesta}</td>
-                  <td>{p.orden}</td>
+                  <td>{s.orden}</td>
                   <td>
-                    <span className={`estado-badge ${p.activa ? 'badge-activa' : 'badge-inactiva'}`}>
-                      {p.activa ? 'Activa' : 'Inactiva'}
+                    <span className={`estado-badge ${s.activa ? 'badge-activa' : 'badge-inactiva'}`}>
+                      {s.activa ? 'Activa' : 'Inactiva'}
                     </span>
                   </td>
-                  <td style={{ whiteSpace: 'nowrap' }}>{formatFecha(p.creadaEn)}</td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{formatFecha(s.creadaEn)}</td>
                   <td>
                     <div className="pregunta-actions">
                       <button
                         type="button"
                         className="btn btn-secondary btn-sm btn-xs"
-                        onClick={() => openEdit(p)}
-                        title="Editar pregunta"
+                        onClick={() => openEdit(s)}
+                        title="Editar sección"
                       >
                         ✏️ Editar
                       </button>
                       <button
                         type="button"
                         className="btn btn-danger btn-sm btn-xs"
-                        onClick={() => setConfirmDelete(p.id)}
-                        title="Eliminar pregunta"
+                        onClick={() => setConfirmDelete(s.id)}
+                        title="Eliminar sección"
                       >
                         🗑️
                       </button>
@@ -208,43 +181,21 @@ export default function PreguntasAdminTab({ showToast }) {
       {/* Create / Edit modal */}
       {modal && (
         <div className="admin-modal-overlay" onClick={closeModal}>
-          <div className="admin-modal" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
+          <div className="admin-modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
             <h2 className="admin-modal-title">
-              {modal === 'create' ? '➕ Nueva pregunta adicional' : '✏️ Editar pregunta'}
+              {modal === 'create' ? '➕ Nueva sección' : '✏️ Editar sección'}
             </h2>
 
             <div className="form-grid" style={{ marginBottom: 16 }}>
               <div className="field full">
-                <label>Texto de la pregunta *</label>
-                <textarea
-                  name="texto"
-                  value={form.texto}
+                <label>Nombre de la sección *</label>
+                <input
+                  type="text"
+                  name="nombre"
+                  value={form.nombre}
                   onChange={handleFormChange}
-                  placeholder="¿Ha declarado bienes en el extranjero?"
-                  rows={3}
+                  placeholder="Ej: Ingresos Extraordinarios"
                 />
-              </div>
-              <div className="field">
-                <label>Sección *</label>
-                <select
-                  name="seccion"
-                  value={form.seccion}
-                  onChange={handleFormChange}
-                  disabled={seccionesLoading}
-                >
-                  <option value="">— Selecciona una sección —</option>
-                  {secciones.map(s => (
-                    <option key={s.id} value={s.nombre}>{s.nombre}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label>Tipo de respuesta</label>
-                <select name="tipoRespuesta" value={form.tipoRespuesta} onChange={handleFormChange}>
-                  {TIPOS.map(t => (
-                    <option key={t} value={t}>{TIPO_LABELS[t]}</option>
-                  ))}
-                </select>
               </div>
               <div className="field">
                 <label>Orden</label>
@@ -253,7 +204,7 @@ export default function PreguntasAdminTab({ showToast }) {
                   name="orden"
                   value={form.orden}
                   onChange={handleFormChange}
-                  min={0}
+                  min={1}
                 />
               </div>
               <div className="field" style={{ justifyContent: 'flex-end' }}>
@@ -288,7 +239,7 @@ export default function PreguntasAdminTab({ showToast }) {
           <div className="admin-modal" onClick={e => e.stopPropagation()}>
             <h2 className="admin-modal-title">⚠️ Confirmar eliminación</h2>
             <p className="admin-modal-desc">
-              ¿Estás seguro de que quieres eliminar esta pregunta? También se eliminarán todas las asignaciones a declaraciones.
+              ¿Estás seguro de que quieres eliminar esta sección? Solo se puede eliminar si no tiene preguntas asignadas.
             </p>
             <div className="btn-row">
               <button type="button" className="btn btn-secondary" onClick={() => setConfirmDelete(null)}>
