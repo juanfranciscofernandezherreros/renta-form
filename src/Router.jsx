@@ -4,6 +4,7 @@ import LoginPage from './LoginPage.jsx'
 import ProfilePage from './ProfilePage.jsx'
 import AdminPage from './AdminPage.jsx'
 import AdminLoginPage from './AdminLoginPage.jsx'
+import TokenConsultaPage from './TokenConsultaPage.jsx'
 import { useAuth } from './AuthContext.jsx'
 
 const ApiDocs = lazy(() => import('./ApiDocs.jsx'))
@@ -34,6 +35,10 @@ export default function Router() {
         <ApiDocs />
       </Suspense>
     )
+  }
+
+  if (hash === '#/consulta') {
+    return <TokenConsultaPage onNavigate={navigate} />
   }
 
   if (hash === '#/login') {

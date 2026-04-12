@@ -558,6 +558,48 @@ footer {
   line-height: 1.6;
 }
 
+/* Token box for anonymous submissions */
+.token-box {
+  background: #f0f7ff;
+  border: 1.5px solid #3498db;
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin: 0 auto 24px;
+  max-width: 560px;
+  text-align: left;
+}
+.token-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1a5e8a;
+  margin-bottom: 6px;
+}
+.token-desc {
+  font-size: .88rem;
+  color: #555;
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+.token-code-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.token-code {
+  font-family: monospace;
+  font-size: .9rem;
+  background: #fff;
+  border: 1px solid #b8d4ea;
+  border-radius: 6px;
+  padding: 6px 10px;
+  word-break: break-all;
+  flex: 1;
+  min-width: 0;
+  color: #1a5e8a;
+  user-select: all;
+}
+
 @media (max-width: 600px) {
   body {
     padding: 12px 8px 48px;

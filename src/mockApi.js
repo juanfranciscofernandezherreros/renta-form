@@ -182,6 +182,21 @@ export async function getDeclaracion(options) {
 }
 
 /**
+ * Mock de getDeclaracionByToken – obtiene el detalle de una declaración por token (= id).
+ * Accesible sin autenticación para usuarios anónimos.
+ * @param {{ token: string }} options
+ * @returns {Promise<{ data: import('./api/types.gen').Declaracion | null, error: { message: string } | null }>}
+ */
+export async function getDeclaracionByToken(options) {
+  await delay()
+  const token = options?.token?.trim()
+  if (!token) return { data: null, error: { message: 'Token requerido' } }
+  const dec = declaracionesStore.find(d => d.id === token)
+  if (!dec) return { data: null, error: { message: 'Declaración no encontrada' } }
+  return { data: dec, error: null }
+}
+
+/**
  * Mock de updateEstadoDeclaracion – actualiza el estado de una declaración.
  * @param {{ path: { id: string }, body: { estado: string } }} options
  * @returns {Promise<{ data: import('./api/types.gen').Declaracion | null, error: { message: string } | null }>}
