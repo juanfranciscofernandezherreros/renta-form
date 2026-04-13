@@ -199,8 +199,9 @@ async function getPreguntas() {
     }))
 
     return { data: { secciones }, error: null }
-  } catch {
+  } catch (err) {
     // If tables don't exist yet (pre-migration), fall back to static data
+    console.warn('[getPreguntas] Falling back to static catalogue:', err.message)
     return { data: CATALOGO_PREGUNTAS, error: null }
   }
 }
@@ -255,13 +256,22 @@ async function updatePreguntaFormulario(campo, { texto, orden, indentada }) {
   if (sets.length === 0) return { data: null, error: { message: 'No hay cambios que guardar' } }
 
   params.push(campo)
-  const { rows } = await pool.query(
+  const { rowCount } = await pool.query(
     `UPDATE preguntas_formulario SET ${sets.join(', ')}, actualizada_en = NOW()
-     WHERE campo = $${params.length}
-     RETURNING campo, texto, seccion_id, orden, indentada, condicion_campo, condicion_valor, actualizada_en`,
+     WHERE campo = $${params.length}`,
     params
   )
-  if (!rows.length) return { data: null, error: { message: 'Pregunta no encontrada' } }
+  if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
+
+  // Fetch the updated row with its section title via JOIN
+  const { rows } = await pool.query(
+    `SELECT pf.campo, pf.texto, pf.seccion_id, sf.titulo AS seccion_titulo,
+            pf.orden, pf.indentada, pf.condicion_campo, pf.condicion_valor, pf.actualizada_en
+     FROM preguntas_formulario pf
+     JOIN secciones_formulario sf ON sf.id = pf.seccion_id
+     WHERE pf.campo = $1`,
+    [campo]
+  )
   return { data: rowToPreguntaFormulario(rows[0]), error: null }
 }
 

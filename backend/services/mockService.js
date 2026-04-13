@@ -83,11 +83,11 @@ async function listPreguntasFormulario() {
         texto: p.texto,
         seccionId: s.id,
         seccionTitulo: s.titulo,
-        orden: idx,
+        orden: p._orden !== undefined ? p._orden : idx,
         indentada: p.indentada ?? false,
         condicionCampo: p.condicion?.campo ?? null,
         condicionValor: p.condicion?.valor ?? null,
-        actualizadaEn: null,
+        actualizadaEn: p._actualizadaEn ?? null,
       })
     })
   })
@@ -106,6 +106,8 @@ async function updatePreguntaFormulario(campo, { texto, orden, indentada }) {
         if (pregunta.textos) pregunta.textos.es = texto
       }
       if (indentada !== undefined) pregunta.indentada = Boolean(indentada)
+      if (orden !== undefined) pregunta._orden = Number(orden)
+      pregunta._actualizadaEn = new Date().toISOString()
       const idx = seccion.preguntas.indexOf(pregunta)
       return {
         data: {
@@ -113,11 +115,11 @@ async function updatePreguntaFormulario(campo, { texto, orden, indentada }) {
           texto: pregunta.texto,
           seccionId: seccion.id,
           seccionTitulo: seccion.titulo,
-          orden: orden !== undefined ? Number(orden) : idx,
+          orden: pregunta._orden !== undefined ? pregunta._orden : idx,
           indentada: pregunta.indentada ?? false,
           condicionCampo: pregunta.condicion?.campo ?? null,
           condicionValor: pregunta.condicion?.valor ?? null,
-          actualizadaEn: new Date().toISOString(),
+          actualizadaEn: pregunta._actualizadaEn,
         },
         error: null,
       }
