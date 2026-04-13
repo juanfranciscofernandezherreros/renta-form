@@ -64,6 +64,20 @@ app.use((err, _req, res, _next) => {
 })
 
 // ── Start ─────────────────────────────────────────────────────────────────
-app.listen(config.PORT, () => {
-  console.log(`[server] Listening on http://localhost:${config.PORT}  (profile: ${config.PROFILE})`)
-})
+function startListening() {
+  app.listen(config.PORT, () => {
+    console.log(`[server] Listening on http://localhost:${config.PORT}  (profile: ${config.PROFILE})`)
+  })
+}
+
+if (config.isDb) {
+  const migrate = require('./db/migrate')
+  migrate()
+    .then(startListening)
+    .catch((err) => {
+      console.error('[migrate] Migration failed, aborting startup:', err)
+      process.exit(1)
+    })
+} else {
+  startListening()
+}
