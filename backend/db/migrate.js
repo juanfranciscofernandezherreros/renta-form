@@ -50,6 +50,38 @@ async function migrate() {
       console.log('[migrate] schema_formulario.sql already applied, skipping.')
     }
 
+    // Ensure documentos table exists (may be missing if DB was created before this table was added)
+    if (!(await tableExists(client, 'documentos'))) {
+      console.log('[migrate] Creating documentos table ...')
+      // Ensure tipo_documento enum exists first
+      await client.query(`
+        DO $$ BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tipo_documento') THEN
+            CREATE TYPE tipo_documento AS ENUM ('dni_anverso', 'dni_reverso', 'adicional');
+          END IF;
+        END $$;
+      `)
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS documentos (
+          id                  UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
+          declaracion_id      UUID            NOT NULL
+                                  REFERENCES declaraciones (id)
+                                  ON DELETE CASCADE,
+          tipo                tipo_documento  NOT NULL,
+          nombre_original     VARCHAR(255)    NOT NULL,
+          mime_type           VARCHAR(100)    NOT NULL,
+          tamanyo_bytes       BIGINT          NOT NULL CHECK (tamanyo_bytes > 0),
+          url                 TEXT,
+          contenido           BYTEA,
+          subido_en           TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+          CONSTRAINT chk_doc_storage CHECK (url IS NOT NULL OR contenido IS NOT NULL)
+        );
+        CREATE INDEX IF NOT EXISTS idx_documentos_declaracion ON documentos (declaracion_id);
+        CREATE INDEX IF NOT EXISTS idx_documentos_tipo ON documentos (tipo);
+      `)
+      console.log('[migrate] documentos table created.')
+    }
+
     // Seed translations if the table is empty
     const { rows: tCount } = await client.query('SELECT COUNT(*) FROM traducciones')
     if (parseInt(tCount[0].count, 10) === 0) {

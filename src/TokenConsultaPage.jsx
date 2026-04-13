@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getDeclaracionByToken } from './apiClient.js'
+import { getDeclaracionByToken, getDocumentoUrl } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
 import { generateDeclaracionPDF, downloadRentaPdf } from './pdfUtils.js'
 
@@ -184,6 +184,26 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion, initi
                     </tr>
                   </tbody>
                 </table>
+                {result.documentos?.length > 0 && (
+                  <div style={{ marginTop: '12px' }}>
+                    <div className="section-title" style={{ fontSize: '0.9em' }}>{t('section5')}</div>
+                    <ul className="documentos-list">
+                      {result.documentos.map(doc => (
+                        <li key={doc.id}>
+                          <a
+                            href={getDocumentoUrl(doc.id)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="doc-download-link"
+                          >
+                            📄 {doc.nombreOriginal}
+                          </a>
+                          <span className="doc-meta">{doc.mimeType} · {Math.round(doc.tamanyo / 1024)} KB</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 <div className="btn-row" style={{ marginTop: '12px' }}>
                   {onEditDeclaracion && (
                     result.estado === 'completado' ? (
