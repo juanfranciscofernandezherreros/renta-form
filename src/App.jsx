@@ -292,17 +292,17 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       <div className="card">
         {/* Buscar renta por código */}
         <form
-          className="buscar-renta-form"
+          className="search-renta-form"
           onSubmit={e => {
             e.preventDefault()
             const trimmed = buscarCodigo.trim()
             if (trimmed) onNavigate('#/consulta/' + encodeURIComponent(trimmed))
           }}
         >
-          <span className="buscar-renta-label">{t('buscarRentaTitle')}</span>
+          <span className="search-renta-label">{t('buscarRentaTitle')}</span>
           <input
             type="text"
-            className="buscar-renta-input"
+            className="search-renta-input"
             value={buscarCodigo}
             onChange={e => setBuscarCodigo(e.target.value)}
             placeholder={t('tokenPlaceholder')}

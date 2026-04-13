@@ -53,14 +53,20 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion, initi
     const trimmed = initialToken.trim()
     if (!trimmed || !getDeclaracionByToken) return
     setLoading(true)
-    getDeclaracionByToken({ token: trimmed }).then(({ data, error: apiError }) => {
-      setLoading(false)
-      if (apiError || !data) {
+    getDeclaracionByToken({ token: trimmed })
+      .then(({ data, error: apiError }) => {
+        if (apiError || !data) {
+          setError(t('tokenNotFound'))
+        } else {
+          setResult(data)
+        }
+      })
+      .catch(() => {
         setError(t('tokenNotFound'))
-      } else {
-        setResult(data)
-      }
-    })
+      })
+      .finally(() => {
+        setLoading(false)
+      })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialToken])
 
