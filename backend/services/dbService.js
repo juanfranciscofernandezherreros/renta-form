@@ -678,17 +678,18 @@ async function listPreguntasAdmin({ activa, page = 1, limit = 10 }) {
 }
 
 async function createPreguntaAdmin(body) {
-  if (!body.texto || !body.seccion || !body.tipoRespuesta) {
+  if (!body.texto || !body.tipoRespuesta) {
     return {
       data: null,
-      error: { message: 'texto, seccion y tipoRespuesta son obligatorios' },
+      error: { message: 'texto y tipoRespuesta son obligatorios' },
       status: 400,
     }
   }
+  const seccion = body.seccion || 'General'
   const { rows } = await pool.query(
     `INSERT INTO preguntas_adicionales (texto, seccion, tipo_respuesta, orden, activa, obligatoria)
      VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-    [body.texto, body.seccion, body.tipoRespuesta, body.orden ?? 0, body.activa !== undefined ? body.activa : true, body.obligatoria !== undefined ? body.obligatoria : false]
+    [body.texto, seccion, body.tipoRespuesta, body.orden ?? 0, body.activa !== undefined ? body.activa : true, body.obligatoria !== undefined ? body.obligatoria : false]
   )
   return { data: rowToPregunta(rows[0]), error: null, status: 201 }
 }

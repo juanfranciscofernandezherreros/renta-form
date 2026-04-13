@@ -329,10 +329,10 @@ async function listPreguntasAdmin({ activa, page = 1, limit = 10 }) {
 }
 
 async function createPreguntaAdmin(body) {
-  if (!body.texto || !body.seccion || !body.tipoRespuesta) {
+  if (!body.texto || !body.tipoRespuesta) {
     return {
       data: null,
-      error: { message: 'texto, seccion y tipoRespuesta son obligatorios' },
+      error: { message: 'texto y tipoRespuesta son obligatorios' },
       status: 400,
     }
   }
@@ -340,7 +340,7 @@ async function createPreguntaAdmin(body) {
   const nueva = {
     id: store.generarPreguntaId(),
     texto: body.texto,
-    seccion: body.seccion,
+    seccion: body.seccion || 'General',
     tipoRespuesta: body.tipoRespuesta,
     orden: body.orden ?? 0,
     activa: body.activa !== undefined ? body.activa : true,
