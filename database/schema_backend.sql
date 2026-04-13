@@ -98,9 +98,10 @@ INSERT INTO secciones (nombre, orden) VALUES
     ('Información Adicional',                  4)
 ON CONFLICT (nombre) DO NOTHING;
 
--- Usuario administrador por defecto (password: admin, sha256 hash)
--- sha256('admin') = 8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918
+-- Usuario administrador por defecto (password: admin, bcrypt cost 12)
+-- Generated with: bcrypt.hash('admin', 12)
+-- Replace this hash in production by calling POST /v1/auth/change-password
 INSERT INTO usuarios (dni_nie, nombre, apellidos, email, telefono, role, password_hash) VALUES
     ('ADMIN', 'Administrador', '', 'admin@renta-form.local', '', 'admin',
-     '$sha256$8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918')
+     '$2b$12$a3QpSIVIiYpVQuwcWtYIbO.5/VbAKdDNClFrl0WTe4GVN7sjA0ruW')
 ON CONFLICT (dni_nie) DO NOTHING;

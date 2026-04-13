@@ -486,7 +486,10 @@ const store = {
   translations: { es: {}, ca: {}, en: {}, fr: {} },
   codigosAcceso: [...codigosAccesoIniciales],
 
-  // Passwords: stored in plain text for seed users; hashed (bcrypt) for new users
+  // Passwords for seed users are stored in plain text here for demo purposes ONLY.
+  // DO NOT use plain-text passwords in production.
+  // Passwords set through the API (changePassword, assignUserAccount) are always
+  // hashed with bcrypt (cost 12) before being stored.
   passwords: new Map([
     ['12345678A', 'renta2025'],
     ['87654321B', 'renta2025'],

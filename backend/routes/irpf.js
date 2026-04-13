@@ -3,7 +3,21 @@
 const { Router } = require('express')
 const multer = require('multer')
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } })
+const ALLOWED_MIME_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png'])
+
+function multerFileFilter(_req, file, cb) {
+  if (ALLOWED_MIME_TYPES.has(file.mimetype)) {
+    cb(null, true)
+  } else {
+    cb(new Error(`Tipo de archivo no permitido: ${file.mimetype}. Se admiten PDF, JPG y PNG.`))
+  }
+}
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: multerFileFilter,
+})
 const router = Router()
 
 function send(res, result) {

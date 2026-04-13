@@ -1,7 +1,17 @@
 'use strict'
 
 const { Router } = require('express')
+const rateLimit = require('express-rate-limit')
+
 const router = Router()
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiados intentos. Inténtalo de nuevo más tarde.' },
+})
 
 /** Sends a service result as an HTTP response. */
 function send(res, result) {
@@ -14,7 +24,7 @@ function send(res, result) {
 
 module.exports = function authRoutes(svc) {
   // POST /v1/auth/login
-  router.post('/login', async (req, res) => {
+  router.post('/login', authLimiter, async (req, res) => {
     const { dniNie, password } = req.body ?? {}
     if (!dniNie || !password) {
       return res.status(400).json({ error: 'dniNie y password son obligatorios' })

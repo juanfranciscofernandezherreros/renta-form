@@ -5,25 +5,24 @@
 //  Mirrors the behaviour of src/mockApi.js in the frontend.
 // ---------------------------------------------------------------------------
 
-const crypto = require('crypto')
+const bcrypt = require('bcrypt')
 const store = require('../data/mockStore')
+
+const BCRYPT_ROUNDS = 12
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-const HASH_PREFIX = '$sha256$'
-
 async function hashPassword(password) {
-  return new Promise((resolve, reject) => {
-    const hash = crypto.createHash('sha256').update(password).digest('hex')
-    resolve(HASH_PREFIX + hash)
-  })
+  return bcrypt.hash(password, BCRYPT_ROUNDS)
 }
 
 async function verifyPassword(input, stored) {
-  if (stored.startsWith(HASH_PREFIX)) {
-    const hashed = await hashPassword(input)
-    return hashed === stored
+  // Plain-text passwords are used in the initial seed data (demo purposes only).
+  // Passwords set through the API are always bcrypt-hashed.
+  if (stored.startsWith('$2b$') || stored.startsWith('$2a$')) {
+    return bcrypt.compare(input, stored)
   }
+  // Fallback: plain-text comparison for seed users (development/demo only)
   return input === stored
 }
 

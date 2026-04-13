@@ -6,23 +6,19 @@
 //  before returning to the API consumer.
 // ---------------------------------------------------------------------------
 
-const crypto = require('crypto')
+const bcrypt = require('bcrypt')
 const pool = require('../db/pool')
+
+const BCRYPT_ROUNDS = 12
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-const HASH_PREFIX = '$sha256$'
-
 function hashPassword(password) {
-  const hash = crypto.createHash('sha256').update(password).digest('hex')
-  return HASH_PREFIX + hash
+  return bcrypt.hash(password, BCRYPT_ROUNDS)
 }
 
 function verifyPassword(input, stored) {
-  if (stored.startsWith(HASH_PREFIX)) {
-    return hashPassword(input) === stored
-  }
-  return input === stored
+  return bcrypt.compare(input, stored)
 }
 
 /** Maps a DB row (snake_case) to the camelCase shape the frontend expects. */
@@ -219,10 +215,10 @@ async function createDeclaracion(body) {
     ) RETURNING id, estado, creado_en`,
     [
       nombre, apellidos, dniNie, email, telefono,
-      viviendaAlquiler, alquilerMenos35 || null, viviendaPropiedad, propiedadAntes2013 || null,
+      viviendaAlquiler, alquilerMenos35 ?? null, viviendaPropiedad, propiedadAntes2013 ?? null,
       pisosAlquiladosTerceros, segundaResidencia,
-      familiaNumerosa, ayudasGobierno, mayores65ACargo, mayoresConviven || null,
-      hijosMenores26, ingresosJuego, ingresosInversiones, comentarios || null,
+      familiaNumerosa, ayudasGobierno, mayores65ACargo, mayoresConviven ?? null,
+      hijosMenores26, ingresosJuego, ingresosInversiones, comentarios ?? null,
     ]
   )
   const row = rows[0]
