@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from './AuthContext.jsx'
 import {
   listDeclaracionesAll,
@@ -8,7 +8,9 @@ import {
   updateDeclaracion,
   assignUserAccount,
   getUserByDniNie,
+  uploadRentaPdf,
 } from './mockApi.js'
+import { downloadRentaPdf } from './pdfUtils.js'
 import PreguntasAdminTab from './PreguntasAdminTab.jsx'
 import SeccionesAdminTab from './SeccionesAdminTab.jsx'
 import DeclaracionPreguntasPanel from './DeclaracionPreguntasPanel.jsx'
@@ -175,6 +177,10 @@ export default function AdminPage({ onNavigate }) {
   const [assignExistingUser, setAssignExistingUser] = useState(null)
   const [assignSaving, setAssignSaving] = useState(false)
 
+  // PDF de la renta
+  const [uploadingPdfId, setUploadingPdfId] = useState(null)
+  const pdfInputRefs = useRef({})
+
   const showToast = useCallback((msg, type = 'success') => {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 4000)
@@ -303,6 +309,50 @@ export default function AdminPage({ onNavigate }) {
     showToast(data?.created
       ? `✅ Cuenta creada para ${assignModal.dniNie}`
       : `🔑 Contraseña actualizada para ${assignModal.dniNie}`)
+  }
+
+  const handlePdfFileChange = async (e, decId) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.type !== 'application/pdf') {
+      showToast('Solo se admiten archivos PDF', 'error')
+      e.target.value = ''
+      return
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('El archivo no puede superar 10 MB', 'error')
+      e.target.value = ''
+      return
+    }
+    setUploadingPdfId(decId)
+    try {
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = ev => resolve(ev.target.result)
+        reader.onerror = () => reject(new Error('Error al leer el archivo'))
+        reader.readAsDataURL(file)
+      })
+      const { data, error: apiErr } = await uploadRentaPdf({ declaracionId: decId, nombre: file.name, dataUrl })
+      if (apiErr) { showToast(`Error al adjuntar PDF: ${apiErr.message}`, 'error'); return }
+      setDeclaraciones(prev => prev.map(d => d.id === decId ? data : d))
+      showToast('✅ PDF de la renta adjuntado correctamente')
+    } catch {
+      showToast('Error al leer el archivo', 'error')
+    } finally {
+      setUploadingPdfId(null)
+      e.target.value = ''
+    }
+  }
+
+  const handleRemoveRentaPdf = async (decId) => {
+    try {
+      const { data, error: apiErr } = await uploadRentaPdf({ declaracionId: decId, nombre: null, dataUrl: null })
+      if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
+      setDeclaraciones(prev => prev.map(d => d.id === decId ? data : d))
+      showToast('PDF de la renta eliminado')
+    } catch {
+      showToast('Error al eliminar el PDF', 'error')
+    }
   }
 
   return (
@@ -527,6 +577,36 @@ export default function AdminPage({ onNavigate }) {
                     <div className="section-title">7. Preguntas Adicionales</div>
                     <DeclaracionPreguntasPanel declaracionId={dec.id} showToast={showToast} />
 
+                    {/* Section 8: PDF de la Renta (admin) */}
+                    <div>
+                      <div className="section-title">8. PDF de la Renta</div>
+                      {dec.rentaPdf ? (
+                        <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                          <span>📄 {dec.rentaPdf.nombre}</span>
+                          <button
+                            type="button"
+                            className="btn btn-secondary btn-sm btn-xs"
+                            onClick={() => downloadRentaPdf(dec.rentaPdf)}
+                            title="Descargar el PDF adjunto"
+                          >
+                            📥 Descargar
+                          </button>
+                          <button
+                            type="button"
+                            className="btn btn-danger btn-sm btn-xs"
+                            onClick={() => handleRemoveRentaPdf(dec.id)}
+                            title="Eliminar el PDF adjunto"
+                          >
+                            🗑️ Eliminar
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ padding: '8px 12px', color: '#888', fontSize: '0.9em' }}>
+                          No hay PDF de la renta adjunto.
+                        </div>
+                      )}
+                    </div>
+
                     {/* Actions */}
                     <div className="btn-row admin-action-row">
                       <button
@@ -553,6 +633,21 @@ export default function AdminPage({ onNavigate }) {
                       >
                         📄 Descargar PDF
                       </button>
+                      <label
+                        className="btn btn-secondary"
+                        style={{ cursor: uploadingPdfId === dec.id ? 'wait' : 'pointer' }}
+                        title="Adjuntar el PDF de la renta para que el contribuyente pueda descargarlo"
+                      >
+                        {uploadingPdfId === dec.id ? '⏳ Subiendo…' : '📎 Adjuntar PDF de la renta'}
+                        <input
+                          ref={el => { pdfInputRefs.current[dec.id] = el }}
+                          type="file"
+                          accept=".pdf,application/pdf"
+                          style={{ display: 'none' }}
+                          disabled={uploadingPdfId === dec.id}
+                          onChange={e => handlePdfFileChange(e, dec.id)}
+                        />
+                      </label>
                       <button
                         type="button"
                         className="btn btn-primary"
