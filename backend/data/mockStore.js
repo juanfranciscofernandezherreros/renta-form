@@ -5,6 +5,8 @@
 //  No localStorage – data lives only while the server process is running.
 // ---------------------------------------------------------------------------
 
+const staticTranslations = require('./translations')
+
 const CATALOGO_PREGUNTAS = {
   secciones: [
     {
@@ -487,7 +489,12 @@ const store = {
   declaracionPreguntas: [...declaracionPreguntaIniciales],
   secciones: [...seccionesIniciales],
   idiomas: [...idiomasIniciales],
-  translations: { es: {}, ca: {}, en: {}, fr: {} },
+  translations: {
+    es: { ...staticTranslations.es },
+    ca: { ...staticTranslations.ca },
+    en: { ...staticTranslations.en },
+    fr: { ...staticTranslations.fr },
+  },
   codigosAcceso: [...codigosAccesoIniciales],
 
   // Passwords for seed users are stored in plain text here for demo purposes ONLY.
