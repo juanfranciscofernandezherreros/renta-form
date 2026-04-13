@@ -161,7 +161,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       seccion.preguntas.some(pregunta => {
         const visible = !pregunta.condicion ||
           form[pregunta.condicion.campo] === pregunta.condicion.valor
-        return visible && !form[pregunta.id]
+        return visible && (form[pregunta.id] == null || form[pregunta.id] === '')
       })
     )
     if (unanswered) {
