@@ -287,6 +287,50 @@ async function updatePreguntaFormulario(campo, { texto, orden, indentada }) {
   return { data: rowToPreguntaFormulario(rows[0]), error: null }
 }
 
+async function listSeccionesFormulario() {
+  const { rows } = await pool.query(
+    'SELECT id, titulo, numero, orden FROM secciones_formulario ORDER BY orden'
+  )
+  return { data: rows.map(r => ({ id: r.id, titulo: r.titulo, numero: r.numero, orden: r.orden })), error: null }
+}
+
+async function createPreguntaFormulario({ campo, texto, seccionId, orden = 0, indentada = false, condicionCampo, condicionValor }) {
+  if (!campo || !String(campo).trim()) return { data: null, error: { message: 'El campo es obligatorio' } }
+  if (!texto || !String(texto).trim()) return { data: null, error: { message: 'El texto es obligatorio' } }
+  if (!seccionId || !String(seccionId).trim()) return { data: null, error: { message: 'La sección es obligatoria' } }
+
+  const { rows } = await pool.query(
+    `INSERT INTO preguntas_formulario (campo, seccion_id, texto, orden, indentada, condicion_campo, condicion_valor)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING campo`,
+    [
+      campo.trim(), seccionId.trim(), texto.trim(), Number(orden), Boolean(indentada),
+      condicionCampo ?? null, condicionValor ?? null,
+    ]
+  )
+  if (!rows.length) return { data: null, error: { message: 'No se pudo crear la pregunta' } }
+
+  const { rows: full } = await pool.query(
+    `SELECT pf.campo, pf.texto, pf.seccion_id, sf.titulo AS seccion_titulo,
+            pf.orden, pf.indentada, pf.condicion_campo, pf.condicion_valor, pf.actualizada_en
+     FROM preguntas_formulario pf
+     JOIN secciones_formulario sf ON sf.id = pf.seccion_id
+     WHERE pf.campo = $1`,
+    [rows[0].campo]
+  )
+  return { data: rowToPreguntaFormulario(full[0]), error: null, status: 201 }
+}
+
+async function deletePreguntaFormulario(campo) {
+  if (!campo) return { data: null, error: { message: 'El campo es obligatorio' } }
+  const { rowCount } = await pool.query(
+    'DELETE FROM preguntas_formulario WHERE campo = $1',
+    [campo]
+  )
+  if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
+  return { data: { deleted: true }, error: null }
+}
+
 // ── Declaraciones ──────────────────────────────────────────────────────────
 
 async function listDeclaraciones({ dniNie, estado, page = 1, limit = 10 }) {
@@ -1015,7 +1059,10 @@ module.exports = {
   updatePreguntaAdmin,
   deletePreguntaAdmin,
   listPreguntasFormulario,
+  listSeccionesFormulario,
+  createPreguntaFormulario,
   updatePreguntaFormulario,
+  deletePreguntaFormulario,
   listSeccionesAdmin,
   createSeccionAdmin,
   updateSeccionAdmin,
