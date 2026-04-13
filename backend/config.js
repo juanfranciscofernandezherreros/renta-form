@@ -4,7 +4,7 @@ require('dotenv').config()
 
 const VALID_PROFILES = ['mock', 'db']
 
-const PROFILE = (process.env.PROFILE || 'mock').toLowerCase()
+const PROFILE = (process.env.PROFILE || 'db').toLowerCase()
 
 if (!VALID_PROFILES.includes(PROFILE)) {
   console.error(`[config] Unknown PROFILE "${PROFILE}". Valid values: ${VALID_PROFILES.join(', ')}`)
@@ -21,7 +21,10 @@ module.exports = {
   isDb: PROFILE === 'db',
 
   // PostgreSQL (only relevant when PROFILE=db)
+  // DATABASE_URL takes precedence over individual PG* variables.
+  // Heroku and Neon both set DATABASE_URL automatically.
   pg: {
+    connectionString: process.env.DATABASE_URL || null,
     host: process.env.PGHOST || 'localhost',
     port: parseInt(process.env.PGPORT || '5432', 10),
     database: process.env.PGDATABASE || 'renta_form',

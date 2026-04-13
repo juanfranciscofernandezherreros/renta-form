@@ -5,7 +5,7 @@
   "type": "commonjs",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "PROFILE=db node server.js",
     "dev": "node --watch server.js",
     "start:mock": "PROFILE=mock node server.js",
     "start:db": "PROFILE=db node server.js"
