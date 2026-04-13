@@ -41,6 +41,38 @@ header .header-text p  { font-size: 0.9rem; opacity: .85; margin-top: 4px; }
   padding: 32px;
 }
 
+/* ── Search renta by code */
+.search-renta-form {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: #f0f4ff;
+  border: 1px solid #c7d4f0;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+}
+.search-renta-label {
+  font-weight: 600;
+  color: #003087;
+  white-space: nowrap;
+  font-size: 0.95rem;
+}
+.search-renta-input {
+  flex: 1;
+  min-width: 220px;
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+.search-renta-input:focus {
+  outline: none;
+  border-color: #003087;
+  box-shadow: 0 0 0 2px rgba(0,48,135,.15);
+}
+
 /* ── Progress bar */
 .progress-bar {
   display: flex;

@@ -73,6 +73,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const [secciones, setSecciones] = useState([])
   const [loadingPreguntas, setLoadingPreguntas] = useState(true)
   const [errorPreguntas, setErrorPreguntas] = useState(null)
+  const [buscarCodigo, setBuscarCodigo] = useState('')
   const topRef = useRef(null)
 
   useEffect(() => {
@@ -289,6 +290,29 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       </header>
 
       <div className="card">
+        {/* Buscar renta por código */}
+        <form
+          className="search-renta-form"
+          onSubmit={e => {
+            e.preventDefault()
+            const trimmed = buscarCodigo.trim()
+            if (trimmed) onNavigate('#/consulta/' + encodeURIComponent(trimmed))
+          }}
+        >
+          <span className="search-renta-label">{t('buscarRentaTitle')}</span>
+          <input
+            type="text"
+            className="search-renta-input"
+            value={buscarCodigo}
+            onChange={e => setBuscarCodigo(e.target.value)}
+            placeholder={t('tokenPlaceholder')}
+            aria-label={t('tokenLabel')}
+          />
+          <button type="submit" className="btn btn-secondary btn-sm" disabled={!buscarCodigo.trim()}>
+            {t('btnConsultar')}
+          </button>
+        </form>
+
         {/* Progress bar */}
         <div className="progress-bar">
           <div className={`step ${submitted ? 'done' : 'active'}`}><div className="bubble">{submitted ? '✓' : '1'}</div> {t('stepId')}</div>
