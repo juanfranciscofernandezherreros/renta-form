@@ -303,8 +303,10 @@ async function createPreguntaFormulario({ campo, texto, seccionId, orden = 0, in
     `INSERT INTO preguntas_formulario (campo, seccion_id, texto, orden, indentada, condicion_campo, condicion_valor)
      VALUES ($1, $2, $3, $4, $5, $6, $7)
      RETURNING campo`,
-    [campo.trim(), seccionId.trim(), texto.trim(), Number(orden), Boolean(indentada),
-     condicionCampo ?? null, condicionValor ?? null]
+    [
+      campo.trim(), seccionId.trim(), texto.trim(), Number(orden), Boolean(indentada),
+      condicionCampo ?? null, condicionValor ?? null,
+    ]
   )
   if (!rows.length) return { data: null, error: { message: 'No se pudo crear la pregunta' } }
 

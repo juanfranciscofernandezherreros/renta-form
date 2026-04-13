@@ -327,12 +327,12 @@ function PreguntasFormularioSection({ showToast }) {
   }
 
   const handleSave = async () => {
+    if (modal === 'create' && !form.campo.trim()) { showToast('El identificador de campo es obligatorio', 'error'); return }
     if (!form.texto.trim()) { showToast('El texto de la pregunta no puede estar vacío', 'error'); return }
-    if (!form.seccionId.trim()) { showToast('La sección es obligatoria', 'error'); return }
+    if (modal === 'create' && !form.seccionId.trim()) { showToast('La sección es obligatoria', 'error'); return }
     setSaving(true)
     try {
       if (modal === 'create') {
-        if (!form.campo.trim()) { showToast('El identificador de campo es obligatorio', 'error'); return }
         const body = {
           campo: form.campo.trim(),
           texto: form.texto.trim(),
