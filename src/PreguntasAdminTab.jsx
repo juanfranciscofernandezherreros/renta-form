@@ -19,7 +19,7 @@ const TIPO_LABELS = {
 }
 const TIPOS = ['yn', 'texto', 'numero', 'fecha', 'importe', 'porcentaje', 'multilinea']
 
-const EMPTY_FORM = { texto: '', seccion: '', tipoRespuesta: 'yn', orden: 0, activa: true }
+const EMPTY_FORM = { texto: '', seccion: '', tipoRespuesta: 'yn', orden: 0, activa: true, obligatoria: false }
 const MAX_ITEMS_FOR_DROPDOWN = 1000
 
 function formatFecha(iso) {
@@ -88,6 +88,7 @@ export default function PreguntasAdminTab({ showToast }) {
       tipoRespuesta: pregunta.tipoRespuesta,
       orden: pregunta.orden,
       activa: pregunta.activa,
+      obligatoria: pregunta.obligatoria ?? false,
     })
     setEditando(pregunta)
     setModal('edit')
@@ -170,6 +171,7 @@ export default function PreguntasAdminTab({ showToast }) {
                 <th>Pregunta</th>
                 <th>Tipo</th>
                 <th>Orden</th>
+                <th>Obligatoria</th>
                 <th>Estado</th>
                 <th>Creada</th>
                 <th style={{ textAlign: 'right' }}>Acciones</th>
@@ -184,6 +186,11 @@ export default function PreguntasAdminTab({ showToast }) {
                   </td>
                   <td>{TIPO_LABELS[p.tipoRespuesta] ?? p.tipoRespuesta}</td>
                   <td>{p.orden}</td>
+                  <td>
+                    <span className={`estado-badge ${p.obligatoria ? 'badge-activa' : 'badge-inactiva'}`}>
+                      {p.obligatoria ? 'Sí' : 'No'}
+                    </span>
+                  </td>
                   <td>
                     <span className={`estado-badge ${p.activa ? 'badge-activa' : 'badge-inactiva'}`}>
                       {p.activa ? 'Activa' : 'Inactiva'}
@@ -284,6 +291,18 @@ export default function PreguntasAdminTab({ showToast }) {
                     style={{ width: 16, height: 16 }}
                   />
                   Activa
+                </label>
+              </div>
+              <div className="field" style={{ justifyContent: 'flex-end' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', textTransform: 'none', fontSize: '.9rem' }}>
+                  <input
+                    type="checkbox"
+                    name="obligatoria"
+                    checked={form.obligatoria}
+                    onChange={handleFormChange}
+                    style={{ width: 16, height: 16 }}
+                  />
+                  Obligatoria
                 </label>
               </div>
             </div>

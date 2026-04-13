@@ -403,7 +403,7 @@ export async function listPreguntasAdmin(options) {
 
 /**
  * Mock de createPreguntaAdmin – crea una nueva pregunta adicional.
- * @param {{ body: { texto: string, seccion: string, tipoRespuesta: string, orden?: number, activa?: boolean } }} options
+ * @param {{ body: { texto: string, seccion: string, tipoRespuesta: string, orden?: number, activa?: boolean, obligatoria?: boolean } }} options
  * @returns {Promise<{ data: object | null, error: { message: string } | null, response: { status: number } }>}
  */
 export async function createPreguntaAdmin(options) {
@@ -420,6 +420,7 @@ export async function createPreguntaAdmin(options) {
     tipoRespuesta: body.tipoRespuesta,
     orden: body.orden ?? 0,
     activa: body.activa !== undefined ? body.activa : true,
+    obligatoria: body.obligatoria !== undefined ? body.obligatoria : false,
     creadaEn: ahora,
     actualizadaEn: ahora,
   }

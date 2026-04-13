@@ -124,9 +124,13 @@ export default function DeclaracionPreguntasPanel({ declaracionId, showToast }) 
           return (
             <div key={a.id} className="dec-pregunta-item">
               <div className="dec-pregunta-texto">
-                <div style={{ fontWeight: 600, fontSize: '.88rem' }}>{p.texto}</div>
+                <div style={{ fontWeight: 600, fontSize: '.88rem' }}>
+                  {p.texto}
+                  {p.obligatoria && <span style={{ color: '#c0392b', marginLeft: 4 }} title="Respuesta obligatoria">*</span>}
+                </div>
                 <div style={{ fontSize: '.76rem', color: '#888', marginTop: 2 }}>
                   📂 {p.seccion} · {TIPO_LABELS[p.tipoRespuesta]}
+                  {p.obligatoria && <span style={{ marginLeft: 8, color: '#c0392b', fontWeight: 600 }}>Obligatoria</span>}
                   {a.respondidaEn && (
                     <span style={{ marginLeft: 8 }}>
                       ✅ Respondida: {new Date(a.respondidaEn).toLocaleDateString('es-ES')}

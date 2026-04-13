@@ -264,6 +264,7 @@ async function createPreguntaAdmin(body) {
     tipoRespuesta: body.tipoRespuesta,
     orden: body.orden ?? 0,
     activa: body.activa !== undefined ? body.activa : true,
+    obligatoria: body.obligatoria !== undefined ? body.obligatoria : false,
     creadaEn: ahora,
     actualizadaEn: ahora,
   }
