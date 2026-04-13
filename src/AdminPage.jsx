@@ -9,6 +9,7 @@ import {
   assignUserAccount,
   getUserByDniNie,
   uploadRentaPdf,
+  getDocumentoUrl,
 } from './apiClient.js'
 import { downloadRentaPdf } from './pdfUtils.js'
 import PreguntasAdminTab from './PreguntasAdminTab.jsx'
@@ -556,7 +557,14 @@ export default function AdminPage({ onNavigate }) {
                         <ul className="documentos-list">
                           {dec.documentos.map(doc => (
                             <li key={doc.id}>
-                              📄 {doc.nombreOriginal}
+                              <a
+                                href={getDocumentoUrl(doc.id)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="doc-download-link"
+                              >
+                                📄 {doc.nombreOriginal}
+                              </a>
                               <span className="doc-meta">{doc.mimeType} · {Math.round(doc.tamanyo / 1024)} KB</span>
                             </li>
                           ))}

@@ -65,13 +65,26 @@ module.exports = function irpfRoutes(svc) {
     upload.fields([
       { name: 'docDniAnverso', maxCount: 1 },
       { name: 'docDniReverso', maxCount: 1 },
-      { name: 'docAdicional', maxCount: 1 },
+      { name: 'docAdicional', maxCount: 10 },
     ]),
     async (req, res) => {
-      const result = await svc.createDeclaracion(req.body)
+      const result = await svc.createDeclaracion(req.body, req.files ?? {})
       send(res, result)
     }
   )
+
+  // GET /v1/irpf/documentos/:docId  (download attachment)
+  router.get('/documentos/:docId', async (req, res) => {
+    const result = await svc.getDocumento(req.params.docId)
+    if (result.error) {
+      const status = result.status || (result.data === null ? 404 : 400)
+      return res.status(status).json({ error: result.error.message })
+    }
+    const { nombreOriginal, mimeType, contenido } = result.data
+    res.setHeader('Content-Type', mimeType)
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(nombreOriginal)}"`)
+    res.send(contenido)
+  })
 
   // GET /v1/irpf/declaraciones/:id/preguntas
   router.get('/declaraciones/:id/preguntas', async (req, res) => {

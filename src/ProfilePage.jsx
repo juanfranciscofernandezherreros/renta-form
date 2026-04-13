@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from './AuthContext.jsx'
-import { listDeclaraciones, changePassword } from './apiClient.js'
+import { listDeclaraciones, changePassword, getDocumentoUrl } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
 import Footer from './Footer.jsx'
 import { generateDeclaracionPDF, downloadRentaPdf } from './pdfUtils.js'
@@ -232,7 +232,14 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
                         <ul className="documentos-list">
                           {dec.documentos.map(doc => (
                             <li key={doc.id}>
-                              📄 {doc.nombreOriginal}
+                              <a
+                                href={getDocumentoUrl(doc.id)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="doc-download-link"
+                              >
+                                📄 {doc.nombreOriginal}
+                              </a>
                               <span className="doc-meta">{doc.mimeType} · {Math.round(doc.tamanyo / 1024)} KB</span>
                             </li>
                           ))}

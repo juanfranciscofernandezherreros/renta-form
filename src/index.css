@@ -619,6 +619,15 @@ footer {
   font-weight: 400;
 }
 
+.doc-download-link {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 500;
+}
+.doc-download-link:hover {
+  text-decoration: underline;
+}
+
 /* ── Yes/No question list */
 .questions-list {
   display: flex;

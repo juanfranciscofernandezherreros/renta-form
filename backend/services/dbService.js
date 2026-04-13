@@ -96,6 +96,18 @@ function rowToUser(row) {
   }
 }
 
+function rowToDocumento(row) {
+  if (!row) return null
+  return {
+    id: row.id,
+    tipo: row.tipo,
+    nombreOriginal: row.nombre_original,
+    mimeType: row.mime_type,
+    tamanyo: row.tamanyo_bytes,
+    subidoEn: row.subido_en,
+  }
+}
+
 function rowToIdioma(row) {
   if (!row) return null
   return {
@@ -291,7 +303,19 @@ async function listDeclaraciones({ dniNie, estado, page = 1, limit = 10 }) {
     `SELECT * FROM declaraciones ${where} ORDER BY creado_en DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params
   )
-  return { data: { data: rows.map(rowToDeclaracion), total, page, limit }, error: null }
+  const declaraciones = rows.map(rowToDeclaracion)
+  if (declaraciones.length) {
+    const ids = declaraciones.map(d => d.id)
+    const { rows: docRows } = await pool.query(
+      `SELECT id, declaracion_id, tipo, nombre_original, mime_type, tamanyo_bytes, subido_en
+       FROM documentos WHERE declaracion_id = ANY($1) ORDER BY subido_en`,
+      [ids]
+    )
+    for (const dec of declaraciones) {
+      dec.documentos = docRows.filter(r => r.declaracion_id === dec.id).map(rowToDocumento)
+    }
+  }
+  return { data: { data: declaraciones, total, page, limit }, error: null }
 }
 
 async function listDeclaracionesAll({ dniNie, estado, page = 1, limit = 20 }) {
@@ -311,10 +335,22 @@ async function listDeclaracionesAll({ dniNie, estado, page = 1, limit = 20 }) {
     `SELECT * FROM declaraciones ${where} ORDER BY creado_en DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
     params
   )
-  return { data: { data: rows.map(rowToDeclaracion), total, page, limit }, error: null }
+  const declaraciones = rows.map(rowToDeclaracion)
+  if (declaraciones.length) {
+    const ids = declaraciones.map(d => d.id)
+    const { rows: docRows } = await pool.query(
+      `SELECT id, declaracion_id, tipo, nombre_original, mime_type, tamanyo_bytes, subido_en
+       FROM documentos WHERE declaracion_id = ANY($1) ORDER BY subido_en`,
+      [ids]
+    )
+    for (const dec of declaraciones) {
+      dec.documentos = docRows.filter(r => r.declaracion_id === dec.id).map(rowToDocumento)
+    }
+  }
+  return { data: { data: declaraciones, total, page, limit }, error: null }
 }
 
-async function createDeclaracion(body) {
+async function createDeclaracion(body, files = {}) {
   const {
     nombre, apellidos, dniNie, email, telefono,
     viviendaAlquiler, alquilerMenos35, viviendaPropiedad, propiedadAntes2013,
@@ -342,20 +378,52 @@ async function createDeclaracion(body) {
     ]
   )
   const row = rows[0]
-  return { data: { id: row.id, estado: row.estado, creadoEn: row.creado_en }, error: null, status: 201 }
+  const declaracionId = row.id
+
+  // Save uploaded files to documentos table
+  const FILE_TIPO_MAP = {
+    docDniAnverso: 'dni_anverso',
+    docDniReverso: 'dni_reverso',
+    docAdicional: 'adicional',
+  }
+  for (const [fieldName, tipo] of Object.entries(FILE_TIPO_MAP)) {
+    const fieldFiles = files[fieldName]
+    if (!fieldFiles || !fieldFiles.length) continue
+    for (const f of fieldFiles) {
+      await pool.query(
+        `INSERT INTO documentos (declaracion_id, tipo, nombre_original, mime_type, tamanyo_bytes, contenido)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [declaracionId, tipo, f.originalname, f.mimetype, f.size, f.buffer]
+      )
+    }
+  }
+
+  return { data: { id: declaracionId, estado: row.estado, creadoEn: row.creado_en }, error: null, status: 201 }
 }
 
 async function getDeclaracion(id) {
   const { rows } = await pool.query('SELECT * FROM declaraciones WHERE id = $1', [id])
   if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
-  return { data: rowToDeclaracion(rows[0]), error: null }
+  const dec = rowToDeclaracion(rows[0])
+  const { rows: docRows } = await pool.query(
+    'SELECT id, tipo, nombre_original, mime_type, tamanyo_bytes, subido_en FROM documentos WHERE declaracion_id = $1 ORDER BY subido_en',
+    [id]
+  )
+  dec.documentos = docRows.map(rowToDocumento)
+  return { data: dec, error: null }
 }
 
 async function getDeclaracionByToken(token) {
   if (!token) return { data: null, error: { message: 'Token requerido' } }
   const { rows } = await pool.query('SELECT * FROM declaraciones WHERE id = $1', [token.trim()])
   if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
-  return { data: rowToDeclaracion(rows[0]), error: null }
+  const dec = rowToDeclaracion(rows[0])
+  const { rows: docRows } = await pool.query(
+    'SELECT id, tipo, nombre_original, mime_type, tamanyo_bytes, subido_en FROM documentos WHERE declaracion_id = $1 ORDER BY subido_en',
+    [dec.id]
+  )
+  dec.documentos = docRows.map(rowToDocumento)
+  return { data: dec, error: null }
 }
 
 async function updateEstadoDeclaracion(id, estado) {
@@ -851,6 +919,24 @@ async function updateIdiomaContent(id, body) {
   return { data: { code, content }, error: null }
 }
 
+async function getDocumento(docId) {
+  const { rows } = await pool.query(
+    'SELECT id, nombre_original, mime_type, tamanyo_bytes, contenido FROM documentos WHERE id = $1',
+    [docId]
+  )
+  if (!rows.length) return { data: null, error: { message: 'Documento no encontrado' } }
+  const row = rows[0]
+  return {
+    data: {
+      nombreOriginal: row.nombre_original,
+      mimeType: row.mime_type,
+      tamanyo: row.tamanyo_bytes,
+      contenido: row.contenido,
+    },
+    error: null,
+  }
+}
+
 // ── Exports ────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -867,6 +953,7 @@ module.exports = {
   updateDeclaracion,
   deleteDeclaracion,
   sendEmailDeclaracion,
+  getDocumento,
   getDeclaracionPreguntas,
   upsertDeclaracionPreguntas,
   removeDeclaracionPregunta,

@@ -153,7 +153,7 @@ async function listDeclaracionesAll({ dniNie, estado, page = 1, limit = 20 }) {
   return { data: { data, total, page, limit }, error: null }
 }
 
-async function createDeclaracion(body) {
+async function createDeclaracion(body, _files = {}) {
   const ahora = new Date().toISOString()
   const id = store.generarId()
   const nueva = {
@@ -674,6 +674,7 @@ module.exports = {
   updateDeclaracion,
   deleteDeclaracion,
   sendEmailDeclaracion,
+  getDocumento: async () => ({ data: null, error: { message: 'No disponible en modo mock' } }),
   getDeclaracionPreguntas,
   upsertDeclaracionPreguntas,
   removeDeclaracionPregunta,
