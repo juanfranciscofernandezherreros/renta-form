@@ -3,6 +3,7 @@
 const fs = require('fs')
 const path = require('path')
 const pool = require('./pool')
+const staticTranslations = require('../data/translations')
 
 const SCHEMA_SQL = path.join(__dirname, '../../database/schema.sql')
 const BACKEND_SQL = path.join(__dirname, '../../database/schema_backend.sql')
@@ -47,6 +48,24 @@ async function migrate() {
       console.log('[migrate] schema_formulario.sql applied.')
     } else {
       console.log('[migrate] schema_formulario.sql already applied, skipping.')
+    }
+
+    // Seed translations if the table is empty
+    const { rows: tCount } = await client.query('SELECT COUNT(*) FROM traducciones')
+    if (parseInt(tCount[0].count, 10) === 0) {
+      console.log('[migrate] Seeding traducciones ...')
+      for (const [code, keys] of Object.entries(staticTranslations)) {
+        for (const [clave, valor] of Object.entries(keys)) {
+          await client.query(
+            `INSERT INTO traducciones (code, clave, valor) VALUES ($1, $2, $3)
+             ON CONFLICT (code, clave) DO NOTHING`,
+            [code, clave, String(valor)]
+          )
+        }
+      }
+      console.log('[migrate] traducciones seeded.')
+    } else {
+      console.log('[migrate] traducciones already seeded, skipping.')
     }
   } finally {
     client.release()
