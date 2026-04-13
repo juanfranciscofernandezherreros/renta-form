@@ -120,7 +120,7 @@ async function loginUser({ dniNie, password }) {
   if (!rows.length) return { data: null, error: { message: 'DNI/NIE no encontrado' } }
   const user = rows[0]
   if (user.bloqueado) return { data: null, error: { message: 'USER_BLOCKED' } }
-  if (!verifyPassword(password, user.password_hash)) {
+  if (!(await verifyPassword(password, user.password_hash))) {
     return { data: null, error: { message: 'Contraseña incorrecta' } }
   }
   return { data: { dniNie, role: user.role }, error: null }
@@ -141,10 +141,10 @@ async function changePassword({ dniNie, oldPassword, newPassword }) {
     [dniNie]
   )
   if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
-  if (!verifyPassword(oldPassword, rows[0].password_hash)) {
+  if (!(await verifyPassword(oldPassword, rows[0].password_hash))) {
     return { data: null, error: { message: 'La contraseña actual es incorrecta' } }
   }
-  const hashed = hashPassword(newPassword)
+  const hashed = await hashPassword(newPassword)
   await pool.query('UPDATE usuarios SET password_hash = $1 WHERE dni_nie = $2', [hashed, dniNie])
   return { data: { success: true }, error: null }
 }
@@ -592,7 +592,7 @@ async function assignUserAccount({ dniNie, password, declaracionId }) {
   const dec = decCheck.rows[0]
   const existing = await pool.query('SELECT dni_nie FROM usuarios WHERE dni_nie = $1', [dniNie])
   const isNew = !existing.rows.length
-  const hashed = hashPassword(password)
+  const hashed = await hashPassword(password)
   if (isNew) {
     await pool.query(
       `INSERT INTO usuarios (dni_nie, nombre, apellidos, email, telefono, role, password_hash)
