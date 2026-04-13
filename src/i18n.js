@@ -51,6 +51,9 @@ const translations = {
     btnSubmitting: '⏳ Enviando…',
     // Confirm
     confirmClear: '¿Seguro que quiere limpiar todos los campos?',
+    confirmDeleteDoc: '¿Eliminar este documento?',
+    // Documents - edit mode
+    docsAlreadyAttached: 'Documentos ya adjuntos:',
     // Toast
     toastSuccess:
       '✅ Cuestionario enviado correctamente. Nos pondremos en contacto contigo en breve.',
@@ -218,6 +221,8 @@ const translations = {
     btnSubmit: '📤 Envoyer le questionnaire',
     btnSubmitting: '⏳ Envoi en cours…',
     confirmClear: 'Êtes-vous sûr de vouloir effacer tous les champs ?',
+    confirmDeleteDoc: 'Supprimer ce document ?',
+    docsAlreadyAttached: 'Documents déjà joints :',
     toastSuccess:
       '✅ Questionnaire envoyé avec succès. Nous vous contacterons prochainement.',
     toastErrorHttp: '❌ Erreur lors de l\'envoi (HTTP',
@@ -374,6 +379,8 @@ const translations = {
     btnSubmit: '📤 Submit questionnaire',
     btnSubmitting: '⏳ Sending…',
     confirmClear: 'Are you sure you want to clear all fields?',
+    confirmDeleteDoc: 'Delete this document?',
+    docsAlreadyAttached: 'Already attached documents:',
     toastSuccess: '✅ Questionnaire submitted successfully. We will contact you shortly.',
     toastErrorHttp: '❌ Error submitting questionnaire (HTTP',
     toastErrorHttpSuffix: '). Please try again.',
@@ -530,6 +537,8 @@ const translations = {
     btnSubmit: '📤 Enviar qüestionari',
     btnSubmitting: '⏳ Enviant…',
     confirmClear: 'Esteu segur que voleu netejar tots els camps?',
+    confirmDeleteDoc: 'Eliminar aquest document?',
+    docsAlreadyAttached: 'Documents ja adjunts:',
     toastSuccess:
       '✅ Qüestionari enviat correctament. Ens posarem en contacte amb vosaltres aviat.',
     toastErrorHttp: '❌ Error en enviar el qüestionari (HTTP',

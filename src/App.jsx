@@ -146,7 +146,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   }
 
   const handleDeleteDocumento = async (docId) => {
-    if (!window.confirm(t('confirmDeleteDoc') || '¿Eliminar este documento?')) return
+    if (!window.confirm(t('confirmDeleteDoc'))) return
     setDeletingDocId(docId)
     const { error } = await deleteDocumento({ path: { docId } })
     setDeletingDocId(null)
@@ -467,7 +467,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
               {editId && editDocumentos.length > 0 && (
                 <div style={{ marginBottom: '12px' }}>
                   <div style={{ fontSize: '0.9em', fontWeight: 600, marginBottom: '6px' }}>
-                    {t('docsAlreadyAttached') || 'Documentos ya adjuntos:'}
+                    {t('docsAlreadyAttached')}
                   </div>
                   <ul className="documentos-list">
                     {editDocumentos.map(doc => (

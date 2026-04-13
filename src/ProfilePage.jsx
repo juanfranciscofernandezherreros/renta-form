@@ -103,7 +103,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
   }
 
   const handleDeleteDocumento = async (decId, docId) => {
-    if (!window.confirm(t('confirmDeleteDoc') || '¿Eliminar este documento?')) return
+    if (!window.confirm(t('confirmDeleteDoc'))) return
     setDeletingDocId(docId)
     const { error: apiError } = await deleteDocumento({ path: { docId } })
     setDeletingDocId(null)

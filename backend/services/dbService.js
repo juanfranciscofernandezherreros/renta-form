@@ -517,7 +517,8 @@ async function updateDeclaracion(id, body, files = {}) {
     return { data: rowToDeclaracion(declaracionRow), error: null }
   } catch (err) {
     await client.query('ROLLBACK')
-    throw err
+    console.error('[DB] updateDeclaracion transaction error:', err)
+    return { data: null, error: { message: 'Error al actualizar la declaración' } }
   } finally {
     client.release()
   }

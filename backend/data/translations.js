@@ -49,8 +49,8 @@ const translations = {
     btnSubmit: '📤 Enviar cuestionario',
     btnSubmitting: '⏳ Enviando…',
     confirmClear: '¿Seguro que quiere limpiar todos los campos?',
-    toastSuccess:
-      '✅ Cuestionario enviado correctamente. Nos pondremos en contacto contigo en breve.',
+    confirmDeleteDoc: '¿Eliminar este documento?',
+    docsAlreadyAttached: 'Documentos ya adjuntos:',
     toastErrorHttp: '❌ Error al enviar el cuestionario (HTTP',
     toastErrorHttpSuffix: '). Inténtelo de nuevo.',
     toastErrorNetwork:
@@ -204,8 +204,8 @@ const translations = {
     btnSubmit: '📤 Envoyer le questionnaire',
     btnSubmitting: '⏳ Envoi en cours…',
     confirmClear: 'Êtes-vous sûr de vouloir effacer tous les champs ?',
-    toastSuccess:
-      '✅ Questionnaire envoyé avec succès. Nous vous contacterons prochainement.',
+    confirmDeleteDoc: 'Supprimer ce document ?',
+    docsAlreadyAttached: 'Documents déjà joints :',
     toastErrorHttp: "❌ Erreur lors de l'envoi (HTTP",
     toastErrorHttpSuffix: '). Veuillez réessayer.',
     toastErrorNetwork:
@@ -357,7 +357,8 @@ const translations = {
     btnSubmit: '📤 Submit questionnaire',
     btnSubmitting: '⏳ Sending…',
     confirmClear: 'Are you sure you want to clear all fields?',
-    toastSuccess: '✅ Questionnaire submitted successfully. We will contact you shortly.',
+    confirmDeleteDoc: 'Delete this document?',
+    docsAlreadyAttached: 'Already attached documents:',
     toastErrorHttp: '❌ Error submitting questionnaire (HTTP',
     toastErrorHttpSuffix: '). Please try again.',
     toastErrorNetwork:
@@ -510,8 +511,8 @@ const translations = {
     btnSubmit: '📤 Enviar qüestionari',
     btnSubmitting: '⏳ Enviant…',
     confirmClear: 'Esteu segur que voleu netejar tots els camps?',
-    toastSuccess:
-      '✅ Qüestionari enviat correctament. Ens posarem en contacte amb vosaltres aviat.',
+    confirmDeleteDoc: 'Eliminar aquest document?',
+    docsAlreadyAttached: 'Documents ja adjunts:',
     toastErrorHttp: '❌ Error en enviar el qüestionari (HTTP',
     toastErrorHttpSuffix: '). Torneu-ho a intentar.',
     toastErrorNetwork:
