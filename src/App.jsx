@@ -1,15 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
-import { getPreguntas as getPreguntasReal, createDeclaracion as createDeclaracionReal } from './api/index.ts'
-import { getPreguntas as getPreguntasMock, createDeclaracion as createDeclaracionMock, updateDeclaracion as updateDeclaracionMock } from './mockApi.js'
-import { DEMO_MODE } from './constants.js'
+import { getPreguntas, createDeclaracion, updateDeclaracion } from './apiClient.js'
 import { useAuth } from './AuthContext.jsx'
 import { useLanguage } from './LanguageContext.jsx'
 import Footer from './Footer.jsx'
-
-const getPreguntas = DEMO_MODE ? getPreguntasMock : getPreguntasReal
-const createDeclaracion = DEMO_MODE ? createDeclaracionMock : createDeclaracionReal
-const updateDeclaracion = DEMO_MODE ? updateDeclaracionMock : null
 
 const TOKENS_STORAGE_KEY = 'renta_form_tokens'
 
@@ -204,7 +198,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
     setSubmitting(true)
     try {
       if (editId && updateDeclaracion) {
-        // Update existing declaration (only available in DEMO_MODE; falls through to create otherwise)
+        // Update existing declaration
         const updateBody = {
           nombre: form.nombre,
           apellidos: form.apellidos,

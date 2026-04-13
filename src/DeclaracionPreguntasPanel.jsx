@@ -4,7 +4,7 @@ import {
   upsertDeclaracionPreguntas,
   removeDeclaracionPregunta,
   listPreguntasAdmin,
-} from './mockApi.js'
+} from './apiClient.js'
 
 const TIPO_LABELS = {
   yn: 'Sí / No',

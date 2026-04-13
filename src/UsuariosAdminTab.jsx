@@ -9,8 +9,8 @@ import {
   setUserSecciones,
   listPreguntasAdmin,
   listSeccionesAdmin,
-} from './mockApi.js'
-import { declaracionesStore } from './demoData.js'
+  listDeclaraciones,
+} from './apiClient.js'
 import Pagination from './Pagination.jsx'
 
 // Re-use the same PDF logic as AdminPage
@@ -68,8 +68,9 @@ function formatFecha(iso) {
   return new Date(iso).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
-function downloadUserDeclaracionPdf(dniNie) {
-  const dec = declaracionesStore.find(d => d.dniNie === dniNie)
+async function downloadUserDeclaracionPdf(dniNie) {
+  const { data: result } = await listDeclaraciones({ query: { dniNie, limit: 1 } })
+  const dec = result?.data?.[0]
   if (!dec) {
     alert('Este usuario no tiene ninguna declaración registrada.')
     return

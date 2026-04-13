@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from './AuthContext.jsx'
-import { loginUser as loginUserMock } from './mockApi.js'
-import { DEMO_MODE, ERROR_USER_BLOCKED } from './constants.js'
+import { loginUser } from './apiClient.js'
+import { ERROR_USER_BLOCKED } from './constants.js'
 import { useLanguage } from './LanguageContext.jsx'
 
 const DNI_NIE_REGEX = /^[0-9XYZ][0-9]{7}[A-Z]$/
@@ -40,13 +40,7 @@ export default function LoginPage({ onNavigate }) {
     }
     setLoading(true)
     const dniNie = form.dniNie.trim().toUpperCase()
-    const loginFn = DEMO_MODE ? loginUserMock : null
-    if (!loginFn) {
-      setErrors({ global: t('errRealModeNotImpl') })
-      setLoading(false)
-      return
-    }
-    const { data, error } = await loginFn({ dniNie, password: form.password })
+    const { data, error } = await loginUser({ dniNie, password: form.password })
     setLoading(false)
     if (error) {
       setErrors({ global: error.message === ERROR_USER_BLOCKED ? t('errUserBlocked') : error.message })

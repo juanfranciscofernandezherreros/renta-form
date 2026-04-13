@@ -6,7 +6,7 @@ import {
   deleteSeccionAdmin,
   getSeccionDeclaraciones,
   getSeccionPreguntas,
-} from './mockApi.js'
+} from './apiClient.js'
 import Pagination from './Pagination.jsx'
 
 const EMPTY_FORM = { nombre: '', orden: 1, activa: true }

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from './AuthContext.jsx'
-import { verificarCodigoAcceso } from './mockApi.js'
-import { DEMO_MODE } from './constants.js'
+import { verificarCodigoAcceso } from './apiClient.js'
 
 export default function IntranetLoginPage() {
   const { grantIntranetAccess } = useAuth()
@@ -18,14 +17,7 @@ export default function IntranetLoginPage() {
     setLoading(true)
     setError(null)
 
-    const verificarFn = DEMO_MODE ? verificarCodigoAcceso : null
-    if (!verificarFn) {
-      setError('Modo real no implementado')
-      setLoading(false)
-      return
-    }
-
-    const { data, error: apiError } = await verificarFn({ codigo })
+    const { data, error: apiError } = await verificarCodigoAcceso({ codigo })
     setLoading(false)
     if (apiError) {
       setError(apiError.message)
@@ -52,12 +44,6 @@ export default function IntranetLoginPage() {
           <br />
           Esta aplicación es de uso interno. Introduzca el código de acceso
           proporcionado por su gestor para continuar.
-          {DEMO_MODE && (
-            <>
-              <br /><br />
-              <strong>Código de demo:</strong> <code>intranet2025</code>
-            </>
-          )}
         </div>
 
         <form onSubmit={handleSubmit} noValidate>
