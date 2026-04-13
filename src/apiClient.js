@@ -133,7 +133,46 @@ export async function updateEstadoDeclaracion(options) {
 export async function updateDeclaracion(options) {
   const id = options?.path?.id
   const body = options?.body ?? {}
+
+  // If any file fields are present, send as multipart/form-data
+  const fileFields = ['docDniAnverso', 'docDniReverso', 'docAdicional']
+  const hasFiles = fileFields.some(f => body[f] != null)
+
+  if (hasFiles) {
+    const fd = new FormData()
+    for (const [key, value] of Object.entries(body)) {
+      if (value == null) continue
+      if (fileFields.includes(key)) {
+        if (Array.isArray(value)) {
+          for (const file of value) {
+            fd.append(key, file)
+          }
+        } else {
+          fd.append(key, value)
+        }
+      } else {
+        fd.append(key, String(value))
+      }
+    }
+    const url = `${API_BASE_URL}/irpf/declaraciones/${encodeURIComponent(id)}`
+    try {
+      const res = await fetch(url, { method: 'PUT', body: fd })
+      const json = await res.json().catch(() => null)
+      if (!res.ok) {
+        return { data: null, error: { message: json?.error ?? res.statusText }, response: { status: res.status } }
+      }
+      return { data: json, error: null, response: { status: res.status } }
+    } catch (err) {
+      return { data: null, error: { message: err.message ?? 'Error de red' } }
+    }
+  }
+
   return request('PUT', `/irpf/declaraciones/${encodeURIComponent(id)}`, { body })
+}
+
+export async function deleteDocumento(options) {
+  const docId = options?.path?.docId
+  return request('DELETE', `/irpf/documentos/${encodeURIComponent(docId)}`)
 }
 
 export async function deleteDeclaracion(options) {
