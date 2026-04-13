@@ -74,6 +74,12 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
   const [pwLoading, setPwLoading] = useState(false)
 
   const [deletingDocId, setDeletingDocId] = useState(null)
+  const [toast, setToast] = useState(null)
+
+  const showToast = (msg, type = 'success') => {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 4000)
+  }
 
   useEffect(() => {
     if (!user) return
@@ -97,12 +103,12 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
   }
 
   const handleDeleteDocumento = async (decId, docId) => {
-    if (!window.confirm('¿Eliminar este documento?')) return
+    if (!window.confirm(t('confirmDeleteDoc') || '¿Eliminar este documento?')) return
     setDeletingDocId(docId)
     const { error: apiError } = await deleteDocumento({ path: { docId } })
     setDeletingDocId(null)
     if (apiError) {
-      alert(`Error al eliminar: ${apiError.message}`)
+      showToast(`Error al eliminar: ${apiError.message}`, 'error')
       return
     }
     setDeclaraciones(prev =>
@@ -172,6 +178,12 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
           </button>
         </nav>
       </header>
+
+      {toast && (
+        <div className={`toast ${toast.type ?? 'success'}`} role="alert">
+          {toast.msg}
+        </div>
+      )}
 
       <div className="card">
         <div className="profile-header">
