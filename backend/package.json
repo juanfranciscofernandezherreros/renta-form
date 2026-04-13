@@ -1,0 +1,23 @@
+{
+  "name": "renta-form-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Renta Form – supports mock and PostgreSQL profiles",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "start:mock": "PROFILE=mock node server.js",
+    "start:db": "PROFILE=db node server.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "multer": "^2.1.1",
+    "pg": "^8.13.3"
+  }
+}
