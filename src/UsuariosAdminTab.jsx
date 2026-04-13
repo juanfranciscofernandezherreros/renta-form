@@ -5,9 +5,7 @@ import {
   reportUser,
   deleteUser,
   sendEmailToUser,
-  setUserPreguntas,
   setUserSecciones,
-  listPreguntasAdmin,
   listSeccionesAdmin,
   listDeclaraciones,
 } from './apiClient.js'
@@ -157,13 +155,10 @@ export default function UsuariosAdminTab({ showToast }) {
   const [emailMsg, setEmailMsg] = useState('')
   const [emailSending, setEmailSending] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
-  const [preguntasModal, setPreguntasModal] = useState(null) // { user }
   const [seccionesModal, setSeccionesModal] = useState(null) // { user }
 
   // Assign modals state
-  const [allPreguntas, setAllPreguntas] = useState([])
   const [allSecciones, setAllSecciones] = useState([])
-  const [selectedPreguntaIds, setSelectedPreguntaIds] = useState([])
   const [selectedSeccionIds, setSelectedSeccionIds] = useState([])
   const [assigning, setAssigning] = useState(false)
 
@@ -189,9 +184,8 @@ export default function UsuariosAdminTab({ showToast }) {
     return () => { cancelled = true }
   }, [filtroBloqueado, filtroDenunciado, page, refreshKey])
 
-  // Load all questions & sections once (for modals)
+  // Load all sections once (for modal)
   useEffect(() => {
-    listPreguntasAdmin({ query: { page: 1, limit: MAX_ITEMS_FOR_DROPDOWN } }).then(({ data }) => setAllPreguntas(data?.data ?? []))
     listSeccionesAdmin({ query: { page: 1, limit: MAX_ITEMS_FOR_DROPDOWN } }).then(({ data }) => setAllSecciones(data?.data ?? []))
   }, [])
 
@@ -240,28 +234,9 @@ export default function UsuariosAdminTab({ showToast }) {
     showToast(`📧 Email enviado a ${emailModal.email}`)
   }
 
-  const openPreguntasModal = (user) => {
-    setSelectedPreguntaIds([...(user.preguntasAsignadas ?? [])])
-    setPreguntasModal(user)
-  }
-
   const openSeccionesModal = (user) => {
     setSelectedSeccionIds([...(user.seccionesAsignadas ?? [])])
     setSeccionesModal(user)
-  }
-
-  const handleSavePreguntas = async () => {
-    if (!preguntasModal) return
-    setAssigning(true)
-    const { error: apiErr } = await setUserPreguntas({
-      path: { dniNie: preguntasModal.dniNie },
-      body: { preguntaIds: selectedPreguntaIds },
-    })
-    setAssigning(false)
-    if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
-    showToast('Preguntas asignadas correctamente')
-    setPreguntasModal(null)
-    refresh()
   }
 
   const handleSaveSecciones = async () => {
@@ -327,7 +302,6 @@ export default function UsuariosAdminTab({ showToast }) {
                 <th>DNI / NIE</th>
                 <th>Email</th>
                 <th>Estado</th>
-                <th>Preguntas</th>
                 <th>Secciones</th>
                 <th>Registrado</th>
                 <th style={{ textAlign: 'right' }}>Acciones</th>
@@ -358,12 +332,6 @@ export default function UsuariosAdminTab({ showToast }) {
                     </div>
                   </td>
                   <td>
-                    {u.preguntasAsignadas.length === 0
-                      ? <span style={{ color: '#aaa', fontSize: '.8rem' }}>—</span>
-                      : <span className="admin-stat-badge" style={{ fontSize: '.75rem' }}>{u.preguntasAsignadas.length} asignada{u.preguntasAsignadas.length !== 1 ? 's' : ''}</span>
-                    }
-                  </td>
-                  <td>
                     {u.seccionesAsignadas.length === 0
                       ? <span style={{ color: '#aaa', fontSize: '.8rem' }}>—</span>
                       : <span className="admin-stat-badge" style={{ fontSize: '.75rem' }}>{u.seccionesAsignadas.length} asignada{u.seccionesAsignadas.length !== 1 ? 's' : ''}</span>
@@ -387,14 +355,6 @@ export default function UsuariosAdminTab({ showToast }) {
                         title={u.denunciado ? 'Retirar denuncia' : 'Denunciar usuario'}
                       >
                         {u.denunciado ? '✅ Retirar denuncia' : '🚨 Denunciar'}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm btn-xs"
-                        onClick={() => openPreguntasModal(u)}
-                        title="Asignar preguntas al usuario"
-                      >
-                        ❓ Preguntas
                       </button>
                       <button
                         type="button"
@@ -492,44 +452,6 @@ export default function UsuariosAdminTab({ showToast }) {
               </button>
               <button type="button" className="btn btn-danger" onClick={() => handleDelete(confirmDelete)}>
                 🗑️ Eliminar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Assign preguntas modal */}
-      {preguntasModal && (
-        <div className="admin-modal-overlay" onClick={() => setPreguntasModal(null)}>
-          <div className="admin-modal" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
-            <h2 className="admin-modal-title">❓ Asignar preguntas a {preguntasModal.nombre} {preguntasModal.apellidos}</h2>
-            <p className="admin-modal-desc">Selecciona las preguntas que se mostrarán a este usuario.</p>
-            {allPreguntas.length === 0 && (
-              <div className="info-box">No hay preguntas adicionales disponibles. Créalas en la pestaña «Preguntas adicionales».</div>
-            )}
-            <div style={{ maxHeight: 300, overflowY: 'auto', marginBottom: 16 }}>
-              {allPreguntas.map(p => (
-                <label key={p.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, marginBottom: 8, cursor: 'pointer', fontSize: '.9rem' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedPreguntaIds.includes(p.id)}
-                    onChange={() => toggleId(selectedPreguntaIds, setSelectedPreguntaIds, p.id)}
-                    style={{ marginTop: 2, width: 16, height: 16, flexShrink: 0 }}
-                  />
-                  <span>
-                    <strong>{p.texto}</strong>
-                    <span style={{ color: '#666', fontSize: '.8rem', marginLeft: 6 }}>({p.seccion})</span>
-                    {!p.activa && <span className="estado-badge badge-inactiva" style={{ marginLeft: 6, fontSize: '.7rem' }}>Inactiva</span>}
-                  </span>
-                </label>
-              ))}
-            </div>
-            <div className="btn-row">
-              <button type="button" className="btn btn-secondary" onClick={() => setPreguntasModal(null)}>
-                Cancelar
-              </button>
-              <button type="button" className="btn btn-primary" disabled={assigning} onClick={handleSavePreguntas}>
-                {assigning ? 'Guardando…' : '💾 Guardar'}
               </button>
             </div>
           </div>

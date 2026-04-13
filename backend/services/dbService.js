@@ -579,153 +579,6 @@ async function sendEmailDeclaracion({ declaracionId, email, mensaje }) {
   return { data: { success: true, to: email }, error: null }
 }
 
-// ── Declaracion ↔ Preguntas ────────────────────────────────────────────────
-
-async function getDeclaracionPreguntas(id) {
-  const decCheck = await pool.query('SELECT id FROM declaraciones WHERE id = $1', [id])
-  if (!decCheck.rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
-  const { rows } = await pool.query(
-    `SELECT dp.*, pa.texto, pa.seccion, pa.tipo_respuesta, pa.orden, pa.activa, pa.obligatoria, pa.creada_en AS pa_creada_en, pa.actualizada_en AS pa_actualizada_en
-     FROM declaracion_pregunta dp
-     LEFT JOIN preguntas_adicionales pa ON pa.id = dp.pregunta_id
-     WHERE dp.declaracion_id = $1`,
-    [id]
-  )
-  const data = rows.map((r) => ({
-    id: r.id,
-    declaracionId: r.declaracion_id,
-    preguntaId: r.pregunta_id,
-    respuesta: r.respuesta,
-    asignadaEn: r.asignada_en,
-    respondidaEn: r.respondida_en,
-    pregunta: r.texto
-      ? {
-          id: r.pregunta_id,
-          texto: r.texto,
-          seccion: r.seccion,
-          tipoRespuesta: r.tipo_respuesta,
-          orden: r.orden,
-          activa: r.activa,
-          obligatoria: r.obligatoria ?? false,
-          creadaEn: r.pa_creada_en,
-          actualizadaEn: r.pa_actualizada_en,
-        }
-      : null,
-  }))
-  return { data: { data, total: data.length }, error: null }
-}
-
-async function upsertDeclaracionPreguntas(id, asignaciones = []) {
-  const decCheck = await pool.query('SELECT id FROM declaraciones WHERE id = $1', [id])
-  if (!decCheck.rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
-  for (const a of asignaciones) {
-    const pCheck = await pool.query('SELECT id FROM preguntas_adicionales WHERE id = $1', [a.preguntaId])
-    if (!pCheck.rows.length)
-      return { data: null, error: { message: `Pregunta ${a.preguntaId} no encontrada` } }
-    const ahora = new Date().toISOString()
-    await pool.query(
-      `INSERT INTO declaracion_pregunta (declaracion_id, pregunta_id, respuesta, asignada_en, respondida_en)
-       VALUES ($1, $2, $3, $4, $5)
-       ON CONFLICT (declaracion_id, pregunta_id) DO UPDATE
-         SET respuesta = EXCLUDED.respuesta,
-             respondida_en = CASE WHEN EXCLUDED.respuesta IS NOT NULL THEN EXCLUDED.respondida_en ELSE declaracion_pregunta.respondida_en END`,
-      [id, a.preguntaId, a.respuesta ?? null, ahora, a.respuesta != null ? ahora : null]
-    )
-  }
-  return getDeclaracionPreguntas(id)
-}
-
-async function removeDeclaracionPregunta(id, preguntaId) {
-  const { rowCount } = await pool.query(
-    'DELETE FROM declaracion_pregunta WHERE declaracion_id = $1 AND pregunta_id = $2',
-    [id, preguntaId]
-  )
-  if (!rowCount) return { data: null, error: { message: 'Asignación no encontrada' } }
-  return { data: { success: true }, error: null }
-}
-
-async function assignPreguntaToAllDeclaraciones(preguntaId) {
-  const pCheck = await pool.query('SELECT id FROM preguntas_adicionales WHERE id = $1', [preguntaId])
-  if (!pCheck.rows.length) return { data: null, error: { message: 'Pregunta no encontrada' } }
-  const { rows: decRows } = await pool.query('SELECT COUNT(*) AS total FROM declaraciones')
-  const total = parseInt(decRows[0].total, 10)
-  const ahora = new Date().toISOString()
-  const result = await pool.query(
-    `INSERT INTO declaracion_pregunta (declaracion_id, pregunta_id, asignada_en)
-     SELECT id, $1, $2 FROM declaraciones
-     ON CONFLICT (declaracion_id, pregunta_id) DO NOTHING`,
-    [preguntaId, ahora]
-  )
-  const inserted = result.rowCount ?? 0
-  return { data: { total, inserted }, error: null }
-}
-
-
-async function listPreguntasAdmin({ activa, page = 1, limit = 10 }) {
-  const conditions = []
-  const params = []
-  if (activa !== undefined) { conditions.push(`activa = $${params.length + 1}`); params.push(activa) }
-  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
-  const countRes = await pool.query(`SELECT COUNT(*) FROM preguntas_adicionales ${where}`, params)
-  const total = parseInt(countRes.rows[0].count, 10)
-  const offset = (page - 1) * limit
-  params.push(limit, offset)
-  const { rows } = await pool.query(
-    `SELECT * FROM preguntas_adicionales ${where} ORDER BY orden ASC LIMIT $${params.length - 1} OFFSET $${params.length}`,
-    params
-  )
-  return { data: { data: rows.map(rowToPregunta), total, page, limit }, error: null }
-}
-
-async function createPreguntaAdmin(body) {
-  if (!body.texto || !body.tipoRespuesta) {
-    return {
-      data: null,
-      error: { message: 'texto y tipoRespuesta son campos obligatorios' },
-      status: 400,
-    }
-  }
-  const seccion = body.seccion || 'General'
-  const { rows } = await pool.query(
-    `INSERT INTO preguntas_adicionales (texto, seccion, tipo_respuesta, orden, activa, obligatoria)
-     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-    [body.texto, seccion, body.tipoRespuesta, body.orden ?? 0, body.activa !== undefined ? body.activa : true, body.obligatoria !== undefined ? body.obligatoria : false]
-  )
-  return { data: rowToPregunta(rows[0]), error: null, status: 201 }
-}
-
-async function getPreguntaAdmin(id) {
-  const { rows } = await pool.query('SELECT * FROM preguntas_adicionales WHERE id = $1', [id])
-  if (!rows.length) return { data: null, error: { message: 'Pregunta no encontrada' } }
-  return { data: rowToPregunta(rows[0]), error: null }
-}
-
-async function updatePreguntaAdmin(id, body) {
-  const FIELD_MAP = { texto: 'texto', seccion: 'seccion', tipoRespuesta: 'tipo_respuesta', orden: 'orden', activa: 'activa', obligatoria: 'obligatoria' }
-  const setClauses = []
-  const params = []
-  for (const [camel, snake] of Object.entries(FIELD_MAP)) {
-    if (body[camel] !== undefined) {
-      params.push(body[camel])
-      setClauses.push(`${snake} = $${params.length}`)
-    }
-  }
-  if (!setClauses.length) return getPreguntaAdmin(id)
-  params.push(id)
-  const { rows } = await pool.query(
-    `UPDATE preguntas_adicionales SET ${setClauses.join(', ')} WHERE id = $${params.length} RETURNING *`,
-    params
-  )
-  if (!rows.length) return { data: null, error: { message: 'Pregunta no encontrada' } }
-  return { data: rowToPregunta(rows[0]), error: null }
-}
-
-async function deletePreguntaAdmin(id) {
-  const { rowCount } = await pool.query('DELETE FROM preguntas_adicionales WHERE id = $1', [id])
-  if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
-  return { data: { success: true }, error: null }
-}
-
 // ── Admin: Secciones ───────────────────────────────────────────────────────
 // NOTE: The "secciones" table is not part of the current schema.sql but we keep
 // the mock store concept alive here using preguntas_adicionales.seccion.
@@ -909,13 +762,6 @@ async function sendEmailToUser({ dniNie, email, mensaje }) {
   return { data: { success: true, to: email }, error: null }
 }
 
-async function setUserPreguntas(dniNie, preguntaIds) {
-  const check = await pool.query('SELECT dni_nie FROM usuarios WHERE dni_nie = $1', [dniNie])
-  if (!check.rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
-  await pool.query('UPDATE usuarios SET preguntas_asignadas = $1 WHERE dni_nie = $2', [JSON.stringify(preguntaIds), dniNie])
-  return { data: { success: true }, error: null }
-}
-
 async function setUserSecciones(dniNie, seccionIds) {
   const check = await pool.query('SELECT dni_nie FROM usuarios WHERE dni_nie = $1', [dniNie])
   if (!check.rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
@@ -1067,15 +913,6 @@ module.exports = {
   sendEmailDeclaracion,
   getDocumento,
   deleteDocumento,
-  getDeclaracionPreguntas,
-  upsertDeclaracionPreguntas,
-  removeDeclaracionPregunta,
-  assignPreguntaToAllDeclaraciones,
-  listPreguntasAdmin,
-  createPreguntaAdmin,
-  getPreguntaAdmin,
-  updatePreguntaAdmin,
-  deletePreguntaAdmin,
   listPreguntasFormulario,
   listSeccionesFormulario,
   createPreguntaFormulario,
@@ -1094,7 +931,6 @@ module.exports = {
   assignUserAccount,
   getUserByDniNie,
   sendEmailToUser,
-  setUserPreguntas,
   setUserSecciones,
   listIdiomasAdmin,
   createIdiomaAdmin,
