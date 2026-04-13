@@ -9,7 +9,10 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "serve -s dist"
+    "start": "serve -s dist",
+    "start:backend": "cd backend && npm start",
+    "start:mock": "cd backend && npm run start:mock",
+    "start:db": "cd backend && npm run start:db"
   },
   "engines": {
     "node": ">=20.0.0"
