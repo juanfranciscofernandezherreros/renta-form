@@ -19,8 +19,25 @@ module.exports = function adminRoutes(svc) {
     send(res, result)
   })
 
+  router.post('/preguntas-formulario', async (req, res) => {
+    const result = await svc.createPreguntaFormulario(req.body ?? {})
+    send(res, result)
+  })
+
   router.put('/preguntas-formulario/:campo', async (req, res) => {
     const result = await svc.updatePreguntaFormulario(req.params.campo, req.body ?? {})
+    send(res, result)
+  })
+
+  router.delete('/preguntas-formulario/:campo', async (req, res) => {
+    const result = await svc.deletePreguntaFormulario(req.params.campo)
+    send(res, result)
+  })
+
+  // ── Secciones del formulario ─────────────────────────────────────────────
+
+  router.get('/secciones-formulario', async (_req, res) => {
+    const result = await svc.listSeccionesFormulario()
     send(res, result)
   })
 

@@ -13,8 +13,7 @@ import {
   deleteDocumento,
 } from './apiClient.js'
 import { downloadRentaPdf } from './pdfUtils.js'
-import PreguntasAdminTab from './PreguntasAdminTab.jsx'
-import PreguntasFormularioAdminTab from './PreguntasFormularioAdminTab.jsx'
+import PreguntasUnificadasAdminTab from './PreguntasUnificadasAdminTab.jsx'
 import SeccionesAdminTab from './SeccionesAdminTab.jsx'
 import DeclaracionPreguntasPanel from './DeclaracionPreguntasPanel.jsx'
 import UsuariosAdminTab from './UsuariosAdminTab.jsx'
@@ -402,17 +401,10 @@ export default function AdminPage({ onNavigate }) {
           </button>
           <button
             type="button"
-            className={`admin-tab${activeTab === 'preguntas-formulario' ? ' active' : ''}`}
-            onClick={() => setActiveTab('preguntas-formulario')}
-          >
-            📝 Preguntas del formulario
-          </button>
-          <button
-            type="button"
             className={`admin-tab${activeTab === 'preguntas' ? ' active' : ''}`}
             onClick={() => setActiveTab('preguntas')}
           >
-            ❓ Preguntas adicionales
+            ❓ Preguntas
           </button>
           <button
             type="button"
@@ -437,12 +429,8 @@ export default function AdminPage({ onNavigate }) {
           </button>
         </div>
 
-        {activeTab === 'preguntas-formulario' && (
-          <PreguntasFormularioAdminTab showToast={showToast} />
-        )}
-
         {activeTab === 'preguntas' && (
-          <PreguntasAdminTab showToast={showToast} />
+          <PreguntasUnificadasAdminTab showToast={showToast} />
         )}
 
         {activeTab === 'secciones' && (
