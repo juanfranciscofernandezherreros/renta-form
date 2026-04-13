@@ -234,154 +234,6 @@ async function sendEmailDeclaracion({ declaracionId, email, mensaje }) {
   return { data: { success: true, to: email }, error: null }
 }
 
-// ── Declaracion ↔ Preguntas ────────────────────────────────────────────────
-
-async function getDeclaracionPreguntas(id) {
-  const dec = store.declaraciones.find((d) => d.id === id)
-  if (!dec) return { data: null, error: { message: 'Declaración no encontrada' } }
-  const asignaciones = store.declaracionPreguntas
-    .filter((dp) => dp.declaracionId === id)
-    .map((dp) => ({
-      ...dp,
-      pregunta: store.preguntasAdicionales.find((p) => p.id === dp.preguntaId) ?? null,
-    }))
-  return { data: { data: asignaciones, total: asignaciones.length }, error: null }
-}
-
-async function upsertDeclaracionPreguntas(id, asignaciones = []) {
-  const dec = store.declaraciones.find((d) => d.id === id)
-  if (!dec) return { data: null, error: { message: 'Declaración no encontrada' } }
-  for (const a of asignaciones) {
-    const preguntaExiste = store.preguntasAdicionales.some((p) => p.id === a.preguntaId)
-    if (!preguntaExiste)
-      return { data: null, error: { message: `Pregunta ${a.preguntaId} no encontrada` } }
-    const existente = store.declaracionPreguntas.find(
-      (dp) => dp.declaracionId === id && dp.preguntaId === a.preguntaId
-    )
-    const ahora = new Date().toISOString()
-    if (existente) {
-      existente.respuesta = a.respuesta ?? existente.respuesta
-      if (a.respuesta !== undefined && a.respuesta !== null) {
-        existente.respondidaEn = ahora
-      }
-    } else {
-      store.declaracionPreguntas.push({
-        id: store.generarDpId(),
-        declaracionId: id,
-        preguntaId: a.preguntaId,
-        respuesta: a.respuesta ?? null,
-        asignadaEn: ahora,
-        respondidaEn: a.respuesta != null ? ahora : null,
-      })
-    }
-  }
-  const resultado = store.declaracionPreguntas
-    .filter((dp) => dp.declaracionId === id)
-    .map((dp) => ({
-      ...dp,
-      pregunta: store.preguntasAdicionales.find((p) => p.id === dp.preguntaId) ?? null,
-    }))
-  return { data: { data: resultado, total: resultado.length }, error: null }
-}
-
-async function removeDeclaracionPregunta(id, preguntaId) {
-  const idx = store.declaracionPreguntas.findIndex(
-    (dp) => dp.declaracionId === id && dp.preguntaId === preguntaId
-  )
-  if (idx === -1) return { data: null, error: { message: 'Asignación no encontrada' } }
-  store.declaracionPreguntas.splice(idx, 1)
-  return { data: { success: true }, error: null }
-}
-
-async function assignPreguntaToAllDeclaraciones(preguntaId) {
-  const preguntaExiste = store.preguntasAdicionales.some((p) => p.id === preguntaId)
-  if (!preguntaExiste) return { data: null, error: { message: 'Pregunta no encontrada' } }
-  const ahora = new Date().toISOString()
-  let inserted = 0
-  for (const dec of store.declaraciones) {
-    const exists = store.declaracionPreguntas.some(
-      (dp) => dp.declaracionId === dec.id && dp.preguntaId === preguntaId
-    )
-    if (!exists) {
-      store.declaracionPreguntas.push({
-        id: store.generarDpId(),
-        declaracionId: dec.id,
-        preguntaId,
-        respuesta: null,
-        asignadaEn: ahora,
-        respondidaEn: null,
-      })
-      inserted++
-    }
-  }
-  return { data: { total: store.declaraciones.length, inserted }, error: null }
-}
-
-// ── Admin: Preguntas adicionales ───────────────────────────────────────────
-
-async function listPreguntasAdmin({ activa, page = 1, limit = 10 }) {
-  let resultado = [...store.preguntasAdicionales]
-  if (activa !== undefined) resultado = resultado.filter((p) => p.activa === activa)
-  const total = resultado.length
-  const start = (page - 1) * limit
-  const data = resultado.slice(start, start + limit)
-  return { data: { data, total, page, limit }, error: null }
-}
-
-async function createPreguntaAdmin(body) {
-  if (!body.texto || !body.tipoRespuesta) {
-    return {
-      data: null,
-      error: { message: 'texto y tipoRespuesta son campos obligatorios' },
-      status: 400,
-    }
-  }
-  const ahora = new Date().toISOString()
-  const nueva = {
-    id: store.generarPreguntaId(),
-    texto: body.texto,
-    seccion: body.seccion || 'General',
-    tipoRespuesta: body.tipoRespuesta,
-    orden: body.orden ?? 0,
-    activa: body.activa !== undefined ? body.activa : true,
-    obligatoria: body.obligatoria !== undefined ? body.obligatoria : false,
-    creadaEn: ahora,
-    actualizadaEn: ahora,
-  }
-  store.preguntasAdicionales.push(nueva)
-  return { data: nueva, error: null, status: 201 }
-}
-
-async function getPreguntaAdmin(id) {
-  const p = store.preguntasAdicionales.find((p) => p.id === id)
-  if (!p) return { data: null, error: { message: 'Pregunta no encontrada' } }
-  return { data: p, error: null }
-}
-
-async function updatePreguntaAdmin(id, body) {
-  const idx = store.preguntasAdicionales.findIndex((p) => p.id === id)
-  if (idx === -1) return { data: null, error: { message: 'Pregunta no encontrada' } }
-  store.preguntasAdicionales[idx] = {
-    ...store.preguntasAdicionales[idx],
-    ...body,
-    id,
-    actualizadaEn: new Date().toISOString(),
-  }
-  return { data: store.preguntasAdicionales[idx], error: null }
-}
-
-async function deletePreguntaAdmin(id) {
-  const idx = store.preguntasAdicionales.findIndex((p) => p.id === id)
-  if (idx === -1) return { data: null, error: { message: 'Pregunta no encontrada' } }
-  store.preguntasAdicionales.splice(idx, 1)
-  // Remove linked assignments
-  for (let j = store.declaracionPreguntas.length - 1; j >= 0; j--) {
-    if (store.declaracionPreguntas[j].preguntaId === id)
-      store.declaracionPreguntas.splice(j, 1)
-  }
-  return { data: { success: true }, error: null }
-}
-
 // ── Admin: Secciones ───────────────────────────────────────────────────────
 
 async function listSeccionesAdmin({ activa, page = 1, limit = 10 }) {
@@ -580,19 +432,6 @@ async function sendEmailToUser({ dniNie, email, mensaje }) {
   return { data: { success: true, to: email }, error: null }
 }
 
-async function setUserPreguntas(dniNie, preguntaIds) {
-  if (!store.users.find((u) => u.dniNie === dniNie)) {
-    return { data: null, error: { message: 'Usuario no encontrado' } }
-  }
-  for (const id of preguntaIds) {
-    if (!store.preguntasAdicionales.find((p) => p.id === id)) {
-      return { data: null, error: { message: `Pregunta ${id} no encontrada` } }
-    }
-  }
-  store.userPreguntas.set(dniNie, [...preguntaIds])
-  return { data: { success: true }, error: null }
-}
-
 async function setUserSecciones(dniNie, seccionIds) {
   if (!store.users.find((u) => u.dniNie === dniNie)) {
     return { data: null, error: { message: 'Usuario no encontrado' } }
@@ -700,15 +539,6 @@ module.exports = {
   sendEmailDeclaracion,
   getDocumento: async () => ({ data: null, error: { message: 'No disponible en modo mock' } }),
   deleteDocumento: async () => ({ data: null, error: { message: 'No disponible en modo mock' } }),
-  getDeclaracionPreguntas,
-  upsertDeclaracionPreguntas,
-  removeDeclaracionPregunta,
-  assignPreguntaToAllDeclaraciones,
-  listPreguntasAdmin,
-  createPreguntaAdmin,
-  getPreguntaAdmin,
-  updatePreguntaAdmin,
-  deletePreguntaAdmin,
   listPreguntasFormulario,
   updatePreguntaFormulario,
   listSeccionesAdmin,
@@ -724,7 +554,6 @@ module.exports = {
   assignUserAccount,
   getUserByDniNie,
   sendEmailToUser,
-  setUserPreguntas,
   setUserSecciones,
   listIdiomasAdmin,
   createIdiomaAdmin,

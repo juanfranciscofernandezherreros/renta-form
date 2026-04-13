@@ -41,43 +41,6 @@ module.exports = function adminRoutes(svc) {
     send(res, result)
   })
 
-  // ── Preguntas adicionales ────────────────────────────────────────────────
-
-  router.get('/preguntas', async (req, res) => {
-    const { activa, page, limit } = req.query
-    const result = await svc.listPreguntasAdmin({
-      activa: activa !== undefined ? activa === 'true' : undefined,
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 10,
-    })
-    send(res, result)
-  })
-
-  router.post('/preguntas', async (req, res) => {
-    const result = await svc.createPreguntaAdmin(req.body ?? {})
-    send(res, result)
-  })
-
-  router.get('/preguntas/:id', async (req, res) => {
-    const result = await svc.getPreguntaAdmin(req.params.id)
-    send(res, result)
-  })
-
-  router.put('/preguntas/:id', async (req, res) => {
-    const result = await svc.updatePreguntaAdmin(req.params.id, req.body ?? {})
-    send(res, result)
-  })
-
-  router.delete('/preguntas/:id', async (req, res) => {
-    const result = await svc.deletePreguntaAdmin(req.params.id)
-    send(res, result)
-  })
-
-  router.post('/preguntas/:id/assign-all', async (req, res) => {
-    const result = await svc.assignPreguntaToAllDeclaraciones(req.params.id)
-    send(res, result)
-  })
-
   // ── Secciones ────────────────────────────────────────────────────────────
 
   router.get('/secciones', async (req, res) => {
@@ -158,12 +121,6 @@ module.exports = function adminRoutes(svc) {
   router.post('/users/:dniNie/email', async (req, res) => {
     const { email, mensaje } = req.body ?? {}
     const result = await svc.sendEmailToUser({ dniNie: req.params.dniNie, email, mensaje })
-    send(res, result)
-  })
-
-  router.put('/users/:dniNie/preguntas', async (req, res) => {
-    const { preguntaIds = [] } = req.body ?? {}
-    const result = await svc.setUserPreguntas(req.params.dniNie, preguntaIds)
     send(res, result)
   })
 

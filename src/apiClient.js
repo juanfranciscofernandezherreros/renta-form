@@ -186,62 +186,6 @@ export async function sendEmailDeclaracion({ declaracionId, email, mensaje }) {
   })
 }
 
-// ── Declaracion ↔ Preguntas ────────────────────────────────────────────────
-
-export async function getDeclaracionPreguntas(options) {
-  const id = options?.path?.id
-  return request('GET', `/irpf/declaraciones/${encodeURIComponent(id)}/preguntas`)
-}
-
-export async function upsertDeclaracionPreguntas(options) {
-  const id = options?.path?.id
-  const { asignaciones } = options?.body ?? {}
-  return request('PUT', `/irpf/declaraciones/${encodeURIComponent(id)}/preguntas`, {
-    body: { asignaciones },
-  })
-}
-
-export async function removeDeclaracionPregunta(options) {
-  const { id, preguntaId } = options?.path ?? {}
-  return request(
-    'DELETE',
-    `/irpf/declaraciones/${encodeURIComponent(id)}/preguntas/${encodeURIComponent(preguntaId)}`
-  )
-}
-
-// ── Admin: Preguntas adicionales ───────────────────────────────────────────
-
-export async function listPreguntasAdmin(options) {
-  const { activa, page, limit } = options?.query ?? {}
-  return request('GET', '/admin/preguntas', { query: { activa, page, limit } })
-}
-
-export async function createPreguntaAdmin(options) {
-  const body = options?.body ?? {}
-  return request('POST', '/admin/preguntas', { body })
-}
-
-export async function getPreguntaAdmin(options) {
-  const id = options?.path?.id
-  return request('GET', `/admin/preguntas/${encodeURIComponent(id)}`)
-}
-
-export async function updatePreguntaAdmin(options) {
-  const id = options?.path?.id
-  const body = options?.body ?? {}
-  return request('PUT', `/admin/preguntas/${encodeURIComponent(id)}`, { body })
-}
-
-export async function deletePreguntaAdmin(options) {
-  const id = options?.path?.id
-  return request('DELETE', `/admin/preguntas/${encodeURIComponent(id)}`)
-}
-
-export async function assignPreguntaToAllDeclaraciones(options) {
-  const id = options?.path?.id
-  return request('POST', `/admin/preguntas/${encodeURIComponent(id)}/assign-all`)
-}
-
 // ── Admin: Preguntas del formulario ───────────────────────────────────────
 
 export async function listPreguntasFormulario() {
@@ -336,14 +280,6 @@ export async function deleteUser(options) {
 export async function sendEmailToUser({ dniNie, email, mensaje }) {
   return request('POST', `/admin/users/${encodeURIComponent(dniNie)}/email`, {
     body: { email, mensaje },
-  })
-}
-
-export async function setUserPreguntas(options) {
-  const { dniNie } = options?.path ?? {}
-  const { preguntaIds } = options?.body ?? {}
-  return request('PUT', `/admin/users/${encodeURIComponent(dniNie)}/preguntas`, {
-    body: { preguntaIds },
   })
 }
 

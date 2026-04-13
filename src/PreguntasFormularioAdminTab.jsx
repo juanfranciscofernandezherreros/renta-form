@@ -1,5 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
-import { listPreguntasFormulario, updatePreguntaFormulario } from './apiClient.js'
+import {
+  listPreguntasFormulario,
+  listSeccionesFormulario,
+  createPreguntaFormulario,
+  updatePreguntaFormulario,
+  deletePreguntaFormulario,
+} from './apiClient.js'
+
+const EMPTY_FORM = { campo: '', texto: '', seccionId: '', orden: 0, indentada: false, condicionCampo: '', condicionValor: '' }
 
 function formatFecha(iso) {
   if (!iso) return '—'
@@ -8,11 +16,14 @@ function formatFecha(iso) {
 
 export default function PreguntasFormularioAdminTab({ showToast }) {
   const [preguntas, setPreguntas] = useState([])
+  const [secciones, setSecciones] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [modal, setModal] = useState(null) // null | 'create' | 'edit'
   const [editando, setEditando] = useState(null)
-  const [form, setForm] = useState({ texto: '', orden: 0, indentada: false })
+  const [form, setForm] = useState(EMPTY_FORM)
   const [saving, setSaving] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
   const refresh = useCallback(() => setRefreshKey(k => k + 1), [])
@@ -20,11 +31,13 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    listPreguntasFormulario()
-      .then(({ data, error: apiErr }) => {
+    Promise.all([listPreguntasFormulario(), listSeccionesFormulario()])
+      .then(([{ data: pData, error: pErr }, { data: sData, error: sErr }]) => {
         if (cancelled) return
-        if (apiErr) throw new Error(apiErr.message ?? 'Error desconocido')
-        setPreguntas(data ?? [])
+        if (pErr) throw new Error(pErr.message ?? 'Error desconocido')
+        if (sErr) throw new Error(sErr.message ?? 'Error desconocido')
+        setPreguntas(pData ?? [])
+        setSecciones(sData ?? [])
         setError(null)
       })
       .catch(err => { if (!cancelled) setError(err.message) })
@@ -32,12 +45,28 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
     return () => { cancelled = true }
   }, [refreshKey])
 
-  const openEdit = (pregunta) => {
-    setForm({ texto: pregunta.texto, orden: pregunta.orden, indentada: pregunta.indentada })
-    setEditando(pregunta)
+  const openCreate = () => {
+    const defaultSeccion = secciones[0]?.id ?? ''
+    setForm({ ...EMPTY_FORM, seccionId: defaultSeccion })
+    setEditando(null)
+    setModal('create')
   }
 
-  const closeModal = () => { setEditando(null); setForm({ texto: '', orden: 0, indentada: false }) }
+  const openEdit = (pregunta) => {
+    setForm({
+      campo: pregunta.campo,
+      texto: pregunta.texto,
+      seccionId: pregunta.seccionId ?? '',
+      orden: pregunta.orden,
+      indentada: pregunta.indentada,
+      condicionCampo: pregunta.condicionCampo ?? '',
+      condicionValor: pregunta.condicionValor ?? '',
+    })
+    setEditando(pregunta)
+    setModal('edit')
+  }
+
+  const closeModal = () => { setModal(null); setEditando(null); setForm(EMPTY_FORM) }
 
   const handleFormChange = e => {
     const { name, value, type, checked } = e.target
@@ -49,15 +78,55 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
       showToast('El texto de la pregunta no puede estar vacío', 'error')
       return
     }
+    if (modal === 'create' && !form.campo.trim()) {
+      showToast('El identificador de campo es obligatorio', 'error')
+      return
+    }
+    if (modal === 'create' && !form.seccionId) {
+      showToast('Debes seleccionar una sección', 'error')
+      return
+    }
     setSaving(true)
     try {
-      const { error: apiErr } = await updatePreguntaFormulario({
-        path: { campo: editando.campo },
-        body: { texto: form.texto, orden: Number(form.orden), indentada: form.indentada },
-      })
-      if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
-      showToast('Pregunta del formulario actualizada correctamente')
+      if (modal === 'create') {
+        const body = {
+          campo: form.campo.trim(),
+          texto: form.texto.trim(),
+          seccionId: form.seccionId,
+          orden: Number(form.orden),
+          indentada: form.indentada,
+          condicionCampo: form.condicionCampo.trim() || undefined,
+          condicionValor: form.condicionValor.trim() || undefined,
+        }
+        const { error: apiErr } = await createPreguntaFormulario({ body })
+        if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
+        showToast('Pregunta creada correctamente')
+      } else {
+        const { error: apiErr } = await updatePreguntaFormulario({
+          path: { campo: editando.campo },
+          body: {
+            texto: form.texto.trim(),
+            orden: Number(form.orden),
+            indentada: form.indentada,
+          },
+        })
+        if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
+        showToast('Pregunta actualizada correctamente')
+      }
       closeModal()
+      refresh()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDelete = async (campo) => {
+    setSaving(true)
+    try {
+      const { error: apiErr } = await deletePreguntaFormulario({ path: { campo } })
+      if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
+      showToast('Pregunta eliminada correctamente')
+      setConfirmDelete(null)
       refresh()
     } finally {
       setSaving(false)
@@ -78,16 +147,16 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
         <div className="admin-stats">
           <span className="admin-stat-badge">{preguntas.length} pregunta{preguntas.length !== 1 ? 's' : ''} del formulario</span>
         </div>
-        <p style={{ fontSize: '.82rem', color: '#666', margin: 0 }}>
-          Estas preguntas forman parte del formulario principal. Puedes editar su texto y orden.
-        </p>
+        <button type="button" className="btn btn-primary btn-sm" onClick={openCreate} disabled={loading}>
+          ➕ Nueva pregunta
+        </button>
       </div>
 
       {loading && <div className="info-box">⏳ Cargando preguntas del formulario…</div>}
       {error && <div className="info-box info-box-error">❌ {error}</div>}
 
       {!loading && !error && preguntas.length === 0 && (
-        <div className="info-box">No se encontraron preguntas del formulario.</div>
+        <div className="info-box">No hay preguntas del formulario. Crea la primera con el botón «Nueva pregunta».</div>
       )}
 
       {!loading && !error && Object.entries(porSeccion).map(([seccionTitulo, items]) => (
@@ -141,6 +210,14 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
                         >
                           ✏️ Editar
                         </button>
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-sm btn-xs"
+                          onClick={() => setConfirmDelete(p)}
+                          title="Eliminar pregunta"
+                        >
+                          🗑️ Eliminar
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -151,17 +228,46 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
         </div>
       ))}
 
-      {/* Edit modal */}
-      {editando && (
+      {/* Create / Edit modal */}
+      {modal && (
         <div className="admin-modal-overlay" onClick={closeModal}>
-          <div className="admin-modal" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
-            <h2 className="admin-modal-title">✏️ Editar pregunta del formulario</h2>
-            <p className="admin-modal-desc" style={{ marginBottom: 16 }}>
-              Campo: <code style={{ background: '#f0f0f0', padding: '1px 5px', borderRadius: 3 }}>{editando.campo}</code>
-              {' · '}Sección: <strong>{editando.seccionTitulo}</strong>
-            </p>
+          <div className="admin-modal" style={{ maxWidth: 580 }} onClick={e => e.stopPropagation()}>
+            <h2 className="admin-modal-title">
+              {modal === 'create' ? '➕ Nueva pregunta del formulario' : '✏️ Editar pregunta del formulario'}
+            </h2>
 
             <div className="form-grid" style={{ marginBottom: 16 }}>
+              {modal === 'create' && (
+                <>
+                  <div className="field">
+                    <label>Identificador de campo *</label>
+                    <input
+                      type="text"
+                      name="campo"
+                      value={form.campo}
+                      onChange={handleFormChange}
+                      placeholder="ej: tieneHipoteca"
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Sección *</label>
+                    <select name="seccionId" value={form.seccionId} onChange={handleFormChange}>
+                      <option value="">— Selecciona una sección —</option>
+                      {secciones.map(s => (
+                        <option key={s.id} value={s.id}>{s.numero ? `${s.numero}. ` : ''}{s.titulo}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
+              {modal === 'edit' && (
+                <div className="field" style={{ color: '#666', fontSize: '.85rem' }}>
+                  <label>Campo</label>
+                  <code style={{ display: 'block', background: '#f0f0f0', padding: '6px 10px', borderRadius: 4, fontSize: '.85rem' }}>
+                    {editando.campo}
+                  </code>
+                </div>
+              )}
               <div className="field full">
                 <label>Texto de la pregunta *</label>
                 <textarea
@@ -193,6 +299,30 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
                   Indentada (pregunta subordinada)
                 </label>
               </div>
+              {modal === 'create' && (
+                <>
+                  <div className="field">
+                    <label>Campo condición (opcional)</label>
+                    <input
+                      type="text"
+                      name="condicionCampo"
+                      value={form.condicionCampo}
+                      onChange={handleFormChange}
+                      placeholder="ej: viviendaAlquiler"
+                    />
+                  </div>
+                  <div className="field">
+                    <label>Valor condición (opcional)</label>
+                    <input
+                      type="text"
+                      name="condicionValor"
+                      value={form.condicionValor}
+                      onChange={handleFormChange}
+                      placeholder="ej: si"
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="btn-row">
@@ -201,6 +331,32 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
               </button>
               <button type="button" className="btn btn-primary" disabled={saving} onClick={handleSave}>
                 {saving ? 'Guardando…' : '💾 Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete confirmation */}
+      {confirmDelete && (
+        <div className="admin-modal-overlay" onClick={() => setConfirmDelete(null)}>
+          <div className="admin-modal" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+            <h2 className="admin-modal-title">🗑️ Eliminar pregunta</h2>
+            <p className="admin-modal-desc">
+              ¿Seguro que deseas eliminar la pregunta <strong>{confirmDelete.texto}</strong>?
+              Esta acción no se puede deshacer.
+            </p>
+            <div className="btn-row">
+              <button type="button" className="btn btn-secondary" onClick={() => setConfirmDelete(null)}>
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn btn-danger"
+                disabled={saving}
+                onClick={() => handleDelete(confirmDelete.campo)}
+              >
+                {saving ? 'Eliminando…' : '🗑️ Eliminar'}
               </button>
             </div>
           </div>

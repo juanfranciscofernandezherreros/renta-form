@@ -101,25 +101,6 @@ module.exports = function irpfRoutes(svc) {
     res.send(contenido)
   })
 
-  // GET /v1/irpf/declaraciones/:id/preguntas
-  router.get('/declaraciones/:id/preguntas', async (req, res) => {
-    const result = await svc.getDeclaracionPreguntas(req.params.id)
-    send(res, result)
-  })
-
-  // PUT /v1/irpf/declaraciones/:id/preguntas
-  router.put('/declaraciones/:id/preguntas', async (req, res) => {
-    const { asignaciones } = req.body ?? {}
-    const result = await svc.upsertDeclaracionPreguntas(req.params.id, asignaciones)
-    send(res, result)
-  })
-
-  // DELETE /v1/irpf/declaraciones/:id/preguntas/:preguntaId
-  router.delete('/declaraciones/:id/preguntas/:preguntaId', async (req, res) => {
-    const result = await svc.removeDeclaracionPregunta(req.params.id, req.params.preguntaId)
-    send(res, result)
-  })
-
   // POST /v1/irpf/declaraciones/:id/email
   router.post('/declaraciones/:id/email', async (req, res) => {
     const { email, mensaje } = req.body ?? {}

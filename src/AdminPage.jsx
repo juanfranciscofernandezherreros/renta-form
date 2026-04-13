@@ -13,10 +13,8 @@ import {
   deleteDocumento,
 } from './apiClient.js'
 import { downloadRentaPdf } from './pdfUtils.js'
-import PreguntasAdminTab from './PreguntasAdminTab.jsx'
 import PreguntasFormularioAdminTab from './PreguntasFormularioAdminTab.jsx'
 import SeccionesAdminTab from './SeccionesAdminTab.jsx'
-import DeclaracionPreguntasPanel from './DeclaracionPreguntasPanel.jsx'
 import UsuariosAdminTab from './UsuariosAdminTab.jsx'
 import IdiomasAdminTab from './IdiomasAdminTab.jsx'
 
@@ -433,20 +431,12 @@ export default function AdminPage({ onNavigate }) {
         {activeTab === 'preguntas' && (
           <>
             <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: '0 0 4px', color: '#333' }}>
-              📋 Preguntas del formulario principal
+              ❓ Preguntas del formulario
             </h2>
             <p style={{ fontSize: '.82rem', color: '#666', margin: '0 0 16px' }}>
-              Estas preguntas son las que el usuario responde al inicio del formulario (secciones 2–4).
+              Gestiona las preguntas que aparecen en el formulario de declaración de la renta.
             </p>
             <PreguntasFormularioAdminTab showToast={showToast} />
-            <hr style={{ margin: '32px 0', border: 'none', borderTop: '1px solid #e5e7eb' }} />
-            <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: '0 0 4px', color: '#333' }}>
-              ➕ Preguntas adicionales
-            </h2>
-            <p style={{ fontSize: '.82rem', color: '#666', margin: '0 0 16px' }}>
-              Preguntas que el administrador puede asignar a declaraciones concretas.
-            </p>
-            <PreguntasAdminTab showToast={showToast} />
           </>
         )}
 
@@ -622,13 +612,9 @@ export default function AdminPage({ onNavigate }) {
                       )
                     })()}
 
-                    {/* Section 7: Additional questions (many-to-many) */}
-                    <div className="section-title">7. Preguntas Adicionales</div>
-                    <DeclaracionPreguntasPanel declaracionId={dec.id} showToast={showToast} />
-
-                    {/* Section 8: PDF de la Renta (admin) */}
+                    {/* Section 7: PDF de la Renta (admin) */}
                     <div>
-                      <div className="section-title">8. PDF de la Renta</div>
+                      <div className="section-title">7. PDF de la Renta</div>
                       {dec.rentaPdf ? (
                         <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                           <span>📄 {dec.rentaPdf.nombre}</span>
