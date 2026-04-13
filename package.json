@@ -12,7 +12,8 @@
     "start": "serve -s dist",
     "start:backend": "cd backend && npm start",
     "start:mock": "cd backend && npm run start:mock",
-    "start:db": "cd backend && npm run start:db"
+    "start:db": "cd backend && npm run start:db",
+    "heroku-postbuild": "npm install --prefix backend && npm run build"
   },
   "engines": {
     "node": ">=20.0.0"
