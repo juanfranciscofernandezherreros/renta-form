@@ -303,7 +303,7 @@ const translations = {
     footerContactSend: '📤 Envoyer le message',
     footerContactSending: '⏳ Envoi en cours…',
     footerContactSuccess: '✅ Message envoyé avec succès. Nous vous contacterons prochainement.',
-    footerContactError: '❌ Impossible d\'envoyer le message. Veuillez réessayer.',
+    footerContactError: "❌ Impossible d'envoyer le message. Veuillez réessayer.",
     footerContactErrName: 'Saisissez votre nom complet',
     footerContactErrEmail: 'Saisissez une adresse e-mail valide',
     footerContactErrSubject: "Indiquez l'objet du message",

@@ -54,15 +54,21 @@ async function migrate() {
     const { rows: tCount } = await client.query('SELECT COUNT(*) FROM traducciones')
     if (parseInt(tCount[0].count, 10) === 0) {
       console.log('[migrate] Seeding traducciones ...')
+      const rows = []
+      const params = []
+      let idx = 1
       for (const [code, keys] of Object.entries(staticTranslations)) {
         for (const [clave, valor] of Object.entries(keys)) {
-          await client.query(
-            `INSERT INTO traducciones (code, clave, valor) VALUES ($1, $2, $3)
-             ON CONFLICT (code, clave) DO NOTHING`,
-            [code, clave, String(valor)]
-          )
+          rows.push(`($${idx}, $${idx + 1}, $${idx + 2})`)
+          params.push(code, clave, String(valor))
+          idx += 3
         }
       }
+      await client.query(
+        `INSERT INTO traducciones (code, clave, valor) VALUES ${rows.join(', ')}
+         ON CONFLICT (code, clave) DO NOTHING`,
+        params
+      )
       console.log('[migrate] traducciones seeded.')
     } else {
       console.log('[migrate] traducciones already seeded, skipping.')
