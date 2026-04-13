@@ -457,6 +457,15 @@ footer {
   margin-top: 2px;
 }
 
+/* ── Optional field indicator */
+.field-optional {
+  font-size: .75rem;
+  font-weight: 400;
+  color: #888;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
 /* ── Link button */
 .link-btn {
   background: none;

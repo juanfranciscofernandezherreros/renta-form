@@ -171,6 +171,9 @@ const translations = {
     footerShowHow: 'ℹ️ ¿Cómo funciona?',
     footerHideHow: '▲ Ocultar',
     btnDownloadPDF: '📄 Descargar PDF',
+    fieldEmailOptional: '(opcional)',
+    errValidationRequired: '❌ Por favor, rellena los campos obligatorios: Nombre, Apellidos, DNI/NIE y Teléfono móvil.',
+    errValidationQuestions: '❌ Por favor, responde a todas las preguntas antes de enviar el formulario.',
   },
 
   fr: {
@@ -325,6 +328,9 @@ const translations = {
     footerShowHow: 'ℹ️ Comment ça marche ?',
     footerHideHow: '▲ Masquer',
     btnDownloadPDF: '📄 Télécharger le PDF',
+    fieldEmailOptional: '(optionnel)',
+    errValidationRequired: '❌ Veuillez remplir les champs obligatoires : Prénom, Nom, DNI/NIE et Téléphone mobile.',
+    errValidationQuestions: '❌ Veuillez répondre à toutes les questions avant d\'envoyer le formulaire.',
   },
 
   en: {
@@ -477,6 +483,9 @@ const translations = {
     footerShowHow: 'ℹ️ How does it work?',
     footerHideHow: '▲ Hide',
     btnDownloadPDF: '📄 Download PDF',
+    fieldEmailOptional: '(optional)',
+    errValidationRequired: '❌ Please fill in the required fields: First name, Surname(s), DNI/NIE and Mobile phone.',
+    errValidationQuestions: '❌ Please answer all questions before submitting the form.',
   },
 
   ca: {
@@ -631,6 +640,9 @@ const translations = {
     footerShowHow: 'ℹ️ Com funciona?',
     footerHideHow: '▲ Amagar',
     btnDownloadPDF: '📄 Descarregar PDF',
+    fieldEmailOptional: '(opcional)',
+    errValidationRequired: '❌ Si us plau, ompliu els camps obligatoris: Nom, Cognoms, DNI/NIE i Telèfon mòbil.',
+    errValidationQuestions: '❌ Si us plau, responeu a totes les preguntes abans d\'enviar el formulari.',
   },
 }
 
