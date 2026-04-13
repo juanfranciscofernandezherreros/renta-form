@@ -13,7 +13,8 @@ import {
   deleteDocumento,
 } from './apiClient.js'
 import { downloadRentaPdf } from './pdfUtils.js'
-import PreguntasUnificadasAdminTab from './PreguntasUnificadasAdminTab.jsx'
+import PreguntasAdminTab from './PreguntasAdminTab.jsx'
+import PreguntasFormularioAdminTab from './PreguntasFormularioAdminTab.jsx'
 import SeccionesAdminTab from './SeccionesAdminTab.jsx'
 import DeclaracionPreguntasPanel from './DeclaracionPreguntasPanel.jsx'
 import UsuariosAdminTab from './UsuariosAdminTab.jsx'
@@ -430,7 +431,23 @@ export default function AdminPage({ onNavigate }) {
         </div>
 
         {activeTab === 'preguntas' && (
-          <PreguntasUnificadasAdminTab showToast={showToast} />
+          <>
+            <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: '0 0 4px', color: '#333' }}>
+              📋 Preguntas del formulario principal
+            </h2>
+            <p style={{ fontSize: '.82rem', color: '#666', margin: '0 0 16px' }}>
+              Estas preguntas son las que el usuario responde al inicio del formulario (secciones 2–4).
+            </p>
+            <PreguntasFormularioAdminTab showToast={showToast} />
+            <hr style={{ margin: '32px 0', border: 'none', borderTop: '1px solid #e5e7eb' }} />
+            <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: '0 0 4px', color: '#333' }}>
+              ➕ Preguntas adicionales
+            </h2>
+            <p style={{ fontSize: '.82rem', color: '#666', margin: '0 0 16px' }}>
+              Preguntas que el administrador puede asignar a declaraciones concretas.
+            </p>
+            <PreguntasAdminTab showToast={showToast} />
+          </>
         )}
 
         {activeTab === 'secciones' && (
