@@ -73,6 +73,11 @@ module.exports = function adminRoutes(svc) {
     send(res, result)
   })
 
+  router.post('/preguntas/:id/assign-all', async (req, res) => {
+    const result = await svc.assignPreguntaToAllDeclaraciones(req.params.id)
+    send(res, result)
+  })
+
   // ── Secciones ────────────────────────────────────────────────────────────
 
   router.get('/secciones', async (req, res) => {

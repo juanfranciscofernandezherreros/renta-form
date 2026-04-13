@@ -82,6 +82,73 @@ async function migrate() {
       console.log('[migrate] documentos table created.')
     }
 
+    // Ensure tipo_respuesta enum has all required values (may be missing if DB predates this feature)
+    // Each value is validated against the hardcoded safe list before being used in ALTER TYPE
+    const TIPO_RESPUESTA_VALUES = ['yn', 'texto', 'numero', 'fecha', 'importe', 'porcentaje', 'multilinea']
+    const SAFE_ENUM_PATTERN = /^[a-z]+$/
+    for (const val of TIPO_RESPUESTA_VALUES) {
+      if (!SAFE_ENUM_PATTERN.test(val)) continue // guard: only lowercase letters
+      const { rows: enumRows } = await client.query(
+        `SELECT 1 FROM pg_enum e
+         JOIN pg_type t ON t.oid = e.enumtypid
+         WHERE t.typname = 'tipo_respuesta' AND e.enumlabel = $1`,
+        [val]
+      )
+      if (!enumRows.length) {
+        // ALTER TYPE ADD VALUE cannot use parameterized queries in PostgreSQL,
+        // but val is validated against a strict pattern above
+        await client.query(`ALTER TYPE tipo_respuesta ADD VALUE IF NOT EXISTS '${val}'`)
+      }
+    }
+
+    // Ensure preguntas_adicionales table exists (may be missing if DB was created before this feature)
+    if (!(await tableExists(client, 'preguntas_adicionales'))) {
+      console.log('[migrate] Creating preguntas_adicionales table ...')
+      await client.query(`
+        DO $$ BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tipo_respuesta') THEN
+            CREATE TYPE tipo_respuesta AS ENUM ('yn', 'texto', 'numero', 'fecha', 'importe', 'porcentaje', 'multilinea');
+          END IF;
+        END $$;
+        CREATE TABLE IF NOT EXISTS preguntas_adicionales (
+          id              UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
+          texto           TEXT            NOT NULL,
+          seccion         VARCHAR(100)    NOT NULL DEFAULT 'General',
+          tipo_respuesta  tipo_respuesta  NOT NULL DEFAULT 'yn',
+          orden           INTEGER         NOT NULL DEFAULT 0,
+          activa          BOOLEAN         NOT NULL DEFAULT TRUE,
+          obligatoria     BOOLEAN         NOT NULL DEFAULT FALSE,
+          creada_en       TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+          actualizada_en  TIMESTAMPTZ     NOT NULL DEFAULT NOW()
+        );
+        CREATE INDEX IF NOT EXISTS idx_preguntas_adicionales_activa ON preguntas_adicionales (activa);
+      `)
+      console.log('[migrate] preguntas_adicionales table created.')
+    }
+
+    // Ensure declaracion_pregunta table exists (may be missing if DB was created before this feature)
+    if (!(await tableExists(client, 'declaracion_pregunta'))) {
+      console.log('[migrate] Creating declaracion_pregunta table ...')
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS declaracion_pregunta (
+          id              UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
+          declaracion_id  UUID            NOT NULL
+                              REFERENCES declaraciones (id)
+                              ON DELETE CASCADE,
+          pregunta_id     UUID            NOT NULL
+                              REFERENCES preguntas_adicionales (id)
+                              ON DELETE CASCADE,
+          respuesta       TEXT,
+          asignada_en     TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+          respondida_en   TIMESTAMPTZ,
+          CONSTRAINT uq_declaracion_pregunta UNIQUE (declaracion_id, pregunta_id)
+        );
+        CREATE INDEX IF NOT EXISTS idx_decpregunta_declaracion ON declaracion_pregunta (declaracion_id);
+        CREATE INDEX IF NOT EXISTS idx_decpregunta_pregunta ON declaracion_pregunta (pregunta_id);
+      `)
+      console.log('[migrate] declaracion_pregunta table created.')
+    }
+
     // Seed translations if the table is empty
     const { rows: tCount } = await client.query('SELECT COUNT(*) FROM traducciones')
     if (parseInt(tCount[0].count, 10) === 0) {

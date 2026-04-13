@@ -237,6 +237,11 @@ export async function deletePreguntaAdmin(options) {
   return request('DELETE', `/admin/preguntas/${encodeURIComponent(id)}`)
 }
 
+export async function assignPreguntaToAllDeclaraciones(options) {
+  const id = options?.path?.id
+  return request('POST', `/admin/preguntas/${encodeURIComponent(id)}/assign-all`)
+}
+
 // ── Admin: Preguntas del formulario ───────────────────────────────────────
 
 export async function listPreguntasFormulario() {
