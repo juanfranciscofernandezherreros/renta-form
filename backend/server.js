@@ -12,6 +12,8 @@
 //    PROFILE=db   node server.js      # or: npm run start:db
 // ---------------------------------------------------------------------------
 
+const fs = require('fs')
+const path = require('path')
 const express = require('express')
 const cors = require('cors')
 const config = require('./config')
@@ -51,10 +53,23 @@ app.use('/v1/auth', authRoutes(svc))
 app.use('/v1/irpf', irpfRoutes(svc))
 app.use('/v1/admin', adminRoutes(svc))
 
-// ── 404 catch-all ────────────────────────────────────────────────────────
-app.use((_req, res) => {
-  res.status(404).json({ error: 'Not found' })
-})
+// ── 404 catch-all / SPA fallback ─────────────────────────────────────────
+const DIST_DIR = path.join(__dirname, '..', 'dist')
+if (fs.existsSync(DIST_DIR)) {
+  // Serve the built React app and let the client-side router handle paths.
+  app.use(express.static(DIST_DIR))
+  app.get('*', (req, res) => {
+    // Return JSON 404 for unmatched API paths; serve the SPA for everything else.
+    if (req.path.startsWith('/v1/')) {
+      return res.status(404).json({ error: 'Not found' })
+    }
+    res.sendFile('index.html', { root: DIST_DIR })
+  })
+} else {
+  app.use((_req, res) => {
+    res.status(404).json({ error: 'Not found' })
+  })
+}
 
 // ── Global error handler ──────────────────────────────────────────────────
 // eslint-disable-next-line no-unused-vars
