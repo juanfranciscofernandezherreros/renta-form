@@ -6,7 +6,7 @@ import {
   deleteIdiomaAdmin,
   getIdiomaContent,
   updateIdiomaContent,
-} from './mockApi.js'
+} from './apiClient.js'
 import Pagination from './Pagination.jsx'
 import { useLanguage } from './LanguageContext.jsx'
 

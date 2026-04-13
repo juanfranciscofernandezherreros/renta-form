@@ -1,12 +1,9 @@
 import { useState, useEffect } from 'react'
-import { getDeclaracionByToken as getDeclaracionByTokenMock } from './mockApi.js'
-import { DEMO_MODE } from './constants.js'
+import { getDeclaracionByToken } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
 import { generateDeclaracionPDF, downloadRentaPdf } from './pdfUtils.js'
 
 const TOKENS_STORAGE_KEY = 'renta_form_tokens'
-
-const getDeclaracionByToken = DEMO_MODE ? getDeclaracionByTokenMock : null
 
 const LOCALE_MAP = { es: 'es-ES', fr: 'fr-FR', en: 'en-GB', ca: 'ca-ES' }
 
@@ -51,7 +48,7 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion, initi
   useEffect(() => {
     if (!initialToken) return
     const trimmed = initialToken.trim()
-    if (!trimmed || !getDeclaracionByToken) return
+    if (!trimmed) return
     setLoading(true)
     getDeclaracionByToken({ token: trimmed })
       .then(({ data, error: apiError }) => {
@@ -75,10 +72,6 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion, initi
     const trimmed = token.trim()
     if (!trimmed) {
       setError(t('errTokenRequired'))
-      return
-    }
-    if (!getDeclaracionByToken) {
-      setError(t('errRealModeNotImpl'))
       return
     }
     setError(null)

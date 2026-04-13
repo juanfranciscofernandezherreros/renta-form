@@ -9,7 +9,7 @@ import {
   assignUserAccount,
   getUserByDniNie,
   uploadRentaPdf,
-} from './mockApi.js'
+} from './apiClient.js'
 import { downloadRentaPdf } from './pdfUtils.js'
 import PreguntasAdminTab from './PreguntasAdminTab.jsx'
 import SeccionesAdminTab from './SeccionesAdminTab.jsx'

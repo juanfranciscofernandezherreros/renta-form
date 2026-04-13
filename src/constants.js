@@ -1,6 +1,5 @@
-// Activa el modo demo: todos los datos se sirven en memoria, sin backend real.
-// Cambiar a `false` para conectar con la API real.
-export const DEMO_MODE = true
+// Modo demo desactivado: todos los datos se sirven desde la base de datos.
+export const DEMO_MODE = false
 
 // API base URL used by the generated @hey-api client.
 // In development the Vite proxy rewrites /v1 → http://localhost:3001/v1.

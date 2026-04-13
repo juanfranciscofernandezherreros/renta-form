@@ -1,14 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from './AuthContext.jsx'
-import { listDeclaraciones as listDeclaracionesReal } from './api/index.ts'
-import { listDeclaraciones as listDeclaracionesMock, changePassword as changePasswordMock } from './mockApi.js'
-import { DEMO_MODE } from './constants.js'
+import { listDeclaraciones, changePassword } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
 import Footer from './Footer.jsx'
 import { generateDeclaracionPDF, downloadRentaPdf } from './pdfUtils.js'
-
-const listDeclaraciones = DEMO_MODE ? listDeclaracionesMock : listDeclaracionesReal
-const changePasswordFn = DEMO_MODE ? changePasswordMock : null
 
 const MIN_PASSWORD_LENGTH = 6
 
@@ -113,9 +108,8 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
     if (!pwForm.newPassword || pwForm.newPassword.length < MIN_PASSWORD_LENGTH) errs.newPassword = `${t('errNewPasswordLength')} ${MIN_PASSWORD_LENGTH} ${t('errNewPasswordLengthSuffix')}`
     if (pwForm.newPassword !== pwForm.confirmPassword) errs.confirmPassword = t('errPasswordsNoMatch')
     if (Object.keys(errs).length) { setPwErrors(errs); return }
-    if (!changePasswordFn) { setPwErrors({ global: t('errFnNotAvailable') }); return }
     setPwLoading(true)
-    const { error: apiError } = await changePasswordFn({
+    const { error: apiError } = await changePassword({
       dniNie: user.dniNie,
       oldPassword: pwForm.oldPassword,
       newPassword: pwForm.newPassword,
@@ -302,7 +296,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
         )}
       </div>
 
-      {changePasswordFn && (
+      {(
       <div className="card">
         <div className="section-title">{t('changePasswordTitle')}</div>
         {pwSuccess && (

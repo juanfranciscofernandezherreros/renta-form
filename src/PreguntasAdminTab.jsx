@@ -5,7 +5,7 @@ import {
   updatePreguntaAdmin,
   deletePreguntaAdmin,
   listSeccionesAdmin,
-} from './mockApi.js'
+} from './apiClient.js'
 import Pagination from './Pagination.jsx'
 
 const TIPO_LABELS = {

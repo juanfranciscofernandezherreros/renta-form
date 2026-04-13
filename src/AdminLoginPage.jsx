@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from './AuthContext.jsx'
-import { loginUser as loginUserMock } from './mockApi.js'
-import { DEMO_MODE } from './constants.js'
+import { loginUser } from './apiClient.js'
 
 export default function AdminLoginPage() {
   const { login } = useAuth()
@@ -34,14 +33,8 @@ export default function AdminLoginPage() {
       return
     }
     setLoading(true)
-    const loginFn = DEMO_MODE ? loginUserMock : null
-    if (!loginFn) {
-      setErrors({ global: 'Modo real no implementado' })
-      setLoading(false)
-      return
-    }
     const dniNie = form.username.trim().toUpperCase()
-    const { data, error } = await loginFn({ dniNie, password: form.password })
+    const { data, error } = await loginUser({ dniNie, password: form.password })
     setLoading(false)
     if (error) {
       setErrors({ global: error.message })
