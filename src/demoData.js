@@ -323,6 +323,7 @@ const declaracionesIniciales = [
 const DEMO_SUBMISSIONS_KEY = 'renta_form_demo_submissions'
 const DEMO_PASSWORDS_KEY = 'renta_form_demo_passwords'
 const DEMO_USERS_KEY = 'renta_form_demo_users'
+const DEMO_RENT_PDF_PREFIX = 'renta_form_rent_pdf_'
 
 /** Carga los envíos de usuario guardados en localStorage. */
 function loadSubmissions() {
@@ -337,11 +338,44 @@ function loadSubmissions() {
 /** Guarda el array de envíos de usuario en localStorage (máx. 50 entradas). */
 export function persistSubmission(declaracion) {
   try {
+    const { rentaPdf: _, ...rest } = declaracion
     const stored = loadSubmissions()
-    stored.push(declaracion)
+    stored.push(rest)
     localStorage.setItem(DEMO_SUBMISSIONS_KEY, JSON.stringify(stored.slice(-50)))
   } catch {
     // localStorage no disponible
+  }
+}
+
+/**
+ * Persiste el PDF de la renta adjuntado por el admin para una declaración.
+ * Se guarda en una clave separada para no sobrecargar la entrada principal.
+ * @param {string} id  ID de la declaración
+ * @param {{ nombre: string, dataUrl: string } | null} data  null para eliminar
+ */
+export function persistRentaPdf(id, data) {
+  try {
+    if (data) {
+      localStorage.setItem(DEMO_RENT_PDF_PREFIX + id, JSON.stringify(data))
+    } else {
+      localStorage.removeItem(DEMO_RENT_PDF_PREFIX + id)
+    }
+  } catch {
+    // localStorage no disponible o cuota superada
+  }
+}
+
+/**
+ * Carga el PDF de la renta adjuntado por el admin para una declaración.
+ * @param {string} id
+ * @returns {{ nombre: string, dataUrl: string } | null}
+ */
+export function loadRentaPdf(id) {
+  try {
+    const stored = localStorage.getItem(DEMO_RENT_PDF_PREFIX + id)
+    return stored ? JSON.parse(stored) : null
+  } catch {
+    return null
   }
 }
 
@@ -400,7 +434,10 @@ const initialIds = new Set(declaracionesIniciales.map(d => d.id))
 const savedSubmissions = loadSubmissions().filter(d => !initialIds.has(d.id))
 
 /** @type {import('./api/types.gen').Declaracion[]} */
-export const declaracionesStore = [...savedSubmissions, ...declaracionesIniciales]
+export const declaracionesStore = [...savedSubmissions, ...declaracionesIniciales].map(d => {
+  const pdf = loadRentaPdf(d.id)
+  return pdf ? { ...d, rentaPdf: pdf } : d
+})
 
 // ---------------------------------------------------------------------------
 // Códigos de acceso a la intranet – tabla codigos_acceso

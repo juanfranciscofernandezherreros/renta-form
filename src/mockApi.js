@@ -26,6 +26,7 @@ import {
   idiomasStore,
   translationsStore,
   generarIdiomaId,
+  persistRentaPdf,
 } from './demoData.js'
 import { ERROR_USER_BLOCKED } from './constants.js'
 
@@ -972,4 +973,23 @@ export async function updateIdiomaContent(options) {
   }
   translationsStore[idioma.code] = { ...(translationsStore[idioma.code] ?? {}), ...body.content }
   return { data: { code: idioma.code, content: translationsStore[idioma.code] }, error: null }
+}
+
+/**
+ * Mock de uploadRentaPdf – adjunta (o elimina) el PDF de la renta de una declaración.
+ * @param {{ declaracionId: string, nombre: string | null, dataUrl: string | null }} options
+ */
+export async function uploadRentaPdf({ declaracionId, nombre, dataUrl }) {
+  await delay(400)
+  const idx = declaracionesStore.findIndex(d => d.id === declaracionId)
+  if (idx === -1) return { data: null, error: { message: 'Declaración no encontrada' } }
+  const pdfData = dataUrl ? { nombre, dataUrl } : null
+  if (pdfData) {
+    declaracionesStore[idx] = { ...declaracionesStore[idx], rentaPdf: pdfData }
+  } else {
+    const { rentaPdf: _, ...rest } = declaracionesStore[idx]
+    declaracionesStore[idx] = rest
+  }
+  persistRentaPdf(declaracionId, pdfData)
+  return { data: declaracionesStore[idx], error: null }
 }

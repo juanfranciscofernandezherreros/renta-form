@@ -283,6 +283,21 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
                       >
                         {t('btnDownloadPDF')}
                       </button>
+                      {dec.rentaPdf && (
+                        <button
+                          type="button"
+                          className="btn btn-primary"
+                          onClick={() => {
+                            const a = document.createElement('a')
+                            a.href = dec.rentaPdf.dataUrl
+                            a.download = dec.rentaPdf.nombre
+                            a.click()
+                          }}
+                          title="Descargar el PDF de la renta preparado por el gestor"
+                        >
+                          📥 Descargar PDF de la renta
+                        </button>
+                      )}
                     </div>
                   </div>
                 )}

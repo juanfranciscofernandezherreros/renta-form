@@ -190,6 +190,21 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion }) {
                   >
                     {t('btnDownloadPDF')}
                   </button>
+                  {result.rentaPdf && (
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-sm"
+                      onClick={() => {
+                        const a = document.createElement('a')
+                        a.href = result.rentaPdf.dataUrl
+                        a.download = result.rentaPdf.nombre
+                        a.click()
+                      }}
+                      title="Descargar el PDF de la renta preparado por el gestor"
+                    >
+                      📥 Descargar PDF de la renta
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
