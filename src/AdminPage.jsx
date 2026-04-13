@@ -614,7 +614,7 @@ export default function AdminPage({ onNavigate }) {
 
                     {/* Section 7: PDF de la Renta (admin) */}
                     <div>
-                      <div className="section-title">8. PDF de la Renta</div>
+                      <div className="section-title">7. PDF de la Renta</div>
                       {dec.rentaPdf ? (
                         <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                           <span>📄 {dec.rentaPdf.nombre}</span>
