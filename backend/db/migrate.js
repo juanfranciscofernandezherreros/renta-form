@@ -6,6 +6,7 @@ const pool = require('./pool')
 
 const SCHEMA_SQL = path.join(__dirname, '../../database/schema.sql')
 const BACKEND_SQL = path.join(__dirname, '../../database/schema_backend.sql')
+const FORMULARIO_SQL = path.join(__dirname, '../../database/schema_formulario.sql')
 
 async function tableExists(client, tableName) {
   const { rows } = await client.query(
@@ -37,6 +38,15 @@ async function migrate() {
       console.log('[migrate] schema_backend.sql applied.')
     } else {
       console.log('[migrate] schema_backend.sql already applied, skipping.')
+    }
+
+    // Run schema_formulario.sql only if 'preguntas_formulario' table is not yet created
+    if (!(await tableExists(client, 'preguntas_formulario'))) {
+      console.log('[migrate] Running schema_formulario.sql ...')
+      await client.query(fs.readFileSync(FORMULARIO_SQL, 'utf8'))
+      console.log('[migrate] schema_formulario.sql applied.')
+    } else {
+      console.log('[migrate] schema_formulario.sql already applied, skipping.')
     }
   } finally {
     client.release()

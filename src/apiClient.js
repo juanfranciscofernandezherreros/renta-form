@@ -159,6 +159,18 @@ export async function deletePreguntaAdmin(options) {
   return request('DELETE', `/admin/preguntas/${encodeURIComponent(id)}`)
 }
 
+// ── Admin: Preguntas del formulario ───────────────────────────────────────
+
+export async function listPreguntasFormulario() {
+  return request('GET', '/admin/preguntas-formulario')
+}
+
+export async function updatePreguntaFormulario(options) {
+  const campo = options?.path?.campo
+  const body = options?.body ?? {}
+  return request('PUT', `/admin/preguntas-formulario/${encodeURIComponent(campo)}`, { body })
+}
+
 // ── Admin: Secciones ───────────────────────────────────────────────────────
 
 export async function listSeccionesAdmin(options) {
