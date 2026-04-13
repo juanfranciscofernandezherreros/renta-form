@@ -38,18 +38,26 @@ const INITIAL_STATE = {
   comentarios: '',
 }
 
+const STEP_ICONS = ['👤', '🏠', '👨‍👩‍👧', '💶', '📁', '📝', '⭐', '❓']
+
 const YesNoField = ({ label, name, value, onChange, indent, t }) => (
-  <div className={`question-row${indent ? ' indent' : ''}`}>
-    <span className="question-text">{label}</span>
-    <div className="radio-group">
-      <label className="radio-label">
-        <input type="radio" name={name} value="si" checked={value === 'si'} onChange={onChange} />
-        {t('yes')}
-      </label>
-      <label className="radio-label">
-        <input type="radio" name={name} value="no" checked={value === 'no'} onChange={onChange} />
-        {t('no')}
-      </label>
+  <div className={`question-card${indent ? ' indent' : ''}${value ? ' answered' : ''}`}>
+    <div className="question-card-text">{label}</div>
+    <div className="yesno-buttons">
+      <button
+        type="button"
+        className={`yesno-btn${value === 'si' ? ' selected yes' : ''}`}
+        onClick={() => onChange({ target: { name, value: 'si' } })}
+      >
+        <span className="yesno-icon">✓</span> {t('yes')}
+      </button>
+      <button
+        type="button"
+        className={`yesno-btn${value === 'no' ? ' selected no' : ''}`}
+        onClick={() => onChange({ target: { name, value: 'no' } })}
+      >
+        <span className="yesno-icon">✗</span> {t('no')}
+      </button>
     </div>
   </div>
 )
@@ -70,6 +78,8 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const [buscarCodigo, setBuscarCodigo] = useState('')
   const [editDocumentos, setEditDocumentos] = useState([])
   const [deletingDocId, setDeletingDocId] = useState(null)
+  const [currentStep, setCurrentStep] = useState(0)
+  const [stepDirection, setStepDirection] = useState('forward')
   const topRef = useRef(null)
 
   useEffect(() => {
@@ -137,12 +147,47 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       setSubmitted(false)
       setSubmissionToken(null)
       setTokenCopied(false)
+      setCurrentStep(0)
+      setStepDirection('forward')
     }
   }
 
   const showToast = (msg, type) => {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 5000)
+  }
+
+  // Wizard step helpers
+  // Steps: 0 = ID fields, 1..N = API sections, N+1 = Docs + Comments (last)
+  const totalSteps = loadingPreguntas ? 0 : secciones.length + 2
+
+  const handleNext = () => {
+    if (currentStep === 0) {
+      if (!form.nombre.trim() || !form.apellidos.trim() || !form.dniNie.trim() || !form.telefono.trim()) {
+        showToast(t('errValidationRequired'), 'error')
+        return
+      }
+    } else if (currentStep >= 1 && currentStep <= secciones.length) {
+      const seccion = secciones[currentStep - 1]
+      const unanswered = seccion.preguntas.some(pregunta => {
+        const visible = !pregunta.condicion ||
+          form[pregunta.condicion.campo] === pregunta.condicion.valor
+        return visible && (form[pregunta.id] == null || form[pregunta.id] === '')
+      })
+      if (unanswered) {
+        showToast(t('errValidationQuestions'), 'error')
+        return
+      }
+    }
+    setStepDirection('forward')
+    setCurrentStep(prev => prev + 1)
+    topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  const handlePrev = () => {
+    setStepDirection('backward')
+    setCurrentStep(prev => prev - 1)
+    topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   const handleDeleteDocumento = async (docId) => {
@@ -347,14 +392,51 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
           </button>
         </form>
 
-        {/* Progress bar */}
-        <div className="progress-bar">
-          <div className={`step ${submitted ? 'done' : 'active'}`}><div className="bubble">{submitted ? '✓' : '1'}</div> {t('stepId')}</div>
-          <div className={`step ${submitted ? 'done' : ''}`}><div className="bubble">{submitted ? '✓' : '2'}</div> {t('stepHousing')}</div>
-          <div className={`step ${submitted ? 'done' : ''}`}><div className="bubble">{submitted ? '✓' : '3'}</div> {t('stepFamily')}</div>
-          <div className={`step ${submitted ? 'done' : ''}`}><div className="bubble">{submitted ? '✓' : '4'}</div> {t('stepIncome')}</div>
-          <div className={`step ${submitted ? 'done' : ''}`}><div className="bubble">{submitted ? '✓' : '5'}</div> {t('stepDocs')}</div>
-        </div>
+        {/* Progress bar – dynamic based on wizard steps */}
+        {!submitted && !loadingPreguntas && !errorPreguntas && (
+          <div className="progress-bar">
+            {/* Step 0: ID */}
+            <div className={`step ${currentStep > 0 ? 'done' : 'active'}`}>
+              <div className="bubble">{currentStep > 0 ? '✓' : '1'}</div>
+              {t('stepId')}
+            </div>
+            {/* Dynamic API sections */}
+            {secciones.map((sec, idx) => {
+              const stepIdx = idx + 1
+              const isDone = currentStep > stepIdx
+              const isActive = currentStep === stepIdx
+              return (
+                <div key={sec.id} className={`step ${isDone ? 'done' : isActive ? 'active' : ''}`}>
+                  <div className="bubble">{isDone ? '✓' : stepIdx + 1}</div>
+                  <span className="progress-step-label">
+                    {sec.titulos?.[lang] ?? sec.titulo}
+                  </span>
+                </div>
+              )
+            })}
+            {/* Last step: docs + comments */}
+            {(() => {
+              const lastIdx = secciones.length + 1
+              const isDone = submitted
+              const isActive = currentStep === lastIdx
+              return (
+                <div className={`step ${isDone ? 'done' : isActive ? 'active' : ''}`}>
+                  <div className="bubble">{isDone ? '✓' : lastIdx + 1}</div>
+                  {t('stepDocs')}
+                </div>
+              )
+            })()}
+          </div>
+        )}
+        {submitted && (
+          <div className="progress-bar">
+            {Array.from({ length: secciones.length + 2 }, (_, i) => (
+              <div key={i} className="step done">
+                <div className="bubble">✓</div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {submitted ? (
           <div className="success-panel">
@@ -398,147 +480,206 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
               {t('instructionsText')}<em>{t('campaignName')}</em>{t('instructionsText2')}
             </div>
 
-            <form onSubmit={handleSubmit} noValidate>
+            {loadingPreguntas && <div className="info-box">{t('loadingQuestions')}</div>}
+            {errorPreguntas && <div className="info-box">{t('errorQuestions')}{errorPreguntas}</div>}
 
-              {/* 1. Datos de identificación */}
-              <div className="section-title">{t('section1')}</div>
-              <div className="form-grid">
-                <div className="field">
-                  <label>{t('fieldNombre')}</label>
-                  <input type="text" name="nombre" value={form.nombre} onChange={handleChange} placeholder={t('fieldNombre')} required />
-                </div>
-                <div className="field">
-                  <label>{t('fieldApellidos')}</label>
-                  <input type="text" name="apellidos" value={form.apellidos} onChange={handleChange} placeholder={t('fieldApellidosPlaceholder')} required />
-                </div>
-                <div className="field">
-                  <label>{t('fieldDniNie')}</label>
-                  <input type="text" name="dniNie" value={form.dniNie} onChange={handleChange} placeholder="00000000A" maxLength={9} required />
-                </div>
-                <div className="field">
-                  <label>{t('fieldEmail')} <span className="field-optional">{t('fieldEmailOptional')}</span></label>
-                  <input type="email" name="email" value={form.email} onChange={handleChange} placeholder={t('fieldEmailPlaceholder')} />
-                </div>
-                <div className="field">
-                  <label>{t('fieldTelefono')}</label>
-                  <input type="tel" name="telefono" value={form.telefono} onChange={handleChange} placeholder={t('fieldTelefonoPlaceholder')} required />
-                </div>
-              </div>
+            {!loadingPreguntas && !errorPreguntas && (
+              <form onSubmit={handleSubmit} noValidate>
+                {/* Animated wizard step container – key change triggers CSS animation */}
+                <div
+                  key={`step-${currentStep}`}
+                  className={`wizard-step${stepDirection === 'backward' ? ' reverse' : ''}`}
+                >
 
-              {/* 2–4. Preguntas dinámicas cargadas desde el endpoint */}
-              {loadingPreguntas && (
-                <div className="info-box">{t('loadingQuestions')}</div>
-              )}
-              {errorPreguntas && (
-                <div className="info-box">{t('errorQuestions')}{errorPreguntas}</div>
-              )}
-              {!loadingPreguntas && !errorPreguntas && secciones.map(seccion => (
-                <div key={seccion.id}>
-                  <div className="section-title">{seccion.numero}. {seccion.titulos?.[lang] ?? seccion.titulo}</div>
-                  <div className="questions-list">
-                    {seccion.preguntas.map(pregunta => {
-                      const visible = !pregunta.condicion ||
-                        form[pregunta.condicion.campo] === pregunta.condicion.valor
-                      if (!visible) return null
-                      return (
-                        <YesNoField
-                          key={pregunta.id}
-                          name={pregunta.id}
-                          value={form[pregunta.id] ?? ''}
-                          onChange={handleChange}
-                          label={pregunta.textos?.[lang] ?? pregunta.texto}
-                          indent={pregunta.indentada}
-                          t={t}
-                        />
-                      )
-                    })}
+                  {/* ── Step 0: Identification ── */}
+                  {currentStep === 0 && (
+                    <>
+                      <div className="wizard-step-header">
+                        <div className="wizard-step-icon">👤</div>
+                        <div>
+                          <div className="wizard-step-title">{t('section1')}</div>
+                          <div className="wizard-step-subtitle">{t('instructionsTitle')}</div>
+                        </div>
+                      </div>
+                      <div className="form-grid">
+                        <div className="field">
+                          <label>{t('fieldNombre')}</label>
+                          <input type="text" name="nombre" value={form.nombre} onChange={handleChange} placeholder={t('fieldNombre')} required />
+                        </div>
+                        <div className="field">
+                          <label>{t('fieldApellidos')}</label>
+                          <input type="text" name="apellidos" value={form.apellidos} onChange={handleChange} placeholder={t('fieldApellidosPlaceholder')} required />
+                        </div>
+                        <div className="field">
+                          <label>{t('fieldDniNie')}</label>
+                          <input type="text" name="dniNie" value={form.dniNie} onChange={handleChange} placeholder="00000000A" maxLength={9} required />
+                        </div>
+                        <div className="field">
+                          <label>{t('fieldEmail')} <span className="field-optional">{t('fieldEmailOptional')}</span></label>
+                          <input type="email" name="email" value={form.email} onChange={handleChange} placeholder={t('fieldEmailPlaceholder')} />
+                        </div>
+                        <div className="field">
+                          <label>{t('fieldTelefono')}</label>
+                          <input type="tel" name="telefono" value={form.telefono} onChange={handleChange} placeholder={t('fieldTelefonoPlaceholder')} required />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* ── Steps 1..N: dynamic API sections ── */}
+                  {currentStep >= 1 && currentStep <= secciones.length && (() => {
+                    const seccion = secciones[currentStep - 1]
+                    const icon = STEP_ICONS[currentStep] ?? '❓'
+                    return (
+                      <>
+                        <div className="wizard-step-header">
+                          <div className="wizard-step-icon">{icon}</div>
+                          <div>
+                            <div className="wizard-step-title">
+                              {seccion.numero}. {seccion.titulos?.[lang] ?? seccion.titulo}
+                            </div>
+                            <div className="wizard-step-subtitle">{t('instructionsTitle')}</div>
+                          </div>
+                        </div>
+                        <div className="questions-list">
+                          {seccion.preguntas.map(pregunta => {
+                            const visible = !pregunta.condicion ||
+                              form[pregunta.condicion.campo] === pregunta.condicion.valor
+                            if (!visible) return null
+                            return (
+                              <YesNoField
+                                key={pregunta.id}
+                                name={pregunta.id}
+                                value={form[pregunta.id] ?? ''}
+                                onChange={handleChange}
+                                label={pregunta.textos?.[lang] ?? pregunta.texto}
+                                indent={pregunta.indentada}
+                                t={t}
+                              />
+                            )
+                          })}
+                        </div>
+                      </>
+                    )
+                  })()}
+
+                  {/* ── Last step: Docs + Comments + Submit ── */}
+                  {currentStep === secciones.length + 1 && (
+                    <>
+                      <div className="wizard-step-header">
+                        <div className="wizard-step-icon">📁</div>
+                        <div>
+                          <div className="wizard-step-title">{t('section5')}</div>
+                          <div className="wizard-step-subtitle">{t('docsInfoTitle')}</div>
+                        </div>
+                      </div>
+
+                      <div className="info-box">
+                        <strong>{t('docsInfoTitle')}</strong>
+                        {t('docsInfoText')}
+                      </div>
+
+                      {/* Already-attached documents when editing */}
+                      {editId && editDocumentos.length > 0 && (
+                        <div style={{ marginBottom: '12px' }}>
+                          <div style={{ fontSize: '0.9em', fontWeight: 600, marginBottom: '6px' }}>
+                            {t('docsAlreadyAttached')}
+                          </div>
+                          <ul className="documentos-list">
+                            {editDocumentos.map(doc => (
+                              <li key={doc.id}>
+                                <a
+                                  href={getDocumentoUrl(doc.id)}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="doc-download-link"
+                                >
+                                  📄 {doc.nombreOriginal}
+                                </a>
+                                <span className="doc-meta">{doc.mimeType} · {Math.round(doc.tamanyo / 1024)} KB</span>
+                                <button
+                                  type="button"
+                                  className="btn btn-danger btn-sm btn-xs"
+                                  onClick={() => handleDeleteDocumento(doc.id)}
+                                  disabled={deletingDocId === doc.id}
+                                  style={{ marginLeft: '8px' }}
+                                  title="Eliminar documento"
+                                >
+                                  {deletingDocId === doc.id ? '⏳' : '🗑️'}
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      <div className="form-grid">
+                        <div className="field">
+                          <label>{t('docDniAnverso')}</label>
+                          <input type="file" name="docDniAnverso" accept=".pdf,.jpg,.jpeg,.png" onChange={handleChange} />
+                          {form.docDniAnverso && <span className="file-name">📄 {form.docDniAnverso.name}</span>}
+                        </div>
+                        <div className="field">
+                          <label>{t('docDniReverso')}</label>
+                          <input type="file" name="docDniReverso" accept=".pdf,.jpg,.jpeg,.png" onChange={handleChange} />
+                          {form.docDniReverso && <span className="file-name">📄 {form.docDniReverso.name}</span>}
+                        </div>
+                        <div className="field full">
+                          <label>{t('docAdicional')}</label>
+                          <input type="file" name="docAdicional" accept=".pdf,.jpg,.jpeg,.png,.zip" multiple onChange={handleChange} />
+                          {form.docAdicional && <span className="file-name">📄 {Array.from(form.docAdicional).map(f => f.name).join(', ')}</span>}
+                        </div>
+                      </div>
+
+                      {/* Comments */}
+                      <div className="section-title">{t('section6')}</div>
+                      <div className="form-grid">
+                        <div className="field full">
+                          <label>{t('commentsLabel')}</label>
+                          <textarea
+                            name="comentarios"
+                            value={form.comentarios}
+                            onChange={handleChange}
+                            placeholder={t('commentsPlaceholder')}
+                            rows={5}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                </div>{/* end wizard-step */}
+
+                {/* Wizard navigation */}
+                <div className="wizard-nav">
+                  <div>
+                    {currentStep > 0 && (
+                      <button type="button" className="btn btn-secondary" onClick={handlePrev}>
+                        {t('btnBack')}
+                      </button>
+                    )}
+                    {currentStep === 0 && (
+                      <button type="button" className="btn btn-secondary" onClick={handleLimpiar}>{t('btnClear')}</button>
+                    )}
+                  </div>
+                  <div className="wizard-progress-text">
+                    {currentStep + 1} / {totalSteps}
+                  </div>
+                  <div className="wizard-nav-right">
+                    {currentStep < secciones.length + 1 ? (
+                      <button type="button" className="btn btn-primary" onClick={handleNext}>
+                        {t('btnContinue')}
+                      </button>
+                    ) : (
+                      <button type="submit" className="btn btn-success" disabled={submitting}>
+                        {submitting ? t('btnSubmitting') : t('btnSubmit')}
+                      </button>
+                    )}
                   </div>
                 </div>
-              ))}
 
-              {/* 5. Documentación adjunta */}
-              <div className="section-title">{t('section5')}</div>
-              <div className="info-box">
-                <strong>{t('docsInfoTitle')}</strong>
-                {t('docsInfoText')}
-              </div>
-
-              {/* Show already-attached documents when editing */}
-              {editId && editDocumentos.length > 0 && (
-                <div style={{ marginBottom: '12px' }}>
-                  <div style={{ fontSize: '0.9em', fontWeight: 600, marginBottom: '6px' }}>
-                    {t('docsAlreadyAttached')}
-                  </div>
-                  <ul className="documentos-list">
-                    {editDocumentos.map(doc => (
-                      <li key={doc.id}>
-                        <a
-                          href={getDocumentoUrl(doc.id)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="doc-download-link"
-                        >
-                          📄 {doc.nombreOriginal}
-                        </a>
-                        <span className="doc-meta">{doc.mimeType} · {Math.round(doc.tamanyo / 1024)} KB</span>
-                        <button
-                          type="button"
-                          className="btn btn-danger btn-sm btn-xs"
-                          onClick={() => handleDeleteDocumento(doc.id)}
-                          disabled={deletingDocId === doc.id}
-                          style={{ marginLeft: '8px' }}
-                          title="Eliminar documento"
-                        >
-                          {deletingDocId === doc.id ? '⏳' : '🗑️'}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <div className="form-grid">
-                <div className="field">
-                  <label>{t('docDniAnverso')}</label>
-                  <input type="file" name="docDniAnverso" accept=".pdf,.jpg,.jpeg,.png" onChange={handleChange} />
-                  {form.docDniAnverso && <span className="file-name">📄 {form.docDniAnverso.name}</span>}
-                </div>
-                <div className="field">
-                  <label>{t('docDniReverso')}</label>
-                  <input type="file" name="docDniReverso" accept=".pdf,.jpg,.jpeg,.png" onChange={handleChange} />
-                  {form.docDniReverso && <span className="file-name">📄 {form.docDniReverso.name}</span>}
-                </div>
-                <div className="field full">
-                  <label>{t('docAdicional')}</label>
-                  <input type="file" name="docAdicional" accept=".pdf,.jpg,.jpeg,.png,.zip" multiple onChange={handleChange} />
-                  {form.docAdicional && <span className="file-name">📄 {Array.from(form.docAdicional).map(f => f.name).join(', ')}</span>}
-                </div>
-              </div>
-
-              {/* 6. Información adicional */}
-              <div className="section-title">{t('section6')}</div>
-              <div className="form-grid">
-                <div className="field full">
-                  <label>{t('commentsLabel')}</label>
-                  <textarea
-                    name="comentarios"
-                    value={form.comentarios}
-                    onChange={handleChange}
-                    placeholder={t('commentsPlaceholder')}
-                    rows={5}
-                  />
-                </div>
-              </div>
-
-              {/* Buttons */}
-              <div className="btn-row">
-                <button type="button" className="btn btn-secondary" onClick={handleLimpiar}>{t('btnClear')}</button>
-                <button type="submit" className="btn btn-success" disabled={submitting}>
-                  {submitting ? t('btnSubmitting') : t('btnSubmit')}
-                </button>
-              </div>
-
-            </form>
+              </form>
+            )}
           </>
         )}
       </div>
