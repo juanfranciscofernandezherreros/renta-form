@@ -8,6 +8,7 @@ import {
   updateIdiomaContent,
 } from './mockApi.js'
 import Pagination from './Pagination.jsx'
+import { useLanguage } from './LanguageContext.jsx'
 
 const EMPTY_FORM = { code: '', label: '', activo: true }
 
@@ -20,6 +21,7 @@ function formatFecha(iso) {
 }
 
 export default function IdiomasAdminTab({ showToast }) {
+  const { reloadTranslations } = useLanguage()
   const [idiomas, setIdiomas] = useState([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -101,6 +103,7 @@ export default function IdiomasAdminTab({ showToast }) {
       }
       closeModal()
       refresh()
+      reloadTranslations()
     } finally {
       setSaving(false)
     }
@@ -112,6 +115,7 @@ export default function IdiomasAdminTab({ showToast }) {
     if (apiErr) { showToast(`Error al eliminar: ${apiErr.message}`, 'error'); return }
     showToast('Idioma eliminado correctamente')
     refresh()
+    reloadTranslations()
   }
 
   const openContent = async (idioma) => {
@@ -136,6 +140,7 @@ export default function IdiomasAdminTab({ showToast }) {
       const { error: apiErr } = await updateIdiomaContent({ path: { id: contentModal.id }, body: { content } })
       if (apiErr) { showToast(`Error al guardar contenido: ${apiErr.message}`, 'error'); return }
       showToast(`Contenido del idioma "${contentModal.label}" guardado correctamente`)
+      reloadTranslations()
       closeContentModal()
     } finally {
       setContentSaving(false)
