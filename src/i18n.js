@@ -118,6 +118,9 @@ const translations = {
     // Yes/No radios
     yes: 'Sí',
     no: 'No',
+    // Buscar renta
+    buscarRentaTitle: '🔍 Buscar mi expediente',
+    buscarRentaDesc: 'Introduce tu código de seguimiento para consultar el estado de tu expediente.',
     // Token (formularios anónimos)
     navConsulta: '🔍 Consultar estado',
     tokenTitle: '🔑 Tu código de seguimiento',
@@ -269,6 +272,9 @@ const translations = {
     langLabel: 'Langue',
     yes: 'Oui',
     no: 'Non',
+    // Buscar renta
+    buscarRentaTitle: '🔍 Rechercher mon dossier',
+    buscarRentaDesc: 'Saisissez votre code de suivi pour vérifier l\'état de votre dossier.',
     // Token (formulaires anonymes)
     navConsulta: '🔍 Consulter l\'état',
     tokenTitle: '🔑 Votre code de suivi',
@@ -418,6 +424,9 @@ const translations = {
     langLabel: 'Language',
     yes: 'Yes',
     no: 'No',
+    // Buscar renta
+    buscarRentaTitle: '🔍 Find my file',
+    buscarRentaDesc: 'Enter your tracking code to check the status of your file.',
     // Token (anonymous forms)
     navConsulta: '🔍 Check status',
     tokenTitle: '🔑 Your tracking code',
@@ -569,6 +578,9 @@ const translations = {
     langLabel: 'Idioma',
     yes: 'Sí',
     no: 'No',
+    // Buscar renta
+    buscarRentaTitle: '🔍 Cercar el meu expedient',
+    buscarRentaDesc: 'Introduïu el vostre codi de seguiment per consultar l\'estat del vostre expedient.',
     // Token (formularis anònims)
     navConsulta: '🔍 Consultar estat',
     tokenTitle: '🔑 El teu codi de seguiment',

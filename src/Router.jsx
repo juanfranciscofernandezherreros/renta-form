@@ -43,8 +43,11 @@ export default function Router() {
     )
   }
 
-  if (hash === '#/consulta') {
-    return <TokenConsultaPage onNavigate={navigate} onEditDeclaracion={handleEditDeclaracion} />
+  if (hash === '#/consulta' || hash.startsWith('#/consulta/')) {
+    const initialToken = hash.startsWith('#/consulta/')
+      ? decodeURIComponent(hash.slice('#/consulta/'.length))
+      : undefined
+    return <TokenConsultaPage onNavigate={navigate} onEditDeclaracion={handleEditDeclaracion} initialToken={initialToken} />
   }
 
   if (hash === '#/login') {

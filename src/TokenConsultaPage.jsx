@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { getDeclaracionByToken as getDeclaracionByTokenMock } from './mockApi.js'
 import { DEMO_MODE } from './constants.js'
 import { useLanguage } from './LanguageContext.jsx'
@@ -40,13 +40,29 @@ function loadHistory() {
   }
 }
 
-export default function TokenConsultaPage({ onNavigate, onEditDeclaracion }) {
+export default function TokenConsultaPage({ onNavigate, onEditDeclaracion, initialToken }) {
   const { lang, setLang, t, availableLanguages } = useLanguage()
-  const [token, setToken] = useState('')
+  const [token, setToken] = useState(initialToken ?? '')
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [history, setHistory] = useState(loadHistory)
+
+  useEffect(() => {
+    if (!initialToken) return
+    const trimmed = initialToken.trim()
+    if (!trimmed || !getDeclaracionByToken) return
+    setLoading(true)
+    getDeclaracionByToken({ token: trimmed }).then(({ data, error: apiError }) => {
+      setLoading(false)
+      if (apiError || !data) {
+        setError(t('tokenNotFound'))
+      } else {
+        setResult(data)
+      }
+    })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialToken])
 
   const handleSubmit = async e => {
     e.preventDefault()
