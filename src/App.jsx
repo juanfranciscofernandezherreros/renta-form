@@ -408,7 +408,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
               return (
                 <div key={sec.id} className={`step ${isDone ? 'done' : isActive ? 'active' : ''}`}>
                   <div className="bubble">{isDone ? '✓' : stepIdx + 1}</div>
-                  <span style={{ maxWidth: 60, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'block' }}>
+                  <span className="progress-step-label">
                     {sec.titulos?.[lang] ?? sec.titulo}
                   </span>
                 </div>

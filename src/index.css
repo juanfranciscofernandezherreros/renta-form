@@ -112,6 +112,14 @@ header .header-text p  { font-size: 0.9rem; opacity: .85; margin-top: 4px; }
 .progress-bar .step.done     .bubble { background: #28a745; }
 .progress-bar .step.active   { color: #003087; font-weight: 600; }
 
+.progress-step-label {
+  max-width: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+}
+
 /* ── Section titles */
 .section-title {
   font-size: 1.1rem;
