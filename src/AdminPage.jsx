@@ -10,6 +10,7 @@ import {
   getUserByDniNie,
   uploadRentaPdf,
 } from './mockApi.js'
+import { downloadRentaPdf } from './pdfUtils.js'
 import PreguntasAdminTab from './PreguntasAdminTab.jsx'
 import SeccionesAdminTab from './SeccionesAdminTab.jsx'
 import DeclaracionPreguntasPanel from './DeclaracionPreguntasPanel.jsx'
@@ -328,7 +329,7 @@ export default function AdminPage({ onNavigate }) {
       const dataUrl = await new Promise((resolve, reject) => {
         const reader = new FileReader()
         reader.onload = ev => resolve(ev.target.result)
-        reader.onerror = reject
+        reader.onerror = () => reject(new Error('Error al leer el archivo'))
         reader.readAsDataURL(file)
       })
       const { data, error: apiErr } = await uploadRentaPdf({ declaracionId: decId, nombre: file.name, dataUrl })
@@ -344,17 +345,14 @@ export default function AdminPage({ onNavigate }) {
   }
 
   const handleRemoveRentaPdf = async (decId) => {
-    const { data, error: apiErr } = await uploadRentaPdf({ declaracionId: decId, nombre: null, dataUrl: null })
-    if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
-    setDeclaraciones(prev => prev.map(d => d.id === decId ? data : d))
-    showToast('PDF de la renta eliminado')
-  }
-
-  const downloadRentaPdf = (rentaPdf) => {
-    const a = document.createElement('a')
-    a.href = rentaPdf.dataUrl
-    a.download = rentaPdf.nombre
-    a.click()
+    try {
+      const { data, error: apiErr } = await uploadRentaPdf({ declaracionId: decId, nombre: null, dataUrl: null })
+      if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
+      setDeclaraciones(prev => prev.map(d => d.id === decId ? data : d))
+      showToast('PDF de la renta eliminado')
+    } catch {
+      showToast('Error al eliminar el PDF', 'error')
+    }
   }
 
   return (

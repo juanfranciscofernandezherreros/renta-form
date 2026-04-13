@@ -199,3 +199,14 @@ export function generateDeclaracionPDF(dec) {
   const dniNie = dec.dniNie ? `_${dec.dniNie}` : ''
   doc.save(`declaracion${nombre}${dniNie}.pdf`)
 }
+
+/**
+ * Descarga el PDF de la renta adjuntado por el administrador.
+ * @param {{ nombre: string, dataUrl: string }} rentaPdf
+ */
+export function downloadRentaPdf(rentaPdf) {
+  const a = document.createElement('a')
+  a.href = rentaPdf.dataUrl
+  a.download = rentaPdf.nombre
+  a.click()
+}

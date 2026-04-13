@@ -5,7 +5,7 @@ import { listDeclaraciones as listDeclaracionesMock, changePassword as changePas
 import { DEMO_MODE } from './constants.js'
 import { useLanguage } from './LanguageContext.jsx'
 import Footer from './Footer.jsx'
-import { generateDeclaracionPDF } from './pdfUtils.js'
+import { generateDeclaracionPDF, downloadRentaPdf } from './pdfUtils.js'
 
 const listDeclaraciones = DEMO_MODE ? listDeclaracionesMock : listDeclaracionesReal
 const changePasswordFn = DEMO_MODE ? changePasswordMock : null
@@ -287,12 +287,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
                         <button
                           type="button"
                           className="btn btn-primary"
-                          onClick={() => {
-                            const a = document.createElement('a')
-                            a.href = dec.rentaPdf.dataUrl
-                            a.download = dec.rentaPdf.nombre
-                            a.click()
-                          }}
+                          onClick={() => downloadRentaPdf(dec.rentaPdf)}
                           title="Descargar el PDF de la renta preparado por el gestor"
                         >
                           📥 Descargar PDF de la renta

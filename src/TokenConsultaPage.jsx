@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { getDeclaracionByToken as getDeclaracionByTokenMock } from './mockApi.js'
 import { DEMO_MODE } from './constants.js'
 import { useLanguage } from './LanguageContext.jsx'
-import { generateDeclaracionPDF } from './pdfUtils.js'
+import { generateDeclaracionPDF, downloadRentaPdf } from './pdfUtils.js'
 
 const TOKENS_STORAGE_KEY = 'renta_form_tokens'
 
@@ -194,12 +194,7 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion }) {
                     <button
                       type="button"
                       className="btn btn-primary btn-sm"
-                      onClick={() => {
-                        const a = document.createElement('a')
-                        a.href = result.rentaPdf.dataUrl
-                        a.download = result.rentaPdf.nombre
-                        a.click()
-                      }}
+                      onClick={() => downloadRentaPdf(result.rentaPdf)}
                       title="Descargar el PDF de la renta preparado por el gestor"
                     >
                       📥 Descargar PDF de la renta
