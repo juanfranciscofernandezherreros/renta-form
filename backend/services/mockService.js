@@ -210,7 +210,7 @@ async function updateEstadoDeclaracion(id, estado) {
   return { data: store.declaraciones[idx], error: null }
 }
 
-async function updateDeclaracion(id, body) {
+async function updateDeclaracion(id, body, _files = {}) {
   const idx = store.declaraciones.findIndex((d) => d.id === id)
   if (idx === -1) return { data: null, error: { message: 'Declaración no encontrada' } }
   store.declaraciones[idx] = {
@@ -675,6 +675,7 @@ module.exports = {
   deleteDeclaracion,
   sendEmailDeclaracion,
   getDocumento: async () => ({ data: null, error: { message: 'No disponible en modo mock' } }),
+  deleteDocumento: async () => ({ data: null, error: { message: 'No disponible en modo mock' } }),
   getDeclaracionPreguntas,
   upsertDeclaracionPreguntas,
   removeDeclaracionPregunta,

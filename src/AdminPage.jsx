@@ -10,6 +10,7 @@ import {
   getUserByDniNie,
   uploadRentaPdf,
   getDocumentoUrl,
+  deleteDocumento,
 } from './apiClient.js'
 import { downloadRentaPdf } from './pdfUtils.js'
 import PreguntasAdminTab from './PreguntasAdminTab.jsx'
@@ -357,6 +358,20 @@ export default function AdminPage({ onNavigate }) {
     }
   }
 
+  const handleDeleteDocumento = async (decId, docId) => {
+    if (!window.confirm('¿Eliminar este documento?')) return
+    const { error: apiErr } = await deleteDocumento({ path: { docId } })
+    if (apiErr) { showToast(`Error al eliminar documento: ${apiErr.message}`, 'error'); return }
+    setDeclaraciones(prev =>
+      prev.map(d =>
+        d.id === decId
+          ? { ...d, documentos: (d.documentos ?? []).filter(doc => doc.id !== docId) }
+          : d
+      )
+    )
+    showToast('Documento eliminado')
+  }
+
   return (
     <>
       <header>
@@ -566,6 +581,15 @@ export default function AdminPage({ onNavigate }) {
                                 📄 {doc.nombreOriginal}
                               </a>
                               <span className="doc-meta">{doc.mimeType} · {Math.round(doc.tamanyo / 1024)} KB</span>
+                              <button
+                                type="button"
+                                className="btn btn-danger btn-sm btn-xs"
+                                onClick={() => handleDeleteDocumento(dec.id, doc.id)}
+                                style={{ marginLeft: '8px' }}
+                                title="Eliminar documento"
+                              >
+                                🗑️
+                              </button>
                             </li>
                           ))}
                         </ul>

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import './App.css'
-import { getPreguntas, createDeclaracion, updateDeclaracion } from './apiClient.js'
+import { getPreguntas, createDeclaracion, updateDeclaracion, deleteDocumento, getDocumentoUrl } from './apiClient.js'
 import { useAuth } from './AuthContext.jsx'
 import { useLanguage } from './LanguageContext.jsx'
 import Footer from './Footer.jsx'
@@ -68,11 +68,14 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const [loadingPreguntas, setLoadingPreguntas] = useState(true)
   const [errorPreguntas, setErrorPreguntas] = useState(null)
   const [buscarCodigo, setBuscarCodigo] = useState('')
+  const [editDocumentos, setEditDocumentos] = useState([])
+  const [deletingDocId, setDeletingDocId] = useState(null)
   const topRef = useRef(null)
 
   useEffect(() => {
     if (!editData) return
     setEditId(editData.id)
+    setEditDocumentos(editData.documentos ?? [])
     setForm({
       ...INITIAL_STATE,
       nombre: editData.nombre ?? '',
@@ -130,6 +133,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
     if (window.confirm(t('confirmClear'))) {
       setForm(INITIAL_STATE)
       setEditId(null)
+      setEditDocumentos([])
       setSubmitted(false)
       setSubmissionToken(null)
       setTokenCopied(false)
@@ -139,6 +143,18 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const showToast = (msg, type) => {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 5000)
+  }
+
+  const handleDeleteDocumento = async (docId) => {
+    if (!window.confirm(t('confirmDeleteDoc') || '¿Eliminar este documento?')) return
+    setDeletingDocId(docId)
+    const { error } = await deleteDocumento({ path: { docId } })
+    setDeletingDocId(null)
+    if (error) {
+      showToast(error.message, 'error')
+    } else {
+      setEditDocumentos(prev => prev.filter(d => d.id !== docId))
+    }
   }
 
   const handleSubmit = async e => {
@@ -219,10 +235,15 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
           ingresosJuego: form.ingresosJuego,
           ingresosInversiones: form.ingresosInversiones,
           comentarios: form.comentarios,
+          // New documents to attach (if any were selected)
+          ...(form.docDniAnverso && { docDniAnverso: form.docDniAnverso }),
+          ...(form.docDniReverso && { docDniReverso: form.docDniReverso }),
+          ...(form.docAdicional && { docAdicional: Array.from(form.docAdicional) }),
         }
         const { data, error, response } = await updateDeclaracion({ path: { id: editId }, body: updateBody })
         if (data) {
           setEditId(null)
+          setEditDocumentos([])
           setSubmitted(true)
           showToast(t('toastSuccess'), 'success')
           setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
@@ -441,6 +462,41 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                 <strong>{t('docsInfoTitle')}</strong>
                 {t('docsInfoText')}
               </div>
+
+              {/* Show already-attached documents when editing */}
+              {editId && editDocumentos.length > 0 && (
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{ fontSize: '0.9em', fontWeight: 600, marginBottom: '6px' }}>
+                    {t('docsAlreadyAttached') || 'Documentos ya adjuntos:'}
+                  </div>
+                  <ul className="documentos-list">
+                    {editDocumentos.map(doc => (
+                      <li key={doc.id}>
+                        <a
+                          href={getDocumentoUrl(doc.id)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="doc-download-link"
+                        >
+                          📄 {doc.nombreOriginal}
+                        </a>
+                        <span className="doc-meta">{doc.mimeType} · {Math.round(doc.tamanyo / 1024)} KB</span>
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-sm btn-xs"
+                          onClick={() => handleDeleteDocumento(doc.id)}
+                          disabled={deletingDocId === doc.id}
+                          style={{ marginLeft: '8px' }}
+                          title="Eliminar documento"
+                        >
+                          {deletingDocId === doc.id ? '⏳' : '🗑️'}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <div className="form-grid">
                 <div className="field">
                   <label>{t('docDniAnverso')}</label>

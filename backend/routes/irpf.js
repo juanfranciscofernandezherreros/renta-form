@@ -3,13 +3,19 @@
 const { Router } = require('express')
 const multer = require('multer')
 
-const ALLOWED_MIME_TYPES = new Set(['application/pdf', 'image/jpeg', 'image/png'])
+const ALLOWED_MIME_TYPES = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'application/zip',
+  'application/x-zip-compressed',
+])
 
 function multerFileFilter(_req, file, cb) {
   if (ALLOWED_MIME_TYPES.has(file.mimetype)) {
     cb(null, true)
   } else {
-    cb(new Error(`Tipo de archivo no permitido: ${file.mimetype}. Se admiten PDF, JPG y PNG.`))
+    cb(new Error(`Tipo de archivo no permitido: ${file.mimetype}. Se admiten PDF, JPG, PNG y ZIP.`))
   }
 }
 
@@ -18,6 +24,23 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: multerFileFilter,
 })
+
+const uploadFields = upload.fields([
+  { name: 'docDniAnverso', maxCount: 1 },
+  { name: 'docDniReverso', maxCount: 1 },
+  { name: 'docAdicional', maxCount: 10 },
+])
+
+/** Wraps multer so that file-type/size errors are returned as JSON 400. */
+function uploadMiddleware(req, res, next) {
+  uploadFields(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ error: err.message })
+    }
+    next()
+  })
+}
+
 const router = Router()
 
 function send(res, result) {
@@ -60,18 +83,10 @@ module.exports = function irpfRoutes(svc) {
   })
 
   // POST /v1/irpf/declaraciones  (multipart)
-  router.post(
-    '/declaraciones',
-    upload.fields([
-      { name: 'docDniAnverso', maxCount: 1 },
-      { name: 'docDniReverso', maxCount: 1 },
-      { name: 'docAdicional', maxCount: 10 },
-    ]),
-    async (req, res) => {
-      const result = await svc.createDeclaracion(req.body, req.files ?? {})
-      send(res, result)
-    }
-  )
+  router.post('/declaraciones', uploadMiddleware, async (req, res) => {
+    const result = await svc.createDeclaracion(req.body, req.files ?? {})
+    send(res, result)
+  })
 
   // GET /v1/irpf/documentos/:docId  (download attachment)
   router.get('/documentos/:docId', async (req, res) => {
@@ -130,9 +145,15 @@ module.exports = function irpfRoutes(svc) {
     send(res, result)
   })
 
-  // PUT /v1/irpf/declaraciones/:id  (update all fields)
-  router.put('/declaraciones/:id', async (req, res) => {
-    const result = await svc.updateDeclaracion(req.params.id, req.body ?? {})
+  // PUT /v1/irpf/declaraciones/:id  (update all fields, optional multipart)
+  router.put('/declaraciones/:id', uploadMiddleware, async (req, res) => {
+    const result = await svc.updateDeclaracion(req.params.id, req.body ?? {}, req.files ?? {})
+    send(res, result)
+  })
+
+  // DELETE /v1/irpf/documentos/:docId  (delete a single attachment)
+  router.delete('/documentos/:docId', async (req, res) => {
+    const result = await svc.deleteDocumento(req.params.docId)
     send(res, result)
   })
 

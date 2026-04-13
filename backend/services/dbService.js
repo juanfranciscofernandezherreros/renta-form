@@ -435,7 +435,7 @@ async function updateEstadoDeclaracion(id, estado) {
   return { data: rowToDeclaracion(rows[0]), error: null }
 }
 
-async function updateDeclaracion(id, body) {
+async function updateDeclaracion(id, body, files = {}) {
   // Build a dynamic SET clause for only provided fields
   const FIELD_MAP = {
     nombre: 'nombre',
@@ -476,6 +476,25 @@ async function updateDeclaracion(id, body) {
     params
   )
   if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
+
+  // Save any newly uploaded files
+  const FILE_TIPO_MAP = {
+    docDniAnverso: 'dni_anverso',
+    docDniReverso: 'dni_reverso',
+    docAdicional: 'adicional',
+  }
+  for (const [fieldName, tipo] of Object.entries(FILE_TIPO_MAP)) {
+    const fieldFiles = files[fieldName]
+    if (!fieldFiles || !fieldFiles.length) continue
+    for (const f of fieldFiles) {
+      await pool.query(
+        `INSERT INTO documentos (declaracion_id, tipo, nombre_original, mime_type, tamanyo_bytes, contenido)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [rows[0].id, tipo, f.originalname, f.mimetype, f.size, f.buffer]
+      )
+    }
+  }
+
   return { data: rowToDeclaracion(rows[0]), error: null }
 }
 
@@ -937,6 +956,12 @@ async function getDocumento(docId) {
   }
 }
 
+async function deleteDocumento(docId) {
+  const { rowCount } = await pool.query('DELETE FROM documentos WHERE id = $1', [docId])
+  if (!rowCount) return { data: null, error: { message: 'Documento no encontrado' } }
+  return { data: { success: true }, error: null }
+}
+
 // ── Exports ────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -954,6 +979,7 @@ module.exports = {
   deleteDeclaracion,
   sendEmailDeclaracion,
   getDocumento,
+  deleteDocumento,
   getDeclaracionPreguntas,
   upsertDeclaracionPreguntas,
   removeDeclaracionPregunta,

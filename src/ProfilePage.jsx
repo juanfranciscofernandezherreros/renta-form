@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from './AuthContext.jsx'
-import { listDeclaraciones, changePassword, getDocumentoUrl } from './apiClient.js'
+import { listDeclaraciones, changePassword, getDocumentoUrl, deleteDocumento } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
 import Footer from './Footer.jsx'
 import { generateDeclaracionPDF, downloadRentaPdf } from './pdfUtils.js'
@@ -73,6 +73,8 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
   const [pwSuccess, setPwSuccess] = useState(false)
   const [pwLoading, setPwLoading] = useState(false)
 
+  const [deletingDocId, setDeletingDocId] = useState(null)
+
   useEffect(() => {
     if (!user) return
     listDeclaraciones({ query: { dniNie: user.dniNie, limit: 10 } })
@@ -92,6 +94,24 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
   const handleEdit = (declaracion) => {
     onEditDeclaracion(declaracion)
     onNavigate('#/')
+  }
+
+  const handleDeleteDocumento = async (decId, docId) => {
+    if (!window.confirm('¿Eliminar este documento?')) return
+    setDeletingDocId(docId)
+    const { error: apiError } = await deleteDocumento({ path: { docId } })
+    setDeletingDocId(null)
+    if (apiError) {
+      alert(`Error al eliminar: ${apiError.message}`)
+      return
+    }
+    setDeclaraciones(prev =>
+      prev.map(d =>
+        d.id === decId
+          ? { ...d, documentos: (d.documentos ?? []).filter(doc => doc.id !== docId) }
+          : d
+      )
+    )
   }
 
   const handlePwChange = e => {
@@ -241,6 +261,18 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
                                 📄 {doc.nombreOriginal}
                               </a>
                               <span className="doc-meta">{doc.mimeType} · {Math.round(doc.tamanyo / 1024)} KB</span>
+                              {dec.estado !== 'completado' && (
+                                <button
+                                  type="button"
+                                  className="btn btn-danger btn-sm btn-xs"
+                                  onClick={() => handleDeleteDocumento(dec.id, doc.id)}
+                                  disabled={deletingDocId === doc.id}
+                                  style={{ marginLeft: '8px' }}
+                                  title="Eliminar documento"
+                                >
+                                  {deletingDocId === doc.id ? '⏳' : '🗑️'}
+                                </button>
+                              )}
                             </li>
                           ))}
                         </ul>
