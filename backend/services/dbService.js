@@ -61,6 +61,7 @@ function rowToPregunta(row) {
     tipoRespuesta: row.tipo_respuesta,
     orden: row.orden,
     activa: row.activa,
+    obligatoria: row.obligatoria ?? false,
     creadaEn: row.creada_en,
     actualizadaEn: row.actualizada_en,
   }
@@ -393,9 +394,9 @@ async function createPreguntaAdmin(body) {
     }
   }
   const { rows } = await pool.query(
-    `INSERT INTO preguntas_adicionales (texto, seccion, tipo_respuesta, orden, activa)
-     VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-    [body.texto, body.seccion, body.tipoRespuesta, body.orden ?? 0, body.activa !== undefined ? body.activa : true]
+    `INSERT INTO preguntas_adicionales (texto, seccion, tipo_respuesta, orden, activa, obligatoria)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+    [body.texto, body.seccion, body.tipoRespuesta, body.orden ?? 0, body.activa !== undefined ? body.activa : true, body.obligatoria !== undefined ? body.obligatoria : false]
   )
   return { data: rowToPregunta(rows[0]), error: null, status: 201 }
 }
@@ -407,7 +408,7 @@ async function getPreguntaAdmin(id) {
 }
 
 async function updatePreguntaAdmin(id, body) {
-  const FIELD_MAP = { texto: 'texto', seccion: 'seccion', tipoRespuesta: 'tipo_respuesta', orden: 'orden', activa: 'activa' }
+  const FIELD_MAP = { texto: 'texto', seccion: 'seccion', tipoRespuesta: 'tipo_respuesta', orden: 'orden', activa: 'activa', obligatoria: 'obligatoria' }
   const setClauses = []
   const params = []
   for (const [camel, snake] of Object.entries(FIELD_MAP)) {

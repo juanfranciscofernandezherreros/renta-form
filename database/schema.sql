@@ -227,6 +227,7 @@ CREATE TABLE IF NOT EXISTS preguntas_adicionales (
     tipo_respuesta  tipo_respuesta  NOT NULL DEFAULT 'yn',
     orden           INTEGER         NOT NULL DEFAULT 0,
     activa          BOOLEAN         NOT NULL DEFAULT TRUE,
+    obligatoria     BOOLEAN         NOT NULL DEFAULT FALSE,
     creada_en       TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
     actualizada_en  TIMESTAMPTZ     NOT NULL DEFAULT NOW()
 );

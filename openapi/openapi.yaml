@@ -885,6 +885,9 @@ paths:
         activa:
           type: boolean
           default: true
+        obligatoria:
+          type: boolean
+          default: false
 
     PreguntaAdicional:
       allOf:
