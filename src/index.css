@@ -628,14 +628,160 @@ footer {
   text-decoration: underline;
 }
 
-/* ── Yes/No question list */
+/* ── Wizard step animations ── */
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(56px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-56px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.wizard-step {
+  animation: slideInRight 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+.wizard-step.reverse {
+  animation: slideInLeft 0.32s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ── Wizard step header */
+.wizard-step-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e4eaf4;
+}
+.wizard-step-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+  background: #e8f0fe;
+  border-radius: 50%;
+  width: 52px; height: 52px;
+  display: flex; align-items: center; justify-content: center;
+}
+.wizard-step-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #003087;
+  line-height: 1.3;
+}
+.wizard-step-subtitle {
+  font-size: .82rem;
+  color: #777;
+  margin-top: 2px;
+}
+
+/* ── Wizard navigation */
+.wizard-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid #e4eaf4;
+  gap: 12px;
+}
+.wizard-nav-right {
+  display: flex;
+  gap: 12px;
+}
+.wizard-progress-text {
+  font-size: .82rem;
+  color: #888;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ── Question card (interactive yes/no) ── */
 .questions-list {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 12px;
   margin-bottom: 8px;
 }
 
+.question-card {
+  background: #fff;
+  border: 1.5px solid #e4eaf4;
+  border-radius: 12px;
+  padding: 18px 20px;
+  transition: border-color .2s, box-shadow .2s;
+  animation: fadeInUp 0.3s ease both;
+}
+.question-card:hover {
+  border-color: #c2d4f7;
+  box-shadow: 0 2px 8px rgba(0,48,135,.06);
+}
+.question-card.answered {
+  border-color: #c2d4f7;
+  background: #f6f9ff;
+}
+.question-card.indent {
+  border-left: 4px solid #5b85c8;
+  margin-left: 20px;
+  background: #f0f5ff;
+}
+.question-card.indent.answered {
+  background: #e8f0ff;
+}
+
+.question-card-text {
+  font-size: .95rem;
+  color: #222;
+  line-height: 1.5;
+  margin-bottom: 14px;
+  font-weight: 500;
+}
+
+.yesno-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.yesno-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 2px solid #c8d1df;
+  background: #f8fafd;
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color .15s, background .15s, color .15s, transform .1s;
+  color: #555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.yesno-btn:hover {
+  border-color: #003087;
+  background: #eef4ff;
+  color: #003087;
+  transform: translateY(-1px);
+}
+.yesno-btn.selected.yes {
+  border-color: #27ae60;
+  background: #d4f5e2;
+  color: #155724;
+}
+.yesno-btn.selected.no {
+  border-color: #c0392b;
+  background: #fdecea;
+  color: #7b1d1d;
+}
+.yesno-icon {
+  font-size: 1rem;
+}
+
+/* keep legacy question-row for any remaining usages */
 .question-row {
   display: flex;
   align-items: center;
@@ -823,6 +969,14 @@ footer {
 
   .form-grid, .form-grid.cols-3 { grid-template-columns: 1fr; }
   .full { grid-column: auto; }
+
+  .question-card { padding: 14px 14px; }
+  .yesno-buttons { flex-direction: column; gap: 8px; }
+  .yesno-btn { flex: none; }
+
+  .wizard-nav { flex-direction: column; align-items: stretch; }
+  .wizard-nav-right { justify-content: flex-end; }
+  .wizard-step-header { flex-wrap: wrap; }
 
   .question-row { flex-direction: column; align-items: flex-start; gap: 10px; }
   .radio-group { gap: 24px; }
