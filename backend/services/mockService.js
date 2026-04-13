@@ -293,6 +293,30 @@ async function removeDeclaracionPregunta(id, preguntaId) {
   return { data: { success: true }, error: null }
 }
 
+async function assignPreguntaToAllDeclaraciones(preguntaId) {
+  const preguntaExiste = store.preguntasAdicionales.some((p) => p.id === preguntaId)
+  if (!preguntaExiste) return { data: null, error: { message: 'Pregunta no encontrada' } }
+  const ahora = new Date().toISOString()
+  let inserted = 0
+  for (const dec of store.declaraciones) {
+    const exists = store.declaracionPreguntas.some(
+      (dp) => dp.declaracionId === dec.id && dp.preguntaId === preguntaId
+    )
+    if (!exists) {
+      store.declaracionPreguntas.push({
+        id: store.generarDpId(),
+        declaracionId: dec.id,
+        preguntaId,
+        respuesta: null,
+        asignadaEn: ahora,
+        respondidaEn: null,
+      })
+      inserted++
+    }
+  }
+  return { data: { total: store.declaraciones.length, inserted }, error: null }
+}
+
 // ── Admin: Preguntas adicionales ───────────────────────────────────────────
 
 async function listPreguntasAdmin({ activa, page = 1, limit = 10 }) {
@@ -679,6 +703,7 @@ module.exports = {
   getDeclaracionPreguntas,
   upsertDeclaracionPreguntas,
   removeDeclaracionPregunta,
+  assignPreguntaToAllDeclaraciones,
   listPreguntasAdmin,
   createPreguntaAdmin,
   getPreguntaAdmin,

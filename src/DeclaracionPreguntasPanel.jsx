@@ -31,7 +31,7 @@ export default function DeclaracionPreguntasPanel({ declaracionId, showToast }) 
     let cancelled = false
     Promise.all([
       getDeclaracionPreguntas({ path: { id: declaracionId } }),
-      listPreguntasAdmin({ query: { activa: true } }),
+      listPreguntasAdmin({ query: { activa: true, limit: 1000, page: 1 } }),
     ])
       .then(([{ data: asData, error: asErr }, { data: prData, error: prErr }]) => {
         if (cancelled) return

@@ -585,7 +585,7 @@ async function getDeclaracionPreguntas(id) {
   const decCheck = await pool.query('SELECT id FROM declaraciones WHERE id = $1', [id])
   if (!decCheck.rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
   const { rows } = await pool.query(
-    `SELECT dp.*, pa.texto, pa.seccion, pa.tipo_respuesta, pa.orden, pa.activa, pa.creada_en AS pa_creada_en, pa.actualizada_en AS pa_actualizada_en
+    `SELECT dp.*, pa.texto, pa.seccion, pa.tipo_respuesta, pa.orden, pa.activa, pa.obligatoria, pa.creada_en AS pa_creada_en, pa.actualizada_en AS pa_actualizada_en
      FROM declaracion_pregunta dp
      LEFT JOIN preguntas_adicionales pa ON pa.id = dp.pregunta_id
      WHERE dp.declaracion_id = $1`,
@@ -606,6 +606,7 @@ async function getDeclaracionPreguntas(id) {
           tipoRespuesta: r.tipo_respuesta,
           orden: r.orden,
           activa: r.activa,
+          obligatoria: r.obligatoria ?? false,
           creadaEn: r.pa_creada_en,
           actualizadaEn: r.pa_actualizada_en,
         }
@@ -643,7 +644,24 @@ async function removeDeclaracionPregunta(id, preguntaId) {
   return { data: { success: true }, error: null }
 }
 
-// ── Admin: Preguntas adicionales ───────────────────────────────────────────
+async function assignPreguntaToAllDeclaraciones(preguntaId) {
+  const pCheck = await pool.query('SELECT id FROM preguntas_adicionales WHERE id = $1', [preguntaId])
+  if (!pCheck.rows.length) return { data: null, error: { message: 'Pregunta no encontrada' } }
+  const ahora = new Date().toISOString()
+  const { rows: decRows } = await pool.query('SELECT id FROM declaraciones')
+  let inserted = 0
+  for (const dec of decRows) {
+    const res = await pool.query(
+      `INSERT INTO declaracion_pregunta (declaracion_id, pregunta_id, asignada_en)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (declaracion_id, pregunta_id) DO NOTHING`,
+      [dec.id, preguntaId, ahora]
+    )
+    inserted += res.rowCount ?? 0
+  }
+  return { data: { total: decRows.length, inserted }, error: null }
+}
+
 
 async function listPreguntasAdmin({ activa, page = 1, limit = 10 }) {
   const conditions = []
@@ -1053,6 +1071,7 @@ module.exports = {
   getDeclaracionPreguntas,
   upsertDeclaracionPreguntas,
   removeDeclaracionPregunta,
+  assignPreguntaToAllDeclaraciones,
   listPreguntasAdmin,
   createPreguntaAdmin,
   getPreguntaAdmin,

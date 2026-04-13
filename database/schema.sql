@@ -218,7 +218,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_registrar_cambio_estado();
 --  TABLA: preguntas_adicionales
 --  Catálogo de preguntas configurables por el administrador.
 -- =============================================================
-CREATE TYPE tipo_respuesta AS ENUM ('yn', 'texto', 'numero');
+CREATE TYPE tipo_respuesta AS ENUM ('yn', 'texto', 'numero', 'fecha', 'importe', 'porcentaje', 'multilinea');
 
 CREATE TABLE IF NOT EXISTS preguntas_adicionales (
     id              UUID            PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -4,6 +4,7 @@ import {
   createPreguntaAdmin,
   updatePreguntaAdmin,
   deletePreguntaAdmin,
+  assignPreguntaToAllDeclaraciones,
   listSeccionesAdmin,
   listPreguntasFormulario,
   listSeccionesFormulario,
@@ -49,6 +50,7 @@ function PreguntasAdicionalesSection({ showToast }) {
   const [form, setForm] = useState(EMPTY_ADICIONAL)
   const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
+  const [confirmAssignAll, setConfirmAssignAll] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [secciones, setSecciones] = useState([])
   const [seccionesLoading, setSeccionesLoading] = useState(false)
@@ -125,6 +127,13 @@ function PreguntasAdicionalesSection({ showToast }) {
     refresh()
   }
 
+  const handleAssignAll = async id => {
+    setConfirmAssignAll(null)
+    const { data, error: apiErr } = await assignPreguntaToAllDeclaraciones({ path: { id } })
+    if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
+    showToast(`Pregunta asignada a ${data.inserted} declaración${data.inserted !== 1 ? 'es' : ''} (${data.total} en total)`)
+  }
+
   return (
     <div>
       <div className="admin-toolbar">
@@ -190,6 +199,7 @@ function PreguntasAdicionalesSection({ showToast }) {
                   <td>
                     <div className="pregunta-actions">
                       <button type="button" className="btn btn-secondary btn-sm btn-xs" onClick={() => openEdit(p)} title="Editar pregunta">✏️ Editar</button>
+                      <button type="button" className="btn btn-secondary btn-sm btn-xs" onClick={() => setConfirmAssignAll(p)} title="Asignar a todas las declaraciones">📋 Todas</button>
                       <button type="button" className="btn btn-danger btn-sm btn-xs" onClick={() => setConfirmDelete(p.id)} title="Eliminar pregunta">🗑️</button>
                     </div>
                   </td>
@@ -263,6 +273,22 @@ function PreguntasAdicionalesSection({ showToast }) {
             <div className="btn-row">
               <button type="button" className="btn btn-secondary" onClick={() => setConfirmDelete(null)}>Cancelar</button>
               <button type="button" className="btn btn-danger" onClick={() => handleDelete(confirmDelete)}>🗑️ Eliminar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {confirmAssignAll && (
+        <div className="admin-modal-overlay" onClick={() => setConfirmAssignAll(null)}>
+          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+            <h2 className="admin-modal-title">📋 Asignar a todas las declaraciones</h2>
+            <p className="admin-modal-desc">
+              ¿Quieres asignar la pregunta <strong>«{confirmAssignAll.texto.slice(0, 60)}{confirmAssignAll.texto.length > 60 ? '…' : ''}»</strong> a todas las declaraciones existentes?
+              Las declaraciones que ya la tengan asignada no se verán afectadas.
+            </p>
+            <div className="btn-row">
+              <button type="button" className="btn btn-secondary" onClick={() => setConfirmAssignAll(null)}>Cancelar</button>
+              <button type="button" className="btn btn-primary" onClick={() => handleAssignAll(confirmAssignAll.id)}>📋 Asignar a todas</button>
             </div>
           </div>
         </div>
