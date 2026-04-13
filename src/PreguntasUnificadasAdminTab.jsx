@@ -73,13 +73,14 @@ export default function PreguntasUnificadasAdminTab({ showToast }) {
       return
     }
     setSaving(true)
+    const body = { texto: form.texto.trim(), tipoRespuesta: form.tipoRespuesta }
     try {
       if (modal === 'create') {
-        const { data, error: apiErr } = await createPreguntaAdmin({ body: { texto: form.texto.trim(), tipoRespuesta: form.tipoRespuesta } })
+        const { data, error: apiErr } = await createPreguntaAdmin({ body })
         if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
         showToast(`Pregunta "${data.texto.slice(0, 40)}${data.texto.length > 40 ? '…' : ''}" creada`)
       } else {
-        const { error: apiErr } = await updatePreguntaAdmin({ path: { id: editando.id }, body: { texto: form.texto.trim(), tipoRespuesta: form.tipoRespuesta } })
+        const { error: apiErr } = await updatePreguntaAdmin({ path: { id: editando.id }, body })
         if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
         showToast('Pregunta actualizada correctamente')
       }

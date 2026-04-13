@@ -332,7 +332,7 @@ async function createPreguntaAdmin(body) {
   if (!body.texto || !body.tipoRespuesta) {
     return {
       data: null,
-      error: { message: 'texto y tipoRespuesta son obligatorios' },
+      error: { message: 'texto y tipoRespuesta son campos obligatorios' },
       status: 400,
     }
   }
