@@ -26,6 +26,109 @@ npm run preview
 
 ---
 
+## Ejecución en local
+
+### Requisitos previos
+
+- **Node.js ≥ 20** (`node -v` para comprobarlo)
+- **npm** (incluido con Node.js)
+
+### 1. Instalar dependencias
+
+```bash
+# Dependencias del frontend (raíz del proyecto)
+npm install
+
+# Dependencias del backend
+cd backend && npm install && cd ..
+```
+
+### 2. Configurar la conexión a la base de datos
+
+Crea el fichero `backend/.env` a partir del ejemplo:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Edita `backend/.env` con los valores de tu base de datos:
+
+```env
+PROFILE=db
+PORT=3001
+
+# Opción A – URL completa (recomendado para Neon / Heroku)
+DATABASE_URL=postgresql://<usuario>:<contraseña>@<host>/<bbdd>?sslmode=require
+
+# Opción B – variables individuales (solo si no se usa DATABASE_URL)
+# PGHOST=localhost
+# PGPORT=5432
+# PGDATABASE=renta_form
+# PGUSER=postgres
+# PGPASSWORD=postgres
+
+CORS_ORIGIN=http://localhost:5173
+```
+
+> **Neon:** usa la connection string que aparece en el panel de Neon como valor de `DATABASE_URL`.
+
+### 3. Arrancar el backend
+
+```bash
+cd backend
+npm run start:db
+```
+
+Al arrancar, el servidor aplica las migraciones automáticamente (`database/schema.sql` y `database/schema_backend.sql`) si las tablas todavía no existen:
+
+```
+[server] Starting with profile: db
+[migrate] Running schema.sql ...
+[migrate] schema.sql applied.
+[migrate] Running schema_backend.sql ...
+[migrate] schema_backend.sql applied.
+[server] Listening on http://localhost:3001  (profile: db)
+```
+
+### 4. Arrancar el frontend
+
+En otra terminal, desde la raíz del proyecto:
+
+```bash
+npm run dev
+```
+
+Vite arranca en **http://localhost:5173** y redirige automáticamente todas las peticiones `/v1/*` al backend (`localhost:3001`).
+
+### 5. Verificar que todo funciona
+
+```bash
+curl http://localhost:3001/health
+# {"status":"ok","profile":"db","time":"..."}
+```
+
+### Resumen de comandos
+
+| Terminal | Directorio | Comando | Descripción |
+|----------|-----------|---------|-------------|
+| 1 | `backend/` | `npm install` | Instala dependencias del backend |
+| 1 | `backend/` | `npm run start:db` | Arranca el backend con PostgreSQL |
+| 2 | raíz | `npm install` | Instala dependencias del frontend |
+| 2 | raíz | `npm run dev` | Arranca el frontend (Vite dev server) |
+
+### Alternativa: modo mock (sin base de datos)
+
+Si solo quieres probar la interfaz sin necesidad de una base de datos real:
+
+```bash
+cd backend
+npm run start:mock
+```
+
+Todos los datos se guardan en memoria y se pierden al reiniciar el servidor.
+
+---
+
 ## API — Endpoint de preguntas
 
 ### Request
