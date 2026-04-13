@@ -82,7 +82,7 @@ module.exports = function irpfRoutes(svc) {
     }
     const { nombreOriginal, mimeType, contenido } = result.data
     res.setHeader('Content-Type', mimeType)
-    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(nombreOriginal)}"`)
+    res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(nombreOriginal)}`)
     res.send(contenido)
   })
 

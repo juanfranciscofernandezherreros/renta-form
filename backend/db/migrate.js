@@ -53,6 +53,14 @@ async function migrate() {
     // Ensure documentos table exists (may be missing if DB was created before this table was added)
     if (!(await tableExists(client, 'documentos'))) {
       console.log('[migrate] Creating documentos table ...')
+      // Ensure tipo_documento enum exists first
+      await client.query(`
+        DO $$ BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tipo_documento') THEN
+            CREATE TYPE tipo_documento AS ENUM ('dni_anverso', 'dni_reverso', 'adicional');
+          END IF;
+        END $$;
+      `)
       await client.query(`
         CREATE TABLE IF NOT EXISTS documentos (
           id                  UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
