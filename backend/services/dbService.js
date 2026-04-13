@@ -108,7 +108,7 @@ function rowToIdioma(row) {
   }
 }
 
-// ── Static catalogue (preguntas fijas del formulario – no stored in DB) ───
+// ── Static catalogue – used as fallback / reference only ─────────────────
 const CATALOGO_PREGUNTAS = require('../data/mockStore').CATALOGO_PREGUNTAS
 
 // ── Auth ───────────────────────────────────────────────────────────────────
@@ -150,10 +150,129 @@ async function changePassword({ dniNie, oldPassword, newPassword }) {
   return { data: { success: true }, error: null }
 }
 
-// ── IRPF preguntas (static catalogue) ────────────────────────────────────
+// ── IRPF preguntas (loaded from DB, falls back to static catalogue) ──────
+
+// Build a lookup of static titulos/textos for multilingual fallback
+function buildStaticLookups() {
+  const titulos = {}
+  const textos = {}
+  CATALOGO_PREGUNTAS.secciones.forEach(s => {
+    titulos[s.id] = s.titulos
+    s.preguntas.forEach(p => { textos[p.id] = p.textos })
+  })
+  return { titulos, textos }
+}
 
 async function getPreguntas() {
-  return { data: CATALOGO_PREGUNTAS, error: null }
+  try {
+    const { rows: secRows } = await pool.query(
+      'SELECT id, titulo, numero, orden FROM secciones_formulario ORDER BY orden'
+    )
+    const { rows: preRows } = await pool.query(
+      `SELECT campo, seccion_id, texto, orden, indentada, condicion_campo, condicion_valor
+       FROM preguntas_formulario ORDER BY seccion_id, orden`
+    )
+
+    if (secRows.length === 0) {
+      // Table exists but has no data – return static catalogue
+      return { data: CATALOGO_PREGUNTAS, error: null }
+    }
+
+    const { titulos: staticTitulos, textos: staticTextos } = buildStaticLookups()
+
+    const secciones = secRows.map(s => ({
+      id: s.id,
+      numero: s.numero,
+      titulo: s.titulo,
+      titulos: staticTitulos[s.id] ?? { es: s.titulo },
+      preguntas: preRows
+        .filter(p => p.seccion_id === s.id)
+        .map(p => ({
+          id: p.campo,
+          texto: p.texto,
+          textos: staticTextos[p.campo] ?? { es: p.texto },
+          indentada: p.indentada,
+          ...(p.condicion_campo
+            ? { condicion: { campo: p.condicion_campo, valor: p.condicion_valor } }
+            : {}),
+        })),
+    }))
+
+    return { data: { secciones }, error: null }
+  } catch (err) {
+    // If tables don't exist yet (pre-migration), fall back to static data
+    console.warn('[getPreguntas] Falling back to static catalogue:', err.message)
+    return { data: CATALOGO_PREGUNTAS, error: null }
+  }
+}
+
+// ── Admin: preguntas_formulario ───────────────────────────────────────────
+
+function rowToPreguntaFormulario(r) {
+  return {
+    campo: r.campo,
+    texto: r.texto,
+    seccionId: r.seccion_id,
+    seccionTitulo: r.seccion_titulo ?? null,
+    orden: r.orden,
+    indentada: r.indentada,
+    condicionCampo: r.condicion_campo ?? null,
+    condicionValor: r.condicion_valor ?? null,
+    actualizadaEn: r.actualizada_en,
+  }
+}
+
+async function listPreguntasFormulario() {
+  const { rows } = await pool.query(
+    `SELECT pf.campo, pf.texto, pf.seccion_id, sf.titulo AS seccion_titulo,
+            pf.orden, pf.indentada, pf.condicion_campo, pf.condicion_valor, pf.actualizada_en
+     FROM preguntas_formulario pf
+     JOIN secciones_formulario sf ON sf.id = pf.seccion_id
+     ORDER BY sf.orden, pf.orden`
+  )
+  return { data: rows.map(rowToPreguntaFormulario), error: null }
+}
+
+async function updatePreguntaFormulario(campo, { texto, orden, indentada }) {
+  if (!campo) return { data: null, error: { message: 'El campo es obligatorio' } }
+
+  const sets = []
+  const params = []
+
+  if (texto !== undefined) {
+    if (!String(texto).trim()) return { data: null, error: { message: 'El texto no puede estar vacío' } }
+    params.push(texto)
+    sets.push(`texto = $${params.length}`)
+  }
+  if (orden !== undefined) {
+    params.push(Number(orden))
+    sets.push(`orden = $${params.length}`)
+  }
+  if (indentada !== undefined) {
+    params.push(Boolean(indentada))
+    sets.push(`indentada = $${params.length}`)
+  }
+
+  if (sets.length === 0) return { data: null, error: { message: 'No hay cambios que guardar' } }
+
+  params.push(campo)
+  const { rowCount } = await pool.query(
+    `UPDATE preguntas_formulario SET ${sets.join(', ')}, actualizada_en = NOW()
+     WHERE campo = $${params.length}`,
+    params
+  )
+  if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
+
+  // Fetch the updated row with its section title via JOIN
+  const { rows } = await pool.query(
+    `SELECT pf.campo, pf.texto, pf.seccion_id, sf.titulo AS seccion_titulo,
+            pf.orden, pf.indentada, pf.condicion_campo, pf.condicion_valor, pf.actualizada_en
+     FROM preguntas_formulario pf
+     JOIN secciones_formulario sf ON sf.id = pf.seccion_id
+     WHERE pf.campo = $1`,
+    [campo]
+  )
+  return { data: rowToPreguntaFormulario(rows[0]), error: null }
 }
 
 // ── Declaraciones ──────────────────────────────────────────────────────────
@@ -756,6 +875,8 @@ module.exports = {
   getPreguntaAdmin,
   updatePreguntaAdmin,
   deletePreguntaAdmin,
+  listPreguntasFormulario,
+  updatePreguntaFormulario,
   listSeccionesAdmin,
   createSeccionAdmin,
   updateSeccionAdmin,

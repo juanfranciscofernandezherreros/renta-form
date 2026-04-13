@@ -72,6 +72,62 @@ async function getPreguntas() {
   return { data: store.CATALOGO_PREGUNTAS, error: null }
 }
 
+// ── Admin: preguntas_formulario ────────────────────────────────────────────
+
+async function listPreguntasFormulario() {
+  const result = []
+  store.CATALOGO_PREGUNTAS.secciones.forEach((s) => {
+    s.preguntas.forEach((p, idx) => {
+      result.push({
+        campo: p.id,
+        texto: p.texto,
+        seccionId: s.id,
+        seccionTitulo: s.titulo,
+        orden: p._orden !== undefined ? p._orden : idx,
+        indentada: p.indentada ?? false,
+        condicionCampo: p.condicion?.campo ?? null,
+        condicionValor: p.condicion?.valor ?? null,
+        actualizadaEn: p._actualizadaEn ?? null,
+      })
+    })
+  })
+  return { data: result, error: null }
+}
+
+async function updatePreguntaFormulario(campo, { texto, orden, indentada }) {
+  if (!campo) return { data: null, error: { message: 'El campo es obligatorio' } }
+
+  for (const seccion of store.CATALOGO_PREGUNTAS.secciones) {
+    const pregunta = seccion.preguntas.find((p) => p.id === campo)
+    if (pregunta) {
+      if (texto !== undefined) {
+        if (!String(texto).trim()) return { data: null, error: { message: 'El texto no puede estar vacío' } }
+        pregunta.texto = texto
+        if (pregunta.textos) pregunta.textos.es = texto
+      }
+      if (indentada !== undefined) pregunta.indentada = Boolean(indentada)
+      if (orden !== undefined) pregunta._orden = Number(orden)
+      pregunta._actualizadaEn = new Date().toISOString()
+      const idx = seccion.preguntas.indexOf(pregunta)
+      return {
+        data: {
+          campo: pregunta.id,
+          texto: pregunta.texto,
+          seccionId: seccion.id,
+          seccionTitulo: seccion.titulo,
+          orden: pregunta._orden !== undefined ? pregunta._orden : idx,
+          indentada: pregunta.indentada ?? false,
+          condicionCampo: pregunta.condicion?.campo ?? null,
+          condicionValor: pregunta.condicion?.valor ?? null,
+          actualizadaEn: pregunta._actualizadaEn,
+        },
+        error: null,
+      }
+    }
+  }
+  return { data: null, error: { message: 'Pregunta no encontrada' } }
+}
+
 // ── Declaraciones ──────────────────────────────────────────────────────────
 
 async function listDeclaraciones({ dniNie, estado, page = 1, limit = 10 }) {
@@ -626,6 +682,8 @@ module.exports = {
   getPreguntaAdmin,
   updatePreguntaAdmin,
   deletePreguntaAdmin,
+  listPreguntasFormulario,
+  updatePreguntaFormulario,
   listSeccionesAdmin,
   createSeccionAdmin,
   updateSeccionAdmin,
