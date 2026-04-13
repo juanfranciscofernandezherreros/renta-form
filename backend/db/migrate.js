@@ -83,19 +83,22 @@ async function migrate() {
     }
 
     // Ensure tipo_respuesta enum has all required values (may be missing if DB predates this feature)
+    // Each value is validated against the hardcoded safe list before being used in ALTER TYPE
     const TIPO_RESPUESTA_VALUES = ['yn', 'texto', 'numero', 'fecha', 'importe', 'porcentaje', 'multilinea']
+    const SAFE_ENUM_PATTERN = /^[a-z]+$/
     for (const val of TIPO_RESPUESTA_VALUES) {
-      await client.query(`
-        DO $$ BEGIN
-          IF NOT EXISTS (
-            SELECT 1 FROM pg_enum e
-            JOIN pg_type t ON t.oid = e.enumtypid
-            WHERE t.typname = 'tipo_respuesta' AND e.enumlabel = '${val}'
-          ) THEN
-            ALTER TYPE tipo_respuesta ADD VALUE IF NOT EXISTS '${val}';
-          END IF;
-        END $$;
-      `)
+      if (!SAFE_ENUM_PATTERN.test(val)) continue // guard: only lowercase letters
+      const { rows: enumRows } = await client.query(
+        `SELECT 1 FROM pg_enum e
+         JOIN pg_type t ON t.oid = e.enumtypid
+         WHERE t.typname = 'tipo_respuesta' AND e.enumlabel = $1`,
+        [val]
+      )
+      if (!enumRows.length) {
+        // ALTER TYPE ADD VALUE cannot use parameterized queries in PostgreSQL,
+        // but val is validated against a strict pattern above
+        await client.query(`ALTER TYPE tipo_respuesta ADD VALUE IF NOT EXISTS '${val}'`)
+      }
     }
 
     // Ensure preguntas_adicionales table exists (may be missing if DB was created before this feature)

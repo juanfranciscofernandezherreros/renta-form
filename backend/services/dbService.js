@@ -647,19 +647,17 @@ async function removeDeclaracionPregunta(id, preguntaId) {
 async function assignPreguntaToAllDeclaraciones(preguntaId) {
   const pCheck = await pool.query('SELECT id FROM preguntas_adicionales WHERE id = $1', [preguntaId])
   if (!pCheck.rows.length) return { data: null, error: { message: 'Pregunta no encontrada' } }
+  const { rows: decRows } = await pool.query('SELECT COUNT(*) AS total FROM declaraciones')
+  const total = parseInt(decRows[0].total, 10)
   const ahora = new Date().toISOString()
-  const { rows: decRows } = await pool.query('SELECT id FROM declaraciones')
-  let inserted = 0
-  for (const dec of decRows) {
-    const res = await pool.query(
-      `INSERT INTO declaracion_pregunta (declaracion_id, pregunta_id, asignada_en)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (declaracion_id, pregunta_id) DO NOTHING`,
-      [dec.id, preguntaId, ahora]
-    )
-    inserted += res.rowCount ?? 0
-  }
-  return { data: { total: decRows.length, inserted }, error: null }
+  const result = await pool.query(
+    `INSERT INTO declaracion_pregunta (declaracion_id, pregunta_id, asignada_en)
+     SELECT id, $1, $2 FROM declaraciones
+     ON CONFLICT (declaracion_id, pregunta_id) DO NOTHING`,
+    [preguntaId, ahora]
+  )
+  const inserted = result.rowCount ?? 0
+  return { data: { total, inserted }, error: null }
 }
 
 
