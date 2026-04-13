@@ -150,6 +150,25 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const handleSubmit = async e => {
     e.preventDefault()
 
+    // Validate required identification fields
+    if (!form.nombre.trim() || !form.apellidos.trim() || !form.dniNie.trim() || !form.telefono.trim()) {
+      showToast(t('errValidationRequired'), 'error')
+      return
+    }
+
+    // Validate all visible questions are answered
+    const unanswered = secciones.some(seccion =>
+      seccion.preguntas.some(pregunta => {
+        const visible = !pregunta.condicion ||
+          form[pregunta.condicion.campo] === pregunta.condicion.valor
+        return visible && !form[pregunta.id]
+      })
+    )
+    if (unanswered) {
+      showToast(t('errValidationQuestions'), 'error')
+      return
+    }
+
     /** @type {import('./api/types.gen').DeclaracionInput} */
     const body = {
       // Identification
@@ -382,8 +401,8 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                   <input type="text" name="dniNie" value={form.dniNie} onChange={handleChange} placeholder="00000000A" maxLength={9} required />
                 </div>
                 <div className="field">
-                  <label>{t('fieldEmail')}</label>
-                  <input type="email" name="email" value={form.email} onChange={handleChange} placeholder={t('fieldEmailPlaceholder')} required />
+                  <label>{t('fieldEmail')} <span className="field-optional">{t('fieldEmailOptional')}</span></label>
+                  <input type="email" name="email" value={form.email} onChange={handleChange} placeholder={t('fieldEmailPlaceholder')} />
                 </div>
                 <div className="field">
                   <label>{t('fieldTelefono')}</label>
