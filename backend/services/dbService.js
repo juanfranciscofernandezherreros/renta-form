@@ -185,8 +185,8 @@ async function getPreguntas() {
        FROM preguntas_formulario ORDER BY seccion_id, orden`
     )
 
-    if (secRows.length === 0) {
-      // Table exists but has no data – return static catalogue
+    if (secRows.length === 0 || preRows.length === 0) {
+      // Tables exist but have no data – return static catalogue
       return { data: CATALOGO_PREGUNTAS, error: null }
     }
 
