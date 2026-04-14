@@ -188,100 +188,56 @@ async function getPreguntas() {
 function rowToPreguntaFormulario(r) {
   return {
     id: r.id,
-    campo: r.campo ?? '',
     texto: r.texto,
-    textos: r.textos ?? {},
-    seccionId: r.seccion_id ?? null,
-    seccionNombre: r.seccion_nombre ?? null,
-    orden: r.orden ?? 0,
+    tipo: 'sino',
     actualizadaEn: r.actualizada_en,
   }
 }
 
 async function listPreguntasFormulario() {
   const { rows } = await pool.query(
-    `SELECT pf.id, pf.campo, pf.texto, pf.textos, pf.seccion_id, pf.orden, pf.actualizada_en,
-            s.nombre AS seccion_nombre
-     FROM preguntas_formulario pf
-     LEFT JOIN secciones s ON s.id = pf.seccion_id
-     ORDER BY s.orden NULLS LAST, pf.orden`
+    `SELECT id, texto, actualizada_en
+     FROM preguntas_formulario
+     ORDER BY actualizada_en DESC`
   )
   return { data: rows.map(rowToPreguntaFormulario), error: null }
 }
 
-async function updatePreguntaFormulario(id, { texto, campo, textos, seccionId, orden }) {
+async function updatePreguntaFormulario(id, { texto }) {
   if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
+  if (texto === undefined) return { data: null, error: { message: 'No hay cambios que guardar' } }
+  if (!String(texto).trim()) return { data: null, error: { message: 'El texto no puede estar vacío' } }
 
-  const sets = []
-  const params = []
-
-  if (texto !== undefined) {
-    if (!String(texto).trim()) return { data: null, error: { message: 'El texto no puede estar vacío' } }
-    params.push(texto)
-    sets.push(`texto = $${params.length}`)
-  }
-  if (campo !== undefined) {
-    params.push(campo)
-    sets.push(`campo = $${params.length}`)
-  }
-  if (textos !== undefined) {
-    params.push(JSON.stringify(textos))
-    sets.push(`textos = $${params.length}::jsonb`)
-  }
-  if (seccionId !== undefined) {
-    params.push(seccionId || null)
-    sets.push(`seccion_id = $${params.length}`)
-  }
-  if (orden !== undefined) {
-    params.push(orden)
-    sets.push(`orden = $${params.length}`)
-  }
-
-  if (sets.length === 0) return { data: null, error: { message: 'No hay cambios que guardar' } }
-
-  params.push(id)
   const { rowCount } = await pool.query(
-    `UPDATE preguntas_formulario SET ${sets.join(', ')}, actualizada_en = NOW()
-     WHERE id = $${params.length}`,
-    params
+    `UPDATE preguntas_formulario SET texto = $1, actualizada_en = NOW() WHERE id = $2`,
+    [texto.trim(), id]
   )
   if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
 
   const { rows } = await pool.query(
-    `SELECT pf.id, pf.campo, pf.texto, pf.textos, pf.seccion_id, pf.orden, pf.actualizada_en,
-            s.nombre AS seccion_nombre
-     FROM preguntas_formulario pf
-     LEFT JOIN secciones s ON s.id = pf.seccion_id
-     WHERE pf.id = $1`,
+    `SELECT id, texto, actualizada_en FROM preguntas_formulario WHERE id = $1`,
     [id]
   )
   return { data: rowToPreguntaFormulario(rows[0]), error: null }
 }
 
-async function createPreguntaFormulario({ texto, campo, textos, seccionId, orden }) {
+async function createPreguntaFormulario({ texto }) {
   if (!texto || !String(texto).trim()) return { data: null, error: { message: 'El texto es obligatorio' } }
-  if (!campo || !String(campo).trim()) return { data: null, error: { message: 'El campo es obligatorio' } }
 
   const { rows } = await pool.query(
-    `INSERT INTO preguntas_formulario (campo, texto, textos, seccion_id, orden)
-     VALUES ($1, $2, $3::jsonb, $4, $5)
-     RETURNING id`,
-    [
-      (campo ?? '').trim(),
-      texto.trim(),
-      JSON.stringify(textos ?? {}),
-      seccionId || null,
-      orden ?? 0,
-    ]
+    `INSERT INTO preguntas_formulario (texto) VALUES ($1) RETURNING id`,
+    [texto.trim()]
   )
   if (!rows.length) return { data: null, error: { message: 'No se pudo crear la pregunta' } }
 
+  // Use the UUID as the internal campo key so the public form can reference it
+  await pool.query(
+    `UPDATE preguntas_formulario SET campo = id::text WHERE id = $1 AND (campo IS NULL OR campo = '')`,
+    [rows[0].id]
+  )
+
   const { rows: full } = await pool.query(
-    `SELECT pf.id, pf.campo, pf.texto, pf.textos, pf.seccion_id, pf.orden, pf.actualizada_en,
-            s.nombre AS seccion_nombre
-     FROM preguntas_formulario pf
-     LEFT JOIN secciones s ON s.id = pf.seccion_id
-     WHERE pf.id = $1`,
+    `SELECT id, texto, actualizada_en FROM preguntas_formulario WHERE id = $1`,
     [rows[0].id]
   )
   return { data: rowToPreguntaFormulario(full[0]), error: null, status: 201 }
