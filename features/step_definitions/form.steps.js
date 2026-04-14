@@ -95,14 +95,6 @@ Given('el usuario responde No a todas las preguntas de ingresos', async function
   await answerAllButtons(this.page, 'no')
 })
 
-Given('el usuario rellena los comentarios finales', async function () {
-  const textarea = this.page.locator('textarea[name="comentarios"]')
-  if (await textarea.isVisible()) {
-    await textarea.fill('Sin comentarios adicionales para la declaración.')
-    await this.page.waitForTimeout(300)
-  }
-})
-
 Given('el usuario envia el formulario', async function () {
   const submitBtn = this.page.locator('button:has-text("Enviar cuestionario")')
   await submitBtn.waitFor({ state: 'visible', timeout: 15000 })

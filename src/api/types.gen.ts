@@ -66,10 +66,6 @@ export type DeclaracionInput = {
      * Documentación adicional (nóminas, certificados, etc.)
      */
     docAdicional?: Array<Blob | File>;
-    /**
-     * Situaciones especiales a tener en cuenta
-     */
-    comentarios?: string;
 };
 
 export type DeclaracionCreada = {
@@ -113,7 +109,6 @@ export type Declaracion = DeclaracionCreada & {
     hijosMenores26: RespuestaYn;
     ingresosJuego: RespuestaYn;
     ingresosInversiones: RespuestaYn;
-    comentarios?: string;
     actualizadoEn: string;
     documentos: Array<Documento>;
 };

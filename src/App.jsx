@@ -30,8 +30,6 @@ const INITIAL_STATE = {
   // 4. Ingresos extraordinarios e inversiones
   ingresosJuego: '',
   ingresosInversiones: '',
-  // 5. Información adicional
-  comentarios: '',
 }
 
 const STEP_ICONS = ['👤', '🏠', '👨‍👩‍👧', '💶', '📝', '⭐', '❓']
@@ -142,7 +140,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       hijosMenores26: editData.hijosMenores26 ?? '',
       ingresosJuego: editData.ingresosJuego ?? '',
       ingresosInversiones: editData.ingresosInversiones ?? '',
-      comentarios: editData.comentarios ?? '',
     })
     setSubmitted(false)
     onEditDataConsumed?.()
@@ -252,7 +249,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
         steps.push({ type: 'question', key: `q:${pregunta.id}`, seccion, pregunta })
       }
     }
-    steps.push({ type: 'comments', key: 'comments' })
     return steps
   }, [loadingPreguntas, secciones])
   const totalSteps = visibleSteps.length
@@ -350,8 +346,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       // Extraordinary income
       ingresosJuego: form.ingresosJuego,
       ingresosInversiones: form.ingresosInversiones,
-      // Comments
-      comentarios: form.comentarios,
     }
 
     setSubmitting(true)
@@ -377,7 +371,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
           hijosMenores26: form.hijosMenores26,
           ingresosJuego: form.ingresosJuego,
           ingresosInversiones: form.ingresosInversiones,
-          comentarios: form.comentarios,
         }
         const { data, error, response } = await updateDeclaracion({ path: { id: editId }, body: updateBody })
         if (data) {
@@ -623,31 +616,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                       </div>
                     )
                   })()}
-
-                  {/* ── Step: Comments + Submit ── */}
-                  {currentStepInfo?.type === 'comments' && (
-                    <>
-                      <div className="wizard-step-header">
-                        <div className="wizard-step-icon">📝</div>
-                        <div>
-                          <div className="wizard-step-title">{t('section6')}</div>
-                        </div>
-                      </div>
-
-                      <div className="form-grid">
-                        <div className="field full">
-                          <label>{t('commentsLabel')}</label>
-                          <textarea
-                            name="comentarios"
-                            value={form.comentarios}
-                            onChange={handleChange}
-                            placeholder={t('commentsPlaceholder')}
-                            rows={5}
-                          />
-                        </div>
-                      </div>
-                    </>
-                  )}
 
                 </div>{/* end wizard-step */}
 

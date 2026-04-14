@@ -99,9 +99,7 @@ INSERT INTO secciones (nombre, clave, orden, titulos) VALUES
     ('Cargas Familiares y Ayudas Públicas', 'familia', 2,
      '{"es":"Cargas Familiares y Ayudas Públicas","fr":"Charges Familiales et Aides Publiques","en":"Family Obligations and Public Benefits","ca":"Càrregues Familiars i Ajudes Públiques"}'),
     ('Ingresos Extraordinarios e Inversiones', 'ingresos', 3,
-     '{"es":"Ingresos Extraordinarios e Inversiones","fr":"Revenus Extraordinaires et Investissements","en":"Extraordinary Income and Investments","ca":"Ingressos Extraordinaris i Inversions"}'),
-    ('Información Adicional', 'adicional', 4,
-     '{"es":"Información Adicional","fr":"Informations Complémentaires","en":"Additional Information","ca":"Informació Addicional"}')
+     '{"es":"Ingresos Extraordinarios e Inversiones","fr":"Revenus Extraordinaires et Investissements","en":"Extraordinary Income and Investments","ca":"Ingressos Extraordinaris i Inversions"}')
 ON CONFLICT (nombre) DO NOTHING;
 
 -- Usuario administrador por defecto (password: admin, bcrypt cost 12)

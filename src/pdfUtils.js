@@ -21,7 +21,6 @@ const CAMPOS_LABELS = {
   hijosMenores26: '¿Tiene hijos menores de 26 años?',
   ingresosJuego: '¿Ha obtenido ingresos por juego?',
   ingresosInversiones: '¿Ha obtenido ingresos por inversiones?',
-  comentarios: 'Comentarios',
 }
 
 const SECCIONES = [
@@ -29,7 +28,6 @@ const SECCIONES = [
   { titulo: '2. Situación de Vivienda', campos: ['viviendaAlquiler', 'alquilerMenos35', 'viviendaPropiedad', 'propiedadAntes2013', 'pisosAlquiladosTerceros', 'segundaResidencia'] },
   { titulo: '3. Cargas Familiares y Ayudas Públicas', campos: ['familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'mayoresConviven', 'hijosMenores26'] },
   { titulo: '4. Ingresos Extraordinarios e Inversiones', campos: ['ingresosJuego', 'ingresosInversiones'] },
-  { titulo: '6. Información Adicional', campos: ['comentarios'] },
 ]
 
 const ESTADO_LABELS = {

@@ -185,7 +185,6 @@ Es el componente más extenso de la aplicación. Gestiona:
   - Sección 3: Cargas Familiares y Ayudas Públicas (5 preguntas).
   - Sección 4: Ingresos Extraordinarios e Inversiones (2 preguntas).
 - **Sección 5 — Documentación Adjunta**: subida de ficheros (DNI anverso, DNI reverso, documentación adicional). Formatos admitidos: PDF, JPG, PNG. Máximo 5 MB por fichero.
-- **Sección 6 — Información Adicional**: campo de comentarios libres.
 
 **Características adicionales:**
 - Indicador de progreso por pasos (Identificación → Vivienda → Familia → Ingresos → Documentación).
@@ -368,7 +367,7 @@ Devuelve el catálogo de secciones y preguntas dinámicas del cuestionario.
 #### `POST /irpf/declaraciones`
 Envía un cuestionario completo. Formato: `multipart/form-data`.
 
-Campos principales: `nombre`, `apellidos`, `dniNie`, `email`, `telefono`, respuestas dinámicas (`si`/`no`), `comentarios`, ficheros adjuntos.
+Campos principales: `nombre`, `apellidos`, `dniNie`, `email`, `telefono`, respuestas dinámicas (`si`/`no`), ficheros adjuntos.
 
 **Respuesta exitosa (201):**
 ```json
