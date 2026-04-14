@@ -33,7 +33,9 @@ CREATE INDEX IF NOT EXISTS idx_usuarios_email   ON usuarios (email);
 CREATE TABLE IF NOT EXISTS secciones (
     id              UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     nombre          VARCHAR(200)    NOT NULL UNIQUE,
+    clave           VARCHAR(50)     NOT NULL DEFAULT '',
     orden           INTEGER         NOT NULL DEFAULT 0,
+    titulos         JSONB           NOT NULL DEFAULT '{}',
     activa          BOOLEAN         NOT NULL DEFAULT TRUE,
     creada_en       TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
     actualizada_en  TIMESTAMPTZ     NOT NULL DEFAULT NOW()
@@ -91,11 +93,15 @@ INSERT INTO idiomas (code, label) VALUES
 ON CONFLICT (code) DO NOTHING;
 
 -- Secciones por defecto (mirrors mock data)
-INSERT INTO secciones (nombre, orden) VALUES
-    ('Situación de Vivienda',                  1),
-    ('Cargas Familiares y Ayudas Públicas',    2),
-    ('Ingresos Extraordinarios e Inversiones', 3),
-    ('Información Adicional',                  4)
+INSERT INTO secciones (nombre, clave, orden, titulos) VALUES
+    ('Situación de Vivienda', 'vivienda', 1,
+     '{"es":"Situación de Vivienda","fr":"Situation de Logement","en":"Housing Situation","ca":"Situació d''Habitatge"}'),
+    ('Cargas Familiares y Ayudas Públicas', 'familia', 2,
+     '{"es":"Cargas Familiares y Ayudas Públicas","fr":"Charges Familiales et Aides Publiques","en":"Family Obligations and Public Benefits","ca":"Càrregues Familiars i Ajudes Públiques"}'),
+    ('Ingresos Extraordinarios e Inversiones', 'ingresos', 3,
+     '{"es":"Ingresos Extraordinarios e Inversiones","fr":"Revenus Extraordinaires et Investissements","en":"Extraordinary Income and Investments","ca":"Ingressos Extraordinaris i Inversions"}'),
+    ('Información Adicional', 'adicional', 4,
+     '{"es":"Información Adicional","fr":"Informations Complémentaires","en":"Additional Information","ca":"Informació Addicional"}')
 ON CONFLICT (nombre) DO NOTHING;
 
 -- Usuario administrador por defecto (password: admin, bcrypt cost 12)

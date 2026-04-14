@@ -4,9 +4,10 @@ import {
   createPreguntaFormulario,
   updatePreguntaFormulario,
   deletePreguntaFormulario,
+  listSeccionesAdmin,
 } from './apiClient.js'
 
-const EMPTY_FORM = { texto: '' }
+const EMPTY_FORM = { campo: '', texto: '', textos: { es: '', fr: '', en: '', ca: '' }, seccionId: '', orden: 0 }
 
 function formatFecha(iso) {
   if (!iso) return '—'
@@ -15,6 +16,7 @@ function formatFecha(iso) {
 
 export default function PreguntasFormularioAdminTab({ showToast }) {
   const [preguntas, setPreguntas] = useState([])
+  const [secciones, setSecciones] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [modal, setModal] = useState(null) // null | 'create' | 'edit'
@@ -29,11 +31,15 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    listPreguntasFormulario()
-      .then(({ data, error: pErr }) => {
+    Promise.all([
+      listPreguntasFormulario(),
+      listSeccionesAdmin({ query: { activa: 'true', limit: 100 } }),
+    ])
+      .then(([pregRes, secRes]) => {
         if (cancelled) return
-        if (pErr) throw new Error(pErr.message ?? 'Error desconocido')
-        setPreguntas(data ?? [])
+        if (pregRes.error) throw new Error(pregRes.error.message ?? 'Error desconocido')
+        setPreguntas(pregRes.data ?? [])
+        setSecciones(secRes.data?.data ?? [])
         setError(null)
       })
       .catch(err => { if (!cancelled) setError(err.message) })
@@ -49,7 +55,11 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
 
   const openEdit = (pregunta) => {
     setForm({
+      campo: pregunta.campo ?? '',
       texto: pregunta.texto,
+      textos: pregunta.textos ?? { es: '', fr: '', en: '', ca: '' },
+      seccionId: pregunta.seccionId ?? '',
+      orden: pregunta.orden ?? 0,
     })
     setEditando(pregunta)
     setModal('edit')
@@ -59,7 +69,11 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
 
   const handleFormChange = e => {
     const { name, value, type, checked } = e.target
-    setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }))
+    setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : (name === 'orden' ? parseInt(value, 10) || 0 : value) }))
+  }
+
+  const handleTextosChange = (lang, value) => {
+    setForm(prev => ({ ...prev, textos: { ...prev.textos, [lang]: value } }))
   }
 
   const handleSave = async () => {
@@ -67,11 +81,19 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
       showToast('El texto de la pregunta no puede estar vacío', 'error')
       return
     }
+    if (!form.campo.trim()) {
+      showToast('El campo (identificador) no puede estar vacío', 'error')
+      return
+    }
     setSaving(true)
     try {
       if (modal === 'create') {
         const body = {
+          campo: form.campo.trim(),
           texto: form.texto.trim(),
+          textos: form.textos,
+          seccionId: form.seccionId || null,
+          orden: form.orden,
         }
         const { error: apiErr } = await createPreguntaFormulario({ body })
         if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
@@ -80,7 +102,11 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
         const { error: apiErr } = await updatePreguntaFormulario({
           path: { id: editando.id },
           body: {
+            campo: form.campo.trim(),
             texto: form.texto.trim(),
+            textos: form.textos,
+            seccionId: form.seccionId || null,
+            orden: form.orden,
           },
         })
         if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
@@ -129,7 +155,10 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
           <table className="preguntas-table">
             <thead>
               <tr>
+                <th>Campo</th>
                 <th>Pregunta (Sí/No)</th>
+                <th>Sección</th>
+                <th>Orden</th>
                 <th>Última modificación</th>
                 <th style={{ textAlign: 'right' }}>Acciones</th>
               </tr>
@@ -137,9 +166,12 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
             <tbody>
               {preguntas.map(p => (
                 <tr key={p.id}>
+                  <td><code style={{ fontSize: '0.85em' }}>{p.campo}</code></td>
                   <td>
                     <div className="pregunta-texto">{p.texto}</div>
                   </td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{p.seccionNombre ?? '—'}</td>
+                  <td style={{ textAlign: 'center' }}>{p.orden}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{formatFecha(p.actualizadaEn)}</td>
                   <td>
                     <div className="pregunta-actions">
@@ -171,21 +203,64 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
       {/* Create / Edit modal */}
       {modal && (
         <div className="admin-modal-overlay" onClick={closeModal}>
-          <div className="admin-modal" style={{ maxWidth: 580 }} onClick={e => e.stopPropagation()}>
+          <div className="admin-modal" style={{ maxWidth: 640 }} onClick={e => e.stopPropagation()}>
             <h2 className="admin-modal-title">
               {modal === 'create' ? '➕ Nueva pregunta del formulario' : '✏️ Editar pregunta del formulario'}
             </h2>
 
             <div className="form-grid" style={{ marginBottom: 16 }}>
               <div className="field full">
+                <label>Campo (identificador) *</label>
+                <input
+                  type="text"
+                  name="campo"
+                  value={form.campo}
+                  onChange={handleFormChange}
+                  placeholder="ej: viviendaAlquiler"
+                />
+              </div>
+              <div className="field full">
                 <label>Texto de la pregunta (Sí/No) *</label>
                 <textarea
                   name="texto"
                   value={form.texto}
                   onChange={handleFormChange}
-                  rows={3}
+                  rows={2}
                 />
               </div>
+              <div className="field">
+                <label>Sección</label>
+                <select name="seccionId" value={form.seccionId} onChange={handleFormChange}>
+                  <option value="">— Sin sección —</option>
+                  {secciones.map(s => (
+                    <option key={s.id} value={s.id}>{s.nombre}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="field">
+                <label>Orden</label>
+                <input
+                  type="number"
+                  name="orden"
+                  value={form.orden}
+                  onChange={handleFormChange}
+                  min={0}
+                />
+              </div>
+              <div className="field full" style={{ borderTop: '1px solid #e0e0e0', paddingTop: 12 }}>
+                <label>Traducciones</label>
+              </div>
+              {['es', 'fr', 'en', 'ca'].map(lang => (
+                <div className="field full" key={lang}>
+                  <label style={{ textTransform: 'uppercase', fontSize: '0.8em' }}>{lang}</label>
+                  <input
+                    type="text"
+                    value={form.textos?.[lang] ?? ''}
+                    onChange={e => handleTextosChange(lang, e.target.value)}
+                    placeholder={`Texto en ${lang}`}
+                  />
+                </div>
+              ))}
             </div>
 
             <div className="btn-row">

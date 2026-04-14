@@ -71,7 +71,9 @@ function rowToSeccion(row) {
   return {
     id: row.id,
     nombre: row.nombre,
+    clave: row.clave ?? '',
     orden: row.orden,
+    titulos: row.titulos ?? {},
     activa: row.activa,
     creadaEn: row.creada_en,
     actualizadaEn: row.actualizada_en,
@@ -107,7 +109,7 @@ function rowToIdioma(row) {
   }
 }
 
-// ── Static catalogue – used as fallback / reference only ─────────────────
+// ── Static catalogue – used as fallback when DB has no preguntas_formulario ──
 const { CATALOGO_PREGUNTAS } = require('../data/catalogoPreguntas')
 
 // ── Auth ───────────────────────────────────────────────────────────────────
@@ -140,10 +142,50 @@ async function changePassword({ dniNie, oldPassword, newPassword }) {
   return { data: { success: true }, error: null }
 }
 
-// ── IRPF preguntas (static catalogue) ─────────────────────────────────────
+// ── IRPF preguntas (loaded from DB, static catalogue as fallback) ──────────
 
 async function getPreguntas() {
-  return { data: CATALOGO_PREGUNTAS, error: null }
+  try {
+    const { rows } = await pool.query(
+      `SELECT pf.campo, pf.texto, pf.textos, pf.orden AS pregunta_orden,
+              s.clave AS seccion_clave, s.nombre AS seccion_nombre,
+              s.orden AS seccion_orden, s.titulos AS seccion_titulos
+       FROM preguntas_formulario pf
+       JOIN secciones s ON s.id = pf.seccion_id
+       WHERE s.activa = true
+       ORDER BY s.orden, pf.orden`
+    )
+    if (!rows.length) return { data: CATALOGO_PREGUNTAS, error: null }
+
+    // Group questions by section
+    const seccionMap = new Map()
+    for (const r of rows) {
+      const key = r.seccion_clave || r.seccion_nombre
+      if (!seccionMap.has(key)) {
+        const titulos = typeof r.seccion_titulos === 'string'
+          ? JSON.parse(r.seccion_titulos)
+          : (r.seccion_titulos ?? {})
+        seccionMap.set(key, {
+          id: key,
+          numero: r.seccion_orden + 1,
+          titulo: r.seccion_nombre,
+          titulos,
+          preguntas: [],
+        })
+      }
+      const textos = typeof r.textos === 'string' ? JSON.parse(r.textos) : (r.textos ?? {})
+      seccionMap.get(key).preguntas.push({
+        id: r.campo,
+        texto: r.texto,
+        textos,
+      })
+    }
+    return { data: { secciones: [...seccionMap.values()] }, error: null }
+  } catch (err) {
+    // If anything goes wrong reading from DB, fall back to static catalogue
+    console.error('getPreguntas DB error, falling back to static catalogue:', err.message)
+    return { data: CATALOGO_PREGUNTAS, error: null }
+  }
 }
 
 // ── Admin: preguntas_formulario ───────────────────────────────────────────
@@ -151,20 +193,28 @@ async function getPreguntas() {
 function rowToPreguntaFormulario(r) {
   return {
     id: r.id,
+    campo: r.campo ?? '',
     texto: r.texto,
+    textos: r.textos ?? {},
+    seccionId: r.seccion_id ?? null,
+    seccionNombre: r.seccion_nombre ?? null,
+    orden: r.orden ?? 0,
     actualizadaEn: r.actualizada_en,
   }
 }
 
 async function listPreguntasFormulario() {
   const { rows } = await pool.query(
-    `SELECT id, texto, actualizada_en
-     FROM preguntas_formulario ORDER BY id`
+    `SELECT pf.id, pf.campo, pf.texto, pf.textos, pf.seccion_id, pf.orden, pf.actualizada_en,
+            s.nombre AS seccion_nombre
+     FROM preguntas_formulario pf
+     LEFT JOIN secciones s ON s.id = pf.seccion_id
+     ORDER BY s.orden NULLS LAST, pf.orden`
   )
   return { data: rows.map(rowToPreguntaFormulario), error: null }
 }
 
-async function updatePreguntaFormulario(id, { texto }) {
+async function updatePreguntaFormulario(id, { texto, campo, textos, seccionId, orden }) {
   if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
 
   const sets = []
@@ -174,6 +224,22 @@ async function updatePreguntaFormulario(id, { texto }) {
     if (!String(texto).trim()) return { data: null, error: { message: 'El texto no puede estar vacío' } }
     params.push(texto)
     sets.push(`texto = $${params.length}`)
+  }
+  if (campo !== undefined) {
+    params.push(campo)
+    sets.push(`campo = $${params.length}`)
+  }
+  if (textos !== undefined) {
+    params.push(JSON.stringify(textos))
+    sets.push(`textos = $${params.length}::jsonb`)
+  }
+  if (seccionId !== undefined) {
+    params.push(seccionId || null)
+    sets.push(`seccion_id = $${params.length}`)
+  }
+  if (orden !== undefined) {
+    params.push(orden)
+    sets.push(`orden = $${params.length}`)
   }
 
   if (sets.length === 0) return { data: null, error: { message: 'No hay cambios que guardar' } }
@@ -187,27 +253,39 @@ async function updatePreguntaFormulario(id, { texto }) {
   if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
 
   const { rows } = await pool.query(
-    `SELECT id, texto, actualizada_en
-     FROM preguntas_formulario WHERE id = $1`,
+    `SELECT pf.id, pf.campo, pf.texto, pf.textos, pf.seccion_id, pf.orden, pf.actualizada_en,
+            s.nombre AS seccion_nombre
+     FROM preguntas_formulario pf
+     LEFT JOIN secciones s ON s.id = pf.seccion_id
+     WHERE pf.id = $1`,
     [id]
   )
   return { data: rowToPreguntaFormulario(rows[0]), error: null }
 }
 
-async function createPreguntaFormulario({ texto }) {
+async function createPreguntaFormulario({ texto, campo, textos, seccionId, orden }) {
   if (!texto || !String(texto).trim()) return { data: null, error: { message: 'El texto es obligatorio' } }
 
   const { rows } = await pool.query(
-    `INSERT INTO preguntas_formulario (texto)
-     VALUES ($1)
+    `INSERT INTO preguntas_formulario (campo, texto, textos, seccion_id, orden)
+     VALUES ($1, $2, $3::jsonb, $4, $5)
      RETURNING id`,
-    [texto.trim()]
+    [
+      (campo ?? '').trim(),
+      texto.trim(),
+      JSON.stringify(textos ?? {}),
+      seccionId || null,
+      orden ?? 0,
+    ]
   )
   if (!rows.length) return { data: null, error: { message: 'No se pudo crear la pregunta' } }
 
   const { rows: full } = await pool.query(
-    `SELECT id, texto, actualizada_en
-     FROM preguntas_formulario WHERE id = $1`,
+    `SELECT pf.id, pf.campo, pf.texto, pf.textos, pf.seccion_id, pf.orden, pf.actualizada_en,
+            s.nombre AS seccion_nombre
+     FROM preguntas_formulario pf
+     LEFT JOIN secciones s ON s.id = pf.seccion_id
+     WHERE pf.id = $1`,
     [rows[0].id]
   )
   return { data: rowToPreguntaFormulario(full[0]), error: null, status: 201 }
@@ -408,8 +486,14 @@ async function createSeccionAdmin(body) {
   const countRes = await pool.query('SELECT COUNT(*) FROM secciones')
   const orden = body.orden ?? (parseInt(countRes.rows[0].count, 10) + 1)
   const { rows } = await pool.query(
-    'INSERT INTO secciones (nombre, orden, activa) VALUES ($1, $2, $3) RETURNING *',
-    [body.nombre.trim(), orden, body.activa !== undefined ? body.activa : true]
+    'INSERT INTO secciones (nombre, clave, orden, titulos, activa) VALUES ($1, $2, $3, $4::jsonb, $5) RETURNING *',
+    [
+      body.nombre.trim(),
+      (body.clave ?? '').trim(),
+      orden,
+      JSON.stringify(body.titulos ?? {}),
+      body.activa !== undefined ? body.activa : true,
+    ]
   )
   return { data: rowToSeccion(rows[0]), error: null, status: 201 }
 }
@@ -422,14 +506,18 @@ async function updateSeccionAdmin(id, body) {
     )
     if (dup.rows.length) return { data: null, error: { message: 'Ya existe una sección con ese nombre' } }
   }
-  const FIELD_MAP = { nombre: 'nombre', orden: 'orden', activa: 'activa' }
+  const FIELD_MAP = { nombre: 'nombre', clave: 'clave', orden: 'orden', activa: 'activa' }
   const setClauses = []
   const params = []
   for (const [camel, snake] of Object.entries(FIELD_MAP)) {
     if (body[camel] !== undefined) {
-      params.push(camel === 'nombre' ? body.nombre.trim() : body[camel])
+      params.push(camel === 'nombre' ? body.nombre.trim() : camel === 'clave' ? (body.clave ?? '').trim() : body[camel])
       setClauses.push(`${snake} = $${params.length}`)
     }
+  }
+  if (body.titulos !== undefined) {
+    params.push(JSON.stringify(body.titulos))
+    setClauses.push(`titulos = $${params.length}::jsonb`)
   }
   if (!setClauses.length) return getSeccionById(id)
   params.push(id)
