@@ -728,6 +728,16 @@ footer {
 }
 
 /* ── Wizard step animations ── */
+@keyframes quizEnter {
+  0%   { opacity: 0; transform: translateX(70px) scale(0.94); }
+  55%  { opacity: 1; transform: translateX(-8px) scale(1.01); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes quizEnterBack {
+  0%   { opacity: 0; transform: translateX(-70px) scale(0.94); }
+  55%  { opacity: 1; transform: translateX(8px) scale(1.01); }
+  100% { opacity: 1; transform: translateX(0) scale(1); }
+}
 @keyframes slideInRight {
   from { opacity: 0; transform: translateX(56px); }
   to   { opacity: 1; transform: translateX(0); }
@@ -750,12 +760,22 @@ footer {
   60%  { transform: scale(1.08); }
   100% { opacity: 1; transform: scale(1); }
 }
+@keyframes answerPulse {
+  0%   { transform: scale(1); box-shadow: 0 6px 20px rgba(108,17,200,.4); }
+  30%  { transform: scale(1.06); box-shadow: 0 10px 30px rgba(108,17,200,.55); }
+  60%  { transform: scale(0.98); }
+  100% { transform: scale(1); }
+}
+@keyframes linearBarGrow {
+  from { transform: scaleX(0); transform-origin: left; }
+  to   { transform: scaleX(1); transform-origin: left; }
+}
 
 .wizard-step {
-  animation: slideInRight 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation: quizEnter 0.42s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 .wizard-step.reverse {
-  animation: slideInLeft 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  animation: quizEnterBack 0.42s cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
 /* ── Wizard step header */
@@ -812,6 +832,108 @@ footer {
   color: #9b7de0;
   font-weight: 800;
   white-space: nowrap;
+}
+
+/* ── Quiz progress header ── */
+.quiz-progress-header {
+  margin-bottom: 28px;
+}
+.quiz-progress-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  gap: 12px;
+}
+.quiz-section-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #6c11c8 0%, #c333e0 100%);
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: .82rem;
+  font-weight: 800;
+  letter-spacing: .3px;
+  box-shadow: 0 4px 14px rgba(108,17,200,.35);
+  animation: fadeInUp .3s ease;
+}
+.quiz-counter {
+  font-size: 1rem;
+  font-weight: 900;
+  color: #6c11c8;
+  white-space: nowrap;
+  animation: fadeInUp .3s ease;
+}
+.quiz-counter span {
+  font-size: .82rem;
+  color: #9b7de0;
+  font-weight: 700;
+}
+.quiz-linear-bar-wrap {
+  height: 12px;
+  background: #e8deff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 4px rgba(108,17,200,.1);
+}
+.quiz-linear-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #6c11c8 0%, #c333e0 50%, #9b23e8 100%);
+  border-radius: 12px;
+  transition: width 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  box-shadow: 0 2px 8px rgba(195,51,224,.5);
+  position: relative;
+  overflow: hidden;
+}
+.quiz-linear-bar::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,.3) 50%, transparent 100%);
+  animation: shimmer 1.8s infinite;
+}
+@keyframes shimmer {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(200%); }
+}
+
+/* ── Quiz single question card ── */
+.quiz-single-question {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: 200px;
+}
+.quiz-single-question .question-card {
+  border-width: 3px;
+  padding: 28px 28px 24px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #fdf8ff 0%, #f5eeff 100%);
+  box-shadow: 0 8px 32px rgba(108,17,200,.1);
+}
+.quiz-single-question .question-card-text {
+  font-size: 1.18rem;
+  font-weight: 800;
+  line-height: 1.5;
+  color: #1a0533;
+  margin-bottom: 24px;
+}
+.quiz-single-question .yesno-buttons {
+  gap: 16px;
+}
+.quiz-single-question .yesno-btn {
+  padding: 18px 28px;
+  font-size: 1.05rem;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(0,0,0,.18);
+}
+.quiz-single-question .yesno-btn:not(.selected):hover {
+  transform: translateY(-4px) scale(1.02);
+}
+.yesno-btn.selected {
+  animation: answerPulse 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 /* ── QUIZ Question cards ── */

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import './App.css'
 import { getPreguntas, createDeclaracion, updateDeclaracion, deleteDocumento, getDocumentoUrl } from './apiClient.js'
 import { useAuth } from './AuthContext.jsx'
@@ -177,22 +177,36 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
 
   // Wizard step helpers
   // Steps: 0 = ID fields, 1..N = API sections, N+1 = Docs + Comments (last)
-  const totalSteps = loadingPreguntas ? 0 : secciones.length + 2
+  // Build a flat list of visible steps: id → individual questions → docs
+  const visibleSteps = useMemo(() => {
+    if (loadingPreguntas || secciones.length === 0) return []
+    const steps = [{ type: 'id', key: 'id' }]
+    for (const seccion of secciones) {
+      for (const pregunta of seccion.preguntas) {
+        const isVisible = !pregunta.condicion ||
+          form[pregunta.condicion.campo] === pregunta.condicion.valor
+        if (isVisible) {
+          steps.push({ type: 'question', key: `q:${pregunta.id}`, seccion, pregunta })
+        }
+      }
+    }
+    steps.push({ type: 'docs', key: 'docs' })
+    return steps
+  }, [loadingPreguntas, secciones, form])
+  const totalSteps = visibleSteps.length
+  const safeStep = Math.min(currentStep, Math.max(0, visibleSteps.length - 1))
+  const currentStepInfo = visibleSteps[safeStep]
 
   const handleNext = () => {
-    if (currentStep === 0) {
+    const info = currentStepInfo
+    if (info?.type === 'id') {
       if (!form.nombre.trim() || !form.apellidos.trim() || !form.dniNie.trim() || !form.telefono.trim()) {
         showToast(t('errValidationRequired'), 'error')
         return
       }
-    } else if (currentStep >= 1 && currentStep <= secciones.length) {
-      const seccion = secciones[currentStep - 1]
-      const unanswered = seccion.preguntas.some(pregunta => {
-        const visible = !pregunta.condicion ||
-          form[pregunta.condicion.campo] === pregunta.condicion.valor
-        return visible && (form[pregunta.id] == null || form[pregunta.id] === '')
-      })
-      if (unanswered) {
+    } else if (info?.type === 'question') {
+      const { pregunta } = info
+      if (form[pregunta.id] == null || form[pregunta.id] === '') {
         showToast(t('errValidationQuestions'), 'error')
         return
       }
@@ -204,7 +218,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
 
   const handlePrev = () => {
     setStepDirection('backward')
-    setCurrentStep(prev => prev - 1)
+    setCurrentStep(prev => Math.max(0, prev - 1))
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
@@ -410,49 +424,43 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
           </button>
         </form>
 
-        {/* Progress bar – dynamic based on wizard steps */}
-        {!submitted && !loadingPreguntas && !errorPreguntas && (
-          <div className="progress-bar">
-            {/* Step 0: ID */}
-            <div className={`step ${currentStep > 0 ? 'done' : 'active'}`}>
-              <div className="bubble">{currentStep > 0 ? '✓' : '1'}</div>
-              {t('stepId')}
-            </div>
-            {/* Dynamic API sections */}
-            {secciones.map((sec, idx) => {
-              const stepIdx = idx + 1
-              const isDone = currentStep > stepIdx
-              const isActive = currentStep === stepIdx
-              return (
-                <div key={sec.id} className={`step ${isDone ? 'done' : isActive ? 'active' : ''}`}>
-                  <div className="bubble">{isDone ? '✓' : stepIdx + 1}</div>
-                  <span className="progress-step-label">
-                    {sec.titulos?.[lang] ?? sec.titulo}
+        {/* Quiz progress bar */}
+        {!submitted && !loadingPreguntas && !errorPreguntas && totalSteps > 0 && (
+          <div className="quiz-progress-header">
+            <div className="quiz-progress-top">
+              <div>
+                {currentStepInfo?.type === 'id' && (
+                  <span className="quiz-section-badge">👤 {t('stepId')}</span>
+                )}
+                {currentStepInfo?.type === 'question' && (
+                  <span className="quiz-section-badge">
+                    {STEP_ICONS[secciones.indexOf(currentStepInfo.seccion) + 1] ?? '❓'}&nbsp;
+                    {currentStepInfo.seccion.titulos?.[lang] ?? currentStepInfo.seccion.titulo}
                   </span>
-                </div>
-              )
-            })}
-            {/* Last step: docs + comments */}
-            {(() => {
-              const lastIdx = secciones.length + 1
-              const isDone = submitted
-              const isActive = currentStep === lastIdx
-              return (
-                <div className={`step ${isDone ? 'done' : isActive ? 'active' : ''}`}>
-                  <div className="bubble">{isDone ? '✓' : lastIdx + 1}</div>
-                  {t('stepDocs')}
-                </div>
-              )
-            })()}
+                )}
+                {currentStepInfo?.type === 'docs' && (
+                  <span className="quiz-section-badge">📁 {t('stepDocs')}</span>
+                )}
+              </div>
+              <div className="quiz-counter">{safeStep + 1} <span>/ {totalSteps}</span></div>
+            </div>
+            <div className="quiz-linear-bar-wrap">
+              <div
+                className="quiz-linear-bar"
+                style={{ width: `${totalSteps > 0 ? ((safeStep + 1) / totalSteps) * 100 : 0}%` }}
+              />
+            </div>
           </div>
         )}
         {submitted && (
-          <div className="progress-bar">
-            {Array.from({ length: secciones.length + 2 }, (_, i) => (
-              <div key={i} className="step done">
-                <div className="bubble">✓</div>
-              </div>
-            ))}
+          <div className="quiz-progress-header">
+            <div className="quiz-progress-top">
+              <span className="quiz-section-badge">🎉 {t('successTitle')}</span>
+              <div className="quiz-counter">✓</div>
+            </div>
+            <div className="quiz-linear-bar-wrap">
+              <div className="quiz-linear-bar" style={{ width: '100%' }} />
+            </div>
           </div>
         )}
 
@@ -493,11 +501,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
           </div>
         ) : (
           <>
-            <div className="info-box">
-              <strong>{t('instructionsTitle')}</strong>
-              {t('instructionsText')}<em>{t('campaignName')}</em>{t('instructionsText2')}
-            </div>
-
             {loadingPreguntas && <div className="info-box">{t('loadingQuestions')}</div>}
             {errorPreguntas && <div className="info-box">{t('errorQuestions')}{errorPreguntas}</div>}
 
@@ -509,9 +512,13 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                   className={`wizard-step${stepDirection === 'backward' ? ' reverse' : ''}`}
                 >
 
-                  {/* ── Step 0: Identification ── */}
-                  {currentStep === 0 && (
+                  {/* ── Step: Identification ── */}
+                  {currentStepInfo?.type === 'id' && (
                     <>
+                      <div className="info-box">
+                        <strong>{t('instructionsTitle')}</strong>
+                        {t('instructionsText')}<em>{t('campaignName')}</em>{t('instructionsText2')}
+                      </div>
                       <div className="wizard-step-header">
                         <div className="wizard-step-icon">👤</div>
                         <div>
@@ -544,48 +551,40 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                     </>
                   )}
 
-                  {/* ── Steps 1..N: dynamic API sections ── */}
-                  {currentStep >= 1 && currentStep <= secciones.length && (() => {
-                    const seccion = secciones[currentStep - 1]
-                    const icon = STEP_ICONS[currentStep] ?? '❓'
+                  {/* ── Step: Single question (quiz style) ── */}
+                  {currentStepInfo?.type === 'question' && (() => {
+                    const { seccion, pregunta } = currentStepInfo
+                    const icon = STEP_ICONS[secciones.indexOf(seccion) + 1] ?? '❓'
+                    const questionSteps = visibleSteps.filter(s => s.type === 'question')
+                    const questionIdx = questionSteps.findIndex(s => s.key === currentStepInfo.key)
                     return (
-                      <>
+                      <div className="quiz-single-question">
                         <div className="wizard-step-header">
                           <div className="wizard-step-icon">{icon}</div>
                           <div>
                             <div className="wizard-step-title">
-                              {seccion.numero}. {seccion.titulos?.[lang] ?? seccion.titulo}
+                              {seccion.titulos?.[lang] ?? seccion.titulo}
                             </div>
                             <div className="wizard-step-subtitle">
-                              🎯 {t('instructionsTitle')} &nbsp;·&nbsp; {seccion.preguntas.length} {seccion.preguntas.length === 1 ? t('questionSingular') : t('questionPlural')}
+                              🎯 {questionIdx + 1} / {questionSteps.length}
                             </div>
                           </div>
                         </div>
-                        <div className="questions-list">
-                          {seccion.preguntas.map((pregunta, qIdx) => {
-                            const visible = !pregunta.condicion ||
-                              form[pregunta.condicion.campo] === pregunta.condicion.valor
-                            if (!visible) return null
-                            return (
-                              <YesNoField
-                                key={pregunta.id}
-                                name={pregunta.id}
-                                value={form[pregunta.id] ?? ''}
-                                onChange={handleChange}
-                                label={pregunta.textos?.[lang] ?? pregunta.texto}
-                                indent={pregunta.indentada}
-                                t={t}
-                                questionNumber={qIdx + 1}
-                              />
-                            )
-                          })}
-                        </div>
-                      </>
+                        <YesNoField
+                          name={pregunta.id}
+                          value={form[pregunta.id] ?? ''}
+                          onChange={handleChange}
+                          label={pregunta.textos?.[lang] ?? pregunta.texto}
+                          indent={false}
+                          t={t}
+                          questionNumber={questionIdx + 1}
+                        />
+                      </div>
                     )
                   })()}
 
-                  {/* ── Last step: Docs + Comments + Submit ── */}
-                  {currentStep === secciones.length + 1 && (
+                  {/* ── Step: Docs + Comments + Submit ── */}
+                  {currentStepInfo?.type === 'docs' && (
                     <>
                       <div className="wizard-step-header">
                         <div className="wizard-step-icon">📁</div>
@@ -674,20 +673,20 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                 {/* Wizard navigation */}
                 <div className="wizard-nav">
                   <div>
-                    {currentStep > 0 && (
+                    {safeStep > 0 && (
                       <button type="button" className="btn btn-secondary" onClick={handlePrev}>
                         {t('btnBack')}
                       </button>
                     )}
-                    {currentStep === 0 && (
+                    {safeStep === 0 && (
                       <button type="button" className="btn btn-secondary" onClick={handleLimpiar}>{t('btnClear')}</button>
                     )}
                   </div>
                   <div className="wizard-progress-text">
-                    {currentStep + 1} / {totalSteps}
+                    {safeStep + 1} / {totalSteps}
                   </div>
                   <div className="wizard-nav-right">
-                    {currentStep < secciones.length + 1 ? (
+                    {safeStep < totalSteps - 1 ? (
                       <button type="button" className="btn btn-primary" onClick={handleNext}>
                         {t('btnContinue')}
                       </button>
