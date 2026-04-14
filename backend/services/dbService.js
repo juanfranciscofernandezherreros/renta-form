@@ -353,7 +353,7 @@ async function createDeclaracion(body) {
 
   let rows
   try {
-    ;({ rows } = await pool.query(
+    ({ rows } = await pool.query(
       `INSERT INTO declaraciones (
         nombre, apellidos, dni_nie, email, telefono,
         vivienda_alquiler, alquiler_menos_35, vivienda_propiedad, propiedad_antes_2013,
