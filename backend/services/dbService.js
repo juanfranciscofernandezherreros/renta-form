@@ -131,7 +131,7 @@ async function getPreguntas() {
       `SELECT pf.campo, pf.texto, pf.textos, pf.orden AS pregunta_orden,
               s.clave AS seccion_clave, s.nombre AS seccion_nombre,
               s.orden AS seccion_orden, s.titulos AS seccion_titulos
-       FROM preguntas_formulario pf
+       FROM preguntas pf
        JOIN secciones s ON s.id = pf.seccion_id
        WHERE s.activa = true
        ORDER BY s.orden, pf.orden`
@@ -168,7 +168,7 @@ async function getPreguntas() {
   }
 }
 
-// ── Admin: preguntas_formulario ───────────────────────────────────────────
+// ── Admin: preguntas ─────────────────────────────────────────────────────
 
 function rowToPreguntaFormulario(r) {
   return {
@@ -182,7 +182,7 @@ function rowToPreguntaFormulario(r) {
 async function listPreguntasFormulario() {
   const { rows } = await pool.query(
     `SELECT id, texto, actualizada_en
-     FROM preguntas_formulario
+     FROM preguntas
      ORDER BY actualizada_en DESC`
   )
   return { data: rows.map(rowToPreguntaFormulario), error: null }
@@ -194,13 +194,13 @@ async function updatePreguntaFormulario(id, { texto }) {
   if (!String(texto).trim()) return { data: null, error: { message: 'El texto no puede estar vacío' } }
 
   const { rowCount } = await pool.query(
-    `UPDATE preguntas_formulario SET texto = $1, actualizada_en = NOW() WHERE id = $2`,
+    `UPDATE preguntas SET texto = $1, actualizada_en = NOW() WHERE id = $2`,
     [texto.trim(), id]
   )
   if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
 
   const { rows } = await pool.query(
-    `SELECT id, texto, actualizada_en FROM preguntas_formulario WHERE id = $1`,
+    `SELECT id, texto, actualizada_en FROM preguntas WHERE id = $1`,
     [id]
   )
   return { data: rowToPreguntaFormulario(rows[0]), error: null }
@@ -210,19 +210,19 @@ async function createPreguntaFormulario({ texto }) {
   if (!texto || !String(texto).trim()) return { data: null, error: { message: 'El texto es obligatorio' } }
 
   const { rows } = await pool.query(
-    `INSERT INTO preguntas_formulario (texto) VALUES ($1) RETURNING id`,
+    `INSERT INTO preguntas (texto) VALUES ($1) RETURNING id`,
     [texto.trim()]
   )
   if (!rows.length) return { data: null, error: { message: 'No se pudo crear la pregunta' } }
 
   // Use the UUID as the internal campo key so the public form can reference it
   await pool.query(
-    `UPDATE preguntas_formulario SET campo = id::text WHERE id = $1 AND (campo IS NULL OR campo = '')`,
+    `UPDATE preguntas SET campo = id::text WHERE id = $1 AND (campo IS NULL OR campo = '')`,
     [rows[0].id]
   ).catch(err => console.error('Warning: could not auto-set campo for new question:', err.message))
 
   const { rows: full } = await pool.query(
-    `SELECT id, texto, actualizada_en FROM preguntas_formulario WHERE id = $1`,
+    `SELECT id, texto, actualizada_en FROM preguntas WHERE id = $1`,
     [rows[0].id]
   )
   return { data: rowToPreguntaFormulario(full[0]), error: null, status: 201 }
@@ -231,7 +231,7 @@ async function createPreguntaFormulario({ texto }) {
 async function deletePreguntaFormulario(id) {
   if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
   const { rowCount } = await pool.query(
-    'DELETE FROM preguntas_formulario WHERE id = $1',
+    'DELETE FROM preguntas WHERE id = $1',
     [id]
   )
   if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
