@@ -108,9 +108,6 @@ function rowToIdioma(row) {
   }
 }
 
-// ── Static catalogue – used as fallback when DB has no preguntas_formulario ──
-const { CATALOGO_PREGUNTAS } = require('../data/catalogoPreguntas')
-
 // ── Auth ───────────────────────────────────────────────────────────────────
 
 async function loginUser({ dniNie, password }) {
@@ -141,7 +138,7 @@ async function changePassword({ dniNie, oldPassword, newPassword }) {
   return { data: { success: true }, error: null }
 }
 
-// ── IRPF preguntas (loaded from DB, static catalogue as fallback) ──────────
+// ── IRPF preguntas (loaded from DB) ──────────────────────────────────────
 
 async function getPreguntas() {
   try {
@@ -154,7 +151,7 @@ async function getPreguntas() {
        WHERE s.activa = true
        ORDER BY s.orden, pf.orden`
     )
-    if (!rows.length) return { data: CATALOGO_PREGUNTAS, error: null }
+    if (!rows.length) return { data: { secciones: [] }, error: null }
 
     // Group questions by section
     const seccionMap = new Map()
@@ -181,9 +178,8 @@ async function getPreguntas() {
     }
     return { data: { secciones: [...seccionMap.values()] }, error: null }
   } catch (err) {
-    // If anything goes wrong reading from DB, fall back to static catalogue
-    console.error('getPreguntas DB error, falling back to static catalogue:', err.message)
-    return { data: CATALOGO_PREGUNTAS, error: null }
+    console.error('getPreguntas DB error:', err.message)
+    return { data: null, error: { message: err.message } }
   }
 }
 
