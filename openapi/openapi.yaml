@@ -49,13 +49,26 @@ paths:
               example:
                 secciones:
                   - id: seccion-vivienda
-                    numero: 2
+                    numero: 1
                     titulo: Situación de Vivienda
+                    titulos:
+                      es: Situación de Vivienda
+                      fr: Situation de logement
+                      ca: Situació d'habitatge
+                      en: Housing Situation
                     preguntas:
                       - id: viviendaAlquiler
                         texto: '¿Vive de alquiler?'
+                        textos:
+                          es: '¿Vive de alquiler?'
+                          fr: 'Vivez-vous en location ?'
+                          ca: 'Viu de lloguer?'
+                          en: 'Do you live in a rental?'
                       - id: alquilerMenos35
-                        texto: '¿El alquiler es inferior al 35 % de los ingresos?'
+                        texto: '¿El importe del alquiler es inferior al 35 % de los ingresos?'
+                        textos:
+                          es: '¿El importe del alquiler es inferior al 35 % de los ingresos?'
+                          en: 'Is the rent amount less than 35% of your income?'
         '503':
           description: Servicio no disponible
           content:
@@ -765,8 +778,16 @@ components:
           example: alquilerMenos35
         texto:
           type: string
-          description: Texto de la pregunta que se muestra al usuario
+          description: Texto de la pregunta en español
           example: '¿El importe del alquiler es inferior al 35 % de los ingresos?'
+        textos:
+          type: object
+          description: Traducciones del texto de la pregunta por código de idioma
+          additionalProperties:
+            type: string
+          example:
+            es: '¿El importe del alquiler es inferior al 35 % de los ingresos?'
+            en: 'Is the rent amount less than 35% of your income?'
 
     Seccion:
       type: object
@@ -778,10 +799,18 @@ components:
         numero:
           type: integer
           minimum: 1
-          example: 2
+          example: 1
         titulo:
           type: string
           example: Situación de Vivienda
+        titulos:
+          type: object
+          description: Traducciones del título de la sección por código de idioma
+          additionalProperties:
+            type: string
+          example:
+            es: Situación de Vivienda
+            en: Housing Situation
         preguntas:
           type: array
           items:

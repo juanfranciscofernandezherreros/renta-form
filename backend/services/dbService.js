@@ -101,7 +101,7 @@ async function changePassword({ dniNie, oldPassword, newPassword }) {
 async function getPreguntas() {
   try {
     const { rows } = await pool.query(
-      `SELECT campo, texto, textos, seccion, seccion_orden, seccion_titulos, orden
+      `SELECT campo, texto, seccion, seccion_orden, seccion_titulos, orden
        FROM preguntas
        ORDER BY seccion_orden, orden`
     )
@@ -122,10 +122,11 @@ async function getPreguntas() {
           preguntas: [],
         })
       }
-      const textos = typeof r.textos === 'string' ? JSON.parse(r.textos) : (r.textos ?? {})
+      // texto column is JSONB with all translations: {"es": "...", "fr": "...", ...}
+      const textos = typeof r.texto === 'string' ? JSON.parse(r.texto) : (r.texto ?? {})
       seccionMap.get(key).preguntas.push({
         id: r.campo,
-        texto: r.texto,
+        texto: textos.es || '',
         textos,
       })
     }
@@ -139,9 +140,15 @@ async function getPreguntas() {
 // ── Admin: preguntas ─────────────────────────────────────────────────────
 
 function rowToPreguntaFormulario(r) {
+  // texto is JSONB – extract Spanish text for display, or stringify if needed
+  const textoRaw = r.texto
+  let textoDisplay = textoRaw
+  if (textoRaw && typeof textoRaw === 'object') {
+    textoDisplay = textoRaw.es || JSON.stringify(textoRaw)
+  }
   return {
     id: r.id,
-    texto: r.texto,
+    texto: textoDisplay,
     tipo: 'sino',
     actualizadaEn: r.actualizada_en,
   }
@@ -151,7 +158,7 @@ async function listPreguntasFormulario() {
   const { rows } = await pool.query(
     `SELECT id, texto, actualizada_en
      FROM preguntas
-     ORDER BY actualizada_en DESC`
+     ORDER BY seccion_orden, orden`
   )
   return { data: rows.map(rowToPreguntaFormulario), error: null }
 }
