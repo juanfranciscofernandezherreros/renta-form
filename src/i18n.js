@@ -179,6 +179,9 @@ const translations = {
     fieldEmailOptional: '(opcional)',
     errValidationRequired: '❌ Por favor, rellena los campos obligatorios: Nombre, Apellidos, DNI/NIE y Teléfono móvil.',
     errValidationQuestions: '❌ Por favor, responde a todas las preguntas antes de enviar el formulario.',
+    step1Subtitle: '🚀 ¡Vamos a empezar! Cuéntanos quién eres',
+    questionSingular: 'pregunta',
+    questionPlural: 'preguntas',
   },
 
   fr: {
@@ -340,6 +343,9 @@ const translations = {
     fieldEmailOptional: '(optionnel)',
     errValidationRequired: '❌ Veuillez remplir les champs obligatoires : Prénom, Nom, DNI/NIE et Téléphone mobile.',
     errValidationQuestions: '❌ Veuillez répondre à toutes les questions avant d\'envoyer le formulaire.',
+    step1Subtitle: '🚀 C\'est parti ! Dites-nous qui vous êtes',
+    questionSingular: 'question',
+    questionPlural: 'questions',
   },
 
   en: {
@@ -499,6 +505,9 @@ const translations = {
     fieldEmailOptional: '(optional)',
     errValidationRequired: '❌ Please fill in the required fields: First name, Surname(s), DNI/NIE and Mobile phone.',
     errValidationQuestions: '❌ Please answer all questions before submitting the form.',
+    step1Subtitle: '🚀 Let\'s get started! Tell us who you are',
+    questionSingular: 'question',
+    questionPlural: 'questions',
   },
 
   ca: {
@@ -658,6 +667,9 @@ const translations = {
     fieldEmailOptional: '(opcional)',
     errValidationRequired: '❌ Si us plau, ompliu els camps obligatoris: Nom, Cognoms, DNI/NIE i Telèfon mòbil.',
     errValidationQuestions: '❌ Si us plau, responeu a totes les preguntes abans d\'enviar el formulari.',
+    step1Subtitle: '🚀 Comencem! Digueu-nos qui sou',
+    questionSingular: 'pregunta',
+    questionPlural: 'preguntes',
   },
 }
 

@@ -43,7 +43,7 @@ const STEP_ICONS = ['👤', '🏠', '👨‍👩‍👧', '💶', '📁', '📝'
 const YesNoField = ({ label, name, value, onChange, indent, t, index }) => (
   <div className={`question-card${indent ? ' indent' : ''}${value ? ' answered' : ''}`}>
     <div className="question-card-text">
-      {index != null && (
+      {index !== null && index !== undefined && (
         <span style={{
           background: 'linear-gradient(135deg, #6c11c8, #9b23e8)',
           color: '#fff',
@@ -516,7 +516,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                         <div className="wizard-step-icon">👤</div>
                         <div>
                           <div className="wizard-step-title">{t('section1')}</div>
-                          <div className="wizard-step-subtitle">🚀 ¡Vamos a empezar! Cuéntanos quién eres</div>
+                          <div className="wizard-step-subtitle">{t('step1Subtitle')}</div>
                         </div>
                       </div>
                       <div className="form-grid">
@@ -557,7 +557,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                               {seccion.numero}. {seccion.titulos?.[lang] ?? seccion.titulo}
                             </div>
                             <div className="wizard-step-subtitle">
-                              🎯 {t('instructionsTitle')} &nbsp;·&nbsp; {seccion.preguntas.length} {seccion.preguntas.length === 1 ? 'pregunta' : 'preguntas'}
+                              🎯 {t('instructionsTitle')} &nbsp;·&nbsp; {seccion.preguntas.length} {seccion.preguntas.length === 1 ? t('questionSingular') : t('questionPlural')}
                             </div>
                           </div>
                         </div>
