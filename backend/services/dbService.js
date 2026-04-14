@@ -791,26 +791,29 @@ async function upsertDeclaracionPreguntas(declaracionId, asignaciones) {
   const dec = await pool.query('SELECT id FROM declaraciones WHERE id = $1', [declaracionId])
   if (!dec.rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
 
+  // Validate all preguntaIds in a single query to avoid N+1
+  const preguntaIds = asignaciones.map(a => a.preguntaId)
+  if (preguntaIds.length > 0) {
+    const { rows: found } = await pool.query(
+      'SELECT id FROM preguntas_adicionales WHERE id = ANY($1)',
+      [preguntaIds]
+    )
+    const foundSet = new Set(found.map(r => r.id))
+    const missing = preguntaIds.find(id => !foundSet.has(id))
+    if (missing) return { data: null, error: { message: `Pregunta ${missing} no encontrada` } }
+  }
+
   for (const a of asignaciones) {
-    const preg = await pool.query('SELECT id FROM preguntas_adicionales WHERE id = $1', [a.preguntaId])
-    if (!preg.rows.length) {
-      return { data: null, error: { message: `Pregunta ${a.preguntaId} no encontrada` } }
-    }
     await pool.query(
       `INSERT INTO declaracion_pregunta (declaracion_id, pregunta_id, respuesta, respondida_en)
-       VALUES ($1, $2, $3, $4)
+       VALUES ($1, $2, $3, CASE WHEN $3 IS NOT NULL THEN NOW() ELSE NULL END)
        ON CONFLICT (declaracion_id, pregunta_id) DO UPDATE SET
          respuesta = EXCLUDED.respuesta,
          respondida_en = CASE
            WHEN EXCLUDED.respuesta IS NOT NULL THEN NOW()
            ELSE declaracion_pregunta.respondida_en
          END`,
-      [
-        declaracionId,
-        a.preguntaId,
-        a.respuesta ?? null,
-        (a.respuesta !== null && a.respuesta !== undefined) ? new Date().toISOString() : null,
-      ]
+      [declaracionId, a.preguntaId, a.respuesta ?? null]
     )
   }
 
