@@ -446,7 +446,7 @@ La aplicación implementa tres capas de acceso:
 
 ## 13. Usuarios de Prueba
 
-Los usuarios de prueba se cargan con el fichero SQL `database/test_data_200_usuarios.sql` (prueba de carga con 200 usuarios). Contraseña de todos los usuarios: `Test1234!`
+El usuario admin se crea automáticamente con `database/init.sql`.
 
 ---
 

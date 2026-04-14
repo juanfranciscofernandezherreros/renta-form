@@ -8,17 +8,10 @@ Node.js/Express REST API that backs the Renta Form frontend.
 
    ```bash
    psql -U postgres -c "CREATE DATABASE renta_form;"
-   psql -U postgres -d renta_form -f ../database/schema.sql
-   psql -U postgres -d renta_form -f ../database/schema_backend.sql
+   psql -U postgres -d renta_form -f ../database/init.sql
    ```
 
-2. (Optional) Load 200 test users for load testing:
-
-   ```bash
-   psql -U postgres -d renta_form -f ../database/test_data_200_usuarios.sql
-   ```
-
-3. Copy `.env.example` to `.env` and set the Postgres credentials:
+2. Copy `.env.example` to `.env` and set the Postgres credentials:
 
    ```
    PGHOST=localhost
@@ -28,7 +21,7 @@ Node.js/Express REST API that backs the Renta Form frontend.
    PGPASSWORD=yourpassword
    ```
 
-4. Start the server:
+3. Start the server:
 
    ```bash
    npm start
