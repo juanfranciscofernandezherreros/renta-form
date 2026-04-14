@@ -40,10 +40,10 @@ const INITIAL_STATE = {
 
 const STEP_ICONS = ['👤', '🏠', '👨‍👩‍👧', '💶', '📁', '📝', '⭐', '❓']
 
-const YesNoField = ({ label, name, value, onChange, indent, t, index }) => (
+const YesNoField = ({ label, name, value, onChange, indent, t, questionNumber }) => (
   <div className={`question-card${indent ? ' indent' : ''}${value ? ' answered' : ''}`}>
     <div className="question-card-text">
-      {index !== null && index !== undefined && (
+      {questionNumber != null && (
         <span style={{
           background: 'linear-gradient(135deg, #6c11c8, #9b23e8)',
           color: '#fff',
@@ -57,7 +57,7 @@ const YesNoField = ({ label, name, value, onChange, indent, t, index }) => (
           fontWeight: '900',
           flexShrink: 0,
           marginRight: '4px',
-        }}>{index}</span>
+        }}>{questionNumber}</span>
       )}
       {label}
     </div>
@@ -575,7 +575,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                                 label={pregunta.textos?.[lang] ?? pregunta.texto}
                                 indent={pregunta.indentada}
                                 t={t}
-                                index={qIdx + 1}
+                                questionNumber={qIdx + 1}
                               />
                             )
                           })}
