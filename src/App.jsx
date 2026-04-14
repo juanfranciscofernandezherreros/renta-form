@@ -114,6 +114,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const [deletingDocId, setDeletingDocId] = useState(null)
   const [currentStep, setCurrentStep] = useState(0)
   const [stepDirection, setStepDirection] = useState('forward')
+  const [fieldErrors, setFieldErrors] = useState({})
   const topRef = useRef(null)
 
   // Game animation state
@@ -180,6 +181,9 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
     } else {
       setForm(prev => ({ ...prev, [name]: value }))
     }
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => { const { [name]: _, ...rest } = prev; return rest })
+    }
   }
 
   const handleLimpiar = () => {
@@ -192,6 +196,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       setTokenCopied(false)
       setCurrentStep(0)
       setStepDirection('forward')
+      setFieldErrors({})
     }
   }
 
@@ -211,6 +216,22 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
     spawnXpPopup()
     setStreak(s => s + 1)
     setTotalScore(s => s + 10)
+    // Auto-advance after answering a yes/no question
+    const nextStep = visibleSteps[safeStep + 1]
+    if (nextStep) {
+      if (nextStep.type === 'question') {
+        const currSectionTitle = currentStepInfo?.type === 'question' ? currentStepInfo.seccion?.titulo : '__none__'
+        const nextSectionTitle = nextStep.seccion?.titulo
+        if (currSectionTitle !== nextSectionTitle) {
+          const banner = nextStep.seccion.titulos?.[lang] ?? nextStep.seccion.titulo
+          setShowLevelUp(banner)
+          setTimeout(() => setShowLevelUp(null), 2300)
+        }
+      }
+      setStepDirection('forward')
+      setCurrentStep(prev => prev + 1)
+      setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+    }
   }
 
   const spawnConfetti = () => {
@@ -255,8 +276,13 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const handleNext = () => {
     const info = currentStepInfo
     if (info?.type === 'id') {
-      if (!form.nombre.trim() || !form.apellidos.trim() || !form.dniNie.trim() || !form.telefono.trim()) {
-        showToast(t('errValidationRequired'), 'error')
+      const errors = {}
+      if (!form.nombre.trim()) errors.nombre = t('errValidationRequired')
+      if (!form.apellidos.trim()) errors.apellidos = t('errValidationRequired')
+      if (!form.dniNie.trim()) errors.dniNie = t('errValidationRequired')
+      if (!form.telefono.trim()) errors.telefono = t('errValidationRequired')
+      if (Object.keys(errors).length > 0) {
+        setFieldErrors(errors)
         setQuestionShake(true)
         setTimeout(() => setQuestionShake(false), SHAKE_DURATION_MS)
         return
@@ -289,6 +315,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const handlePrev = () => {
     setStepDirection('backward')
     setStreak(0)
+    setFieldErrors({})
     setCurrentStep(prev => Math.max(0, prev - 1))
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
@@ -619,15 +646,18 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                       <div className="form-grid">
                         <div className="field">
                           <label>{t('fieldNombre')}</label>
-                          <input type="text" name="nombre" value={form.nombre} onChange={handleChange} placeholder={t('fieldNombre')} required />
+                          <input type="text" name="nombre" value={form.nombre} onChange={handleChange} placeholder={t('fieldNombre')} required className={fieldErrors.nombre ? 'is-invalid' : ''} />
+                          {fieldErrors.nombre && <span className="field-error">{fieldErrors.nombre}</span>}
                         </div>
                         <div className="field">
                           <label>{t('fieldApellidos')}</label>
-                          <input type="text" name="apellidos" value={form.apellidos} onChange={handleChange} placeholder={t('fieldApellidosPlaceholder')} required />
+                          <input type="text" name="apellidos" value={form.apellidos} onChange={handleChange} placeholder={t('fieldApellidosPlaceholder')} required className={fieldErrors.apellidos ? 'is-invalid' : ''} />
+                          {fieldErrors.apellidos && <span className="field-error">{fieldErrors.apellidos}</span>}
                         </div>
                         <div className="field">
                           <label>{t('fieldDniNie')}</label>
-                          <input type="text" name="dniNie" value={form.dniNie} onChange={handleChange} placeholder="00000000A" maxLength={9} required />
+                          <input type="text" name="dniNie" value={form.dniNie} onChange={handleChange} placeholder="00000000A" maxLength={9} required className={fieldErrors.dniNie ? 'is-invalid' : ''} />
+                          {fieldErrors.dniNie && <span className="field-error">{fieldErrors.dniNie}</span>}
                         </div>
                         <div className="field">
                           <label>{t('fieldEmail')} <span className="field-optional">{t('fieldEmailOptional')}</span></label>
@@ -635,7 +665,8 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                         </div>
                         <div className="field">
                           <label>{t('fieldTelefono')}</label>
-                          <input type="tel" name="telefono" value={form.telefono} onChange={handleChange} placeholder={t('fieldTelefonoPlaceholder')} required />
+                          <input type="tel" name="telefono" value={form.telefono} onChange={handleChange} placeholder={t('fieldTelefonoPlaceholder')} required className={fieldErrors.telefono ? 'is-invalid' : ''} />
+                          {fieldErrors.telefono && <span className="field-error">{fieldErrors.telefono}</span>}
                         </div>
                       </div>
                     </>
