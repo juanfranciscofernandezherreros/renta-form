@@ -11,35 +11,38 @@ const STATIC_LANGUAGES = [
   { code: 'fr', label: 'Français' },
 ]
 
+async function fetchLanguageData() {
+  const [idiomasRes, traduccionesRes] = await Promise.all([
+    getIdiomas(),
+    getTraducciones(),
+  ])
+  return { idiomasRes, traduccionesRes }
+}
+
 export function LanguageProvider({ children }) {
   const [lang, setLang] = useState('es')
   const [languages, setLanguages] = useState(STATIC_LANGUAGES)
   const [translations, setTranslations] = useState({})
   const loadedRef = useRef(false)
 
-  const loadFromDb = useCallback(async () => {
-    try {
-      const [idiomasRes, traduccionesRes] = await Promise.all([
-        getIdiomas(),
-        getTraducciones(),
-      ])
-      if (idiomasRes.data && Array.isArray(idiomasRes.data) && idiomasRes.data.length) {
-        setLanguages(idiomasRes.data)
-      }
-      if (traduccionesRes.data && typeof traduccionesRes.data === 'object') {
-        setTranslations(traduccionesRes.data)
-      }
-    } catch {
-      // Fallback: keep static languages & keys as-is
+  const applyData = useCallback(({ idiomasRes, traduccionesRes }) => {
+    if (idiomasRes.data && Array.isArray(idiomasRes.data) && idiomasRes.data.length) {
+      setLanguages(idiomasRes.data)
+    }
+    if (traduccionesRes.data && typeof traduccionesRes.data === 'object') {
+      setTranslations(traduccionesRes.data)
     }
   }, [])
 
   useEffect(() => {
-    if (!loadedRef.current) {
-      loadedRef.current = true
-      loadFromDb()
-    }
-  }, [loadFromDb])
+    if (loadedRef.current) return
+    loadedRef.current = true
+    let cancelled = false
+    fetchLanguageData().then((data) => {
+      if (!cancelled) applyData(data)
+    }).catch(() => { /* fallback: keep static */ })
+    return () => { cancelled = true }
+  }, [applyData])
 
   const t = useCallback(
     (key) => {
@@ -58,8 +61,13 @@ export function LanguageProvider({ children }) {
   )
 
   const reloadTranslations = useCallback(async () => {
-    await loadFromDb()
-  }, [loadFromDb])
+    try {
+      const data = await fetchLanguageData()
+      applyData(data)
+    } catch {
+      // keep current state on error
+    }
+  }, [applyData])
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t, reloadTranslations, availableLanguages: languages }}>
