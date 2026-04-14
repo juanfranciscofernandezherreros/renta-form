@@ -150,6 +150,20 @@ async function migrate() {
       console.log('[migrate] declaracion_pregunta table created.')
     }
 
+    // Ensure unique constraint on declaraciones.dni_nie exists (may be missing in older DBs)
+    const { rows: uqRows } = await client.query(
+      `SELECT 1 FROM pg_constraint
+       WHERE conrelid = 'declaraciones'::regclass
+         AND conname = 'uq_declaraciones_dni_nie'`
+    )
+    if (!uqRows.length) {
+      console.log('[migrate] Adding unique constraint on declaraciones.dni_nie ...')
+      await client.query(
+        'ALTER TABLE declaraciones ADD CONSTRAINT uq_declaraciones_dni_nie UNIQUE (dni_nie)'
+      )
+      console.log('[migrate] uq_declaraciones_dni_nie constraint added.')
+    }
+
     // Seed translations if the table is empty
     const { rows: tCount } = await client.query('SELECT COUNT(*) FROM traducciones')
     if (parseInt(tCount[0].count, 10) === 0) {

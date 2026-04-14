@@ -94,13 +94,12 @@ CREATE TABLE IF NOT EXISTS declaraciones (
         CHECK (dni_nie ~ '^[0-9XYZ][0-9]{7}[A-Z]$'),
 
     CONSTRAINT chk_email_formato
-        CHECK (email ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$')
+        CHECK (email ~ '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
+
+    CONSTRAINT uq_declaraciones_dni_nie UNIQUE (dni_nie)
 );
 
 -- Índices de búsqueda frecuente
-CREATE INDEX IF NOT EXISTS idx_declaraciones_dni_nie
-    ON declaraciones (dni_nie);
-
 CREATE INDEX IF NOT EXISTS idx_declaraciones_email
     ON declaraciones (email);
 
