@@ -1,7 +1,7 @@
 {
   "name": "renta-form-backend",
   "version": "1.0.0",
-  "description": "Backend API for Renta Form – supports mock and PostgreSQL profiles",
+  "description": "Backend API for Renta Form – PostgreSQL",
   "type": "commonjs",
   "main": "server.js",
   "scripts": {

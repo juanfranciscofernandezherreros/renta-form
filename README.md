@@ -79,7 +79,17 @@ cd backend
 npm run start:db
 ```
 
-Al arrancar, el servidor aplica las migraciones automáticamente (`database/schema.sql` y `database/schema_backend.sql`) si las tablas todavía no existen:
+Al arrancar, el servidor aplica las migraciones automáticamente (`database/schema.sql` y `database/schema_backend.sql`) si las tablas todavía no existen.
+
+Para cargar 200 usuarios de prueba (prueba de carga), ejecuta:
+
+```bash
+psql $DATABASE_URL -f database/test_data_200_usuarios.sql
+# o con variables individuales:
+# psql -U postgres -d renta_form -f database/test_data_200_usuarios.sql
+```
+
+Todos los usuarios tienen la contraseña `Test1234!`.
 
 ```
 [server] Starting with profile: db
@@ -115,17 +125,6 @@ curl http://localhost:3001/health
 | 1 | `backend/` | `npm run start:db` | Arranca el backend con PostgreSQL |
 | 2 | raíz | `npm install` | Instala dependencias del frontend |
 | 2 | raíz | `npm run dev` | Arranca el frontend (Vite dev server) |
-
-### Alternativa: modo mock (sin base de datos)
-
-Si solo quieres probar la interfaz sin necesidad de una base de datos real:
-
-```bash
-cd backend
-npm run start:mock
-```
-
-Todos los datos se guardan en memoria y se pierden al reiniciar el servidor.
 
 ---
 
@@ -278,11 +277,11 @@ Los tests E2E navegan por toda la aplicación y generan **screenshots** de cada 
 
 ### Requisitos
 
-Antes de ejecutar los tests, arranca el backend (modo mock) y el servidor de desarrollo:
+Antes de ejecutar los tests, arranca el backend y el servidor de desarrollo:
 
 ```bash
-# Terminal 1 – Backend mock
-cd backend && npm install && PROFILE=mock node server.js
+# Terminal 1 – Backend (PostgreSQL)
+cd backend && npm install && npm start
 
 # Terminal 2 – Frontend dev (incluye proxy /v1 → localhost:3001)
 npm run dev

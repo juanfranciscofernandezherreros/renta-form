@@ -92,7 +92,7 @@ INSERT INTO idiomas (code, label) VALUES
     ('fr', 'Français')
 ON CONFLICT (code) DO NOTHING;
 
--- Secciones por defecto (mirrors mock data)
+-- Secciones por defecto
 INSERT INTO secciones (nombre, clave, orden, titulos) VALUES
     ('Situación de Vivienda', 'vivienda', 1,
      '{"es":"Situación de Vivienda","fr":"Situation de Logement","en":"Housing Situation","ca":"Situació d''Habitatge"}'),

@@ -1,4 +1,3 @@
-// Modo demo desactivado: todos los datos se sirven desde la base de datos.
 export const DEMO_MODE = false
 
 // API base URL used by the generated @hey-api client.

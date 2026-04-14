@@ -2,26 +2,7 @@
 
 Node.js/Express REST API that backs the Renta Form frontend.
 
-## Profiles
-
-| Profile | Command | Description |
-|---------|---------|-------------|
-| `mock` (default) | `npm run start:mock` | All data in memory – no database required |
-| `db` | `npm run start:db` | Reads/writes a real PostgreSQL database |
-
-The active profile is controlled by the `PROFILE` environment variable (default: `mock`).
-
-## Quick start (mock profile)
-
-```bash
-cd backend
-npm install
-npm start           # PROFILE=mock by default
-```
-
-The server listens on `http://localhost:3001`.
-
-## Quick start (db profile)
+## Quick start
 
 1. Create the PostgreSQL database and apply the schema:
 
@@ -31,10 +12,15 @@ The server listens on `http://localhost:3001`.
    psql -U postgres -d renta_form -f ../database/schema_backend.sql
    ```
 
-2. Copy `.env.example` to `.env` and set the Postgres credentials:
+2. (Optional) Load 200 test users for load testing:
+
+   ```bash
+   psql -U postgres -d renta_form -f ../database/test_data_200_usuarios.sql
+   ```
+
+3. Copy `.env.example` to `.env` and set the Postgres credentials:
 
    ```
-   PROFILE=db
    PGHOST=localhost
    PGPORT=5432
    PGDATABASE=renta_form
@@ -42,11 +28,13 @@ The server listens on `http://localhost:3001`.
    PGPASSWORD=yourpassword
    ```
 
-3. Start the server:
+4. Start the server:
 
    ```bash
-   npm run start:db
+   npm start
    ```
+
+The server listens on `http://localhost:3001`.
 
 ## API base URL
 
