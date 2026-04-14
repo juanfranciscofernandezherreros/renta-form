@@ -4,7 +4,7 @@
 -- =============================================================
 
 -- Yes/no questions that admins can manage from the admin panel
-CREATE TABLE IF NOT EXISTS preguntas_formulario (
+CREATE TABLE IF NOT EXISTS preguntas (
     id              UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
     campo           VARCHAR(100)    NOT NULL DEFAULT '',
     texto           TEXT            NOT NULL,
@@ -14,13 +14,13 @@ CREATE TABLE IF NOT EXISTS preguntas_formulario (
     actualizada_en  TIMESTAMPTZ     NOT NULL DEFAULT NOW()
 );
 
-CREATE OR REPLACE TRIGGER trg_preguntas_formulario_actualizado_en
-BEFORE UPDATE ON preguntas_formulario
+CREATE OR REPLACE TRIGGER trg_preguntas_actualizado_en
+BEFORE UPDATE ON preguntas
 FOR EACH ROW EXECUTE FUNCTION fn_set_actualizado_en();
 
 -- ── Seed data ─────────────────────────────────────────────────────────────
 
-INSERT INTO preguntas_formulario (campo, texto, textos, seccion_id, orden)
+INSERT INTO preguntas (campo, texto, textos, seccion_id, orden)
 SELECT seed.campo, seed.texto, seed.textos::jsonb, s.id, seed.orden
 FROM (VALUES
     ('viviendaAlquiler',

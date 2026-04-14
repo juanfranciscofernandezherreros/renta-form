@@ -42,8 +42,19 @@ async function migrate() {
     }
 
     // Run schema_formulario.sql – drop old secciones_formulario + campo-based table if present,
-    // then create the simplified preguntas_formulario (UUID id, no seccion_id/campo)
-    if (!(await tableExists(client, 'preguntas_formulario'))) {
+    // then create the simplified preguntas (UUID id, no seccion_id/campo)
+    if (await tableExists(client, 'preguntas_formulario')) {
+      console.log('[migrate] Renaming preguntas_formulario → preguntas ...')
+      await client.query(`ALTER TABLE preguntas_formulario RENAME TO preguntas`)
+      await client.query(`
+        DO $$ BEGIN
+          IF EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'trg_preguntas_formulario_actualizado_en') THEN
+            ALTER TRIGGER trg_preguntas_formulario_actualizado_en ON preguntas RENAME TO trg_preguntas_actualizado_en;
+          END IF;
+        END $$;
+      `)
+      console.log('[migrate] preguntas_formulario renamed to preguntas.')
+    } else if (!(await tableExists(client, 'preguntas'))) {
       console.log('[migrate] Running schema_formulario.sql ...')
       await client.query(fs.readFileSync(FORMULARIO_SQL, 'utf8'))
       console.log('[migrate] schema_formulario.sql applied.')
