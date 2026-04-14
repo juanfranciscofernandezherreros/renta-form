@@ -1,5 +1,3 @@
-export const DEMO_MODE = false
-
 // API base URL used by the generated @hey-api client.
 // In development the Vite proxy rewrites /v1 → http://localhost:3001/v1.
 // In production, point this to the deployed backend base URL.

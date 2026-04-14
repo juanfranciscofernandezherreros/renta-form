@@ -12,29 +12,9 @@ const ID_CAMPOS_LABELS = {
 
 const ID_SECCION = { titulo: '1. Datos de Identificación', campos: ['nombre', 'apellidos', 'dniNie', 'email', 'telefono'] }
 
-// Build an effective secciones list combining the static ID section and dynamic DB sections.
-// If dbSecciones is null/empty, falls back to the original hardcoded sections.
+// Build an effective secciones list combining the fixed ID section and dynamic DB sections.
 function buildSecciones(dbSecciones, lang) {
-  const FALLBACK_SECCIONES = [
-    { titulo: '1. Datos de Identificación', campos: ['nombre', 'apellidos', 'dniNie', 'email', 'telefono'], labels: ID_CAMPOS_LABELS },
-    { titulo: '2. Situación de Vivienda', campos: ['viviendaAlquiler', 'alquilerMenos35', 'viviendaPropiedad', 'propiedadAntes2013', 'pisosAlquiladosTerceros', 'segundaResidencia'], labels: {
-      viviendaAlquiler: '¿Vive de alquiler?', alquilerMenos35: '¿Alquiler inferior al 35% de ingresos?',
-      viviendaPropiedad: '¿Tiene vivienda en propiedad?', propiedadAntes2013: '¿Adquirida antes de 2013?',
-      pisosAlquiladosTerceros: '¿Tiene pisos alquilados a terceros?', segundaResidencia: '¿Tiene segunda residencia?',
-    } },
-    { titulo: '3. Cargas Familiares y Ayudas Públicas', campos: ['familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'mayoresConviven', 'hijosMenores26'], labels: {
-      familiaNumerosa: '¿Familia numerosa?', ayudasGobierno: '¿Ha recibido ayudas del gobierno?',
-      mayores65ACargo: '¿Tiene mayores de 65 años a cargo?', mayoresConviven: '¿Conviven con usted?',
-      hijosMenores26: '¿Tiene hijos menores de 26 años?',
-    } },
-    { titulo: '4. Ingresos Extraordinarios e Inversiones', campos: ['ingresosJuego', 'ingresosInversiones'], labels: {
-      ingresosJuego: '¿Ha obtenido ingresos por juego?', ingresosInversiones: '¿Ha obtenido ingresos por inversiones?',
-    } },
-  ]
-
-  if (!dbSecciones || !dbSecciones.length) return FALLBACK_SECCIONES
-
-  const dynamicSections = dbSecciones.map((sec) => {
+  const dynamicSections = (dbSecciones ?? []).map((sec) => {
     const labels = {}
     const campos = (sec.preguntas ?? []).map(p => {
       labels[p.id] = (p.textos && p.textos[lang]) ? p.textos[lang] : p.texto
