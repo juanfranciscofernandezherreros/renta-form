@@ -182,7 +182,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       setForm(prev => ({ ...prev, [name]: value }))
     }
     if (fieldErrors[name]) {
-      setFieldErrors(prev => { const next = { ...prev }; delete next[name]; return next })
+      setFieldErrors(prev => { const { [name]: _, ...rest } = prev; return rest })
     }
   }
 
