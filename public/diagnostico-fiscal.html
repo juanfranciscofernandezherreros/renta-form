@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Diagnóstico Fiscal 2025 – NH Gestión Integral</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── Reset & base ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue-900: #002d63;
+      --blue-700: #004593;
+      --blue-600: #0055b3;
+      --blue-100: #e8f0fb;
+      --blue-50:  #f0f5ff;
+      --gray-800: #1a1f36;
+      --gray-600: #4a5568;
+      --gray-400: #a0aec0;
+      --gray-200: #e2e8f0;
+      --gray-100: #f7f8fc;
+      --green-600: #1a9e6b;
+      --green-100: #e6f7f1;
+      --red-500:  #e53e3e;
+      --white:    #ffffff;
+      --radius:   12px;
+      --shadow:   0 4px 24px rgba(0, 45, 99, 0.10);
+      --transition: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #f0f5ff 0%, #e8f0fb 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      color: var(--gray-800);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── Card wrapper ─────────────────────────────────────────── */
+    .card {
+      width: 100%;
+      max-width: 500px;
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    /* ─── Card header ──────────────────────────────────────────── */
+    .card-header {
+      background: var(--blue-700);
+      padding: 28px 32px 20px;
+      color: var(--white);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: var(--white);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .brand-logo svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .brand-name {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      opacity: 0.85;
+      line-height: 1.2;
+    }
+
+    .card-title {
+      font-size: 20px;
+      font-weight: 700;
+      line-height: 1.3;
+      margin-bottom: 4px;
+    }
+
+    .card-subtitle {
+      font-size: 13px;
+      opacity: 0.75;
+      font-weight: 400;
+    }
+
+    /* ─── Progress bar ─────────────────────────────────────────── */
+    .progress-wrap {
+      background: rgba(255,255,255,0.18);
+      height: 5px;
+      border-radius: 0;
+      margin-top: 18px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--white);
+      border-radius: 0 3px 3px 0;
+      transition: width var(--transition);
+      width: 0%;
+    }
+
+    .progress-label {
+      font-size: 11px;
+      opacity: 0.7;
+      margin-top: 6px;
+      text-align: right;
+      letter-spacing: 0.03em;
+    }
+
+    /* ─── Card body ────────────────────────────────────────────── */
+    .card-body {
+      padding: 32px 32px 28px;
+      position: relative;
+      min-height: 320px;
+    }
+
+    /* ─── Screens ──────────────────────────────────────────────── */
+    .screen {
+      position: absolute;
+      inset: 0;
+      padding: 32px 32px 28px;
+      display: flex;
+      flex-direction: column;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(30px);
+      transition: opacity var(--transition), transform var(--transition);
+    }
+
+    .screen.active {
+      opacity: 1;
+      pointer-events: all;
+      transform: translateX(0);
+    }
+
+    .screen.exit-left {
+      opacity: 0;
+      transform: translateX(-30px);
+      transition: opacity var(--transition), transform var(--transition);
+    }
+
+    /* ─── Identification screen ────────────────────────────────── */
+    .screen-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--gray-800);
+      margin-bottom: 6px;
+    }
+
+    .screen-desc {
+      font-size: 13px;
+      color: var(--gray-600);
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--gray-600);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 7px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--gray-800);
+      background: var(--gray-100);
+      transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+      outline: none;
+    }
+
+    .form-input:focus {
+      border-color: var(--blue-700);
+      background: var(--white);
+      box-shadow: 0 0 0 3px rgba(0, 69, 147, 0.10);
+    }
+
+    .form-input.error {
+      border-color: var(--red-500);
+    }
+
+    .field-error {
+      display: none;
+      font-size: 11px;
+      color: var(--red-500);
+      margin-top: 5px;
+      font-weight: 500;
+    }
+
+    .field-error.visible {
+      display: block;
+    }
+
+    .btn-primary {
+      display: block;
+      width: 100%;
+      padding: 13px 20px;
+      background: var(--blue-700);
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background var(--transition), transform 0.12s;
+      margin-top: 8px;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-primary:hover {
+      background: var(--blue-900);
+    }
+
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
+
+    /* ─── Question screen ──────────────────────────────────────── */
+    .question-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .question-category {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--blue-700);
+      background: var(--blue-100);
+      padding: 3px 9px;
+      border-radius: 4px;
+    }
+
+    .question-counter {
+      font-size: 11px;
+      color: var(--gray-400);
+      margin-left: auto;
+      font-weight: 500;
+    }
+
+    .question-text {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--gray-800);
+      line-height: 1.5;
+      margin-bottom: 22px;
+    }
+
+    .answer-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .answer-btn {
+      padding: 14px 10px;
+      border: 1.5px solid var(--gray-200);
+      border-radius: 8px;
+      background: var(--gray-100);
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--gray-800);
+      cursor: pointer;
+      transition: border-color var(--transition), background var(--transition), color var(--transition), box-shadow var(--transition);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .answer-btn:hover {
+      border-color: var(--blue-700);
+      background: var(--blue-50);
+      color: var(--blue-700);
+      box-shadow: 0 2px 10px rgba(0,69,147,0.10);
+    }
+
+    .answer-btn .answer-icon {
+      font-size: 20px;
+    }
+
+    .answer-btn.yes:hover,
+    .answer-btn.yes.selected {
+      border-color: var(--green-600);
+      background: var(--green-100);
+      color: var(--green-600);
+    }
+
+    .answer-btn.no:hover,
+    .answer-btn.no.selected {
+      border-color: var(--red-500);
+      background: #fff5f5;
+      color: var(--red-500);
+    }
+
+    /* ─── Info box ─────────────────────────────────────────────── */
+    .info-box {
+      background: var(--blue-50);
+      border: 1px solid var(--blue-100);
+      border-left: 3px solid var(--blue-700);
+      border-radius: 6px;
+      padding: 12px 14px;
+      margin-top: auto;
+    }
+
+    .info-box-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--blue-700);
+      margin-bottom: 5px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .info-box-title svg {
+      width: 12px;
+      height: 12px;
+      flex-shrink: 0;
+    }
+
+    .info-box-text {
+      font-size: 12px;
+      color: var(--gray-600);
+      line-height: 1.6;
+    }
+
+    /* ─── Success screen ───────────────────────────────────────── */
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      background: var(--green-100);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      flex-shrink: 0;
+    }
+
+    .success-icon svg {
+      width: 34px;
+      height: 34px;
+      color: var(--green-600);
+    }
+
+    .success-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--gray-800);
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+    .success-text {
+      font-size: 13px;
+      color: var(--gray-600);
+      text-align: center;
+      line-height: 1.7;
+      margin-bottom: 24px;
+    }
+
+    .summary-box {
+      background: var(--gray-100);
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 16px 18px;
+      margin-bottom: 20px;
+    }
+
+    .summary-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--gray-600);
+      margin-bottom: 10px;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--gray-200);
+    }
+
+    .summary-row:last-child {
+      border-bottom: none;
+    }
+
+    .summary-row span:first-child {
+      color: var(--gray-600);
+    }
+
+    .summary-row span:last-child {
+      font-weight: 600;
+      color: var(--gray-800);
+    }
+
+    .badge-yes {
+      color: var(--green-600);
+    }
+
+    .badge-no {
+      color: var(--red-500);
+    }
+
+    .divider {
+      height: 1px;
+      background: var(--gray-200);
+      margin: 0 0 20px;
+    }
+
+    .contact-note {
+      background: var(--blue-50);
+      border: 1px solid var(--blue-100);
+      border-radius: 8px;
+      padding: 14px 16px;
+      font-size: 13px;
+      color: var(--blue-700);
+      line-height: 1.6;
+      text-align: center;
+    }
+
+    .contact-note strong {
+      display: block;
+      font-size: 14px;
+      margin-bottom: 3px;
+    }
+
+    /* ─── Footer note ──────────────────────────────────────────── */
+    .card-footer {
+      padding: 14px 32px;
+      border-top: 1px solid var(--gray-200);
+      background: var(--gray-100);
+    }
+
+    .footer-text {
+      font-size: 11px;
+      color: var(--gray-400);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    /* ─── Responsive ───────────────────────────────────────────── */
+    @media (max-width: 540px) {
+      .card-header { padding: 22px 20px 16px; }
+      .screen, .card-body { padding: 24px 20px 20px; }
+      .card-footer { padding: 12px 20px; }
+      .card-title { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="card" id="app" role="main">
+
+  <!-- ── HEADER ─────────────────────────────────────── -->
+  <div class="card-header">
+    <div class="brand">
+      <div class="brand-logo" aria-hidden="true">
+        <!-- Simple building/office icon -->
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="6" width="18" height="15" rx="1.5" fill="#004593"/>
+          <rect x="3" y="3" width="18" height="4" rx="1" fill="#0055b3"/>
+          <rect x="8" y="10" width="3" height="3" rx="0.5" fill="white"/>
+          <rect x="13" y="10" width="3" height="3" rx="0.5" fill="white"/>
+          <rect x="10" y="16" width="4" height="5" rx="0.5" fill="white"/>
+        </svg>
+      </div>
+      <span class="brand-name">NH Gestión Integral</span>
+    </div>
+    <div class="card-title">Diagnóstico Fiscal 2025</div>
+    <div class="card-subtitle">Evaluación personalizada de su situación tributaria</div>
+    <div class="progress-wrap" role="progressbar" aria-label="Progreso del diagnóstico" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="progress-label" id="progressLabel" aria-live="polite">Inicio</div>
+  </div>
+
+  <!-- ── BODY ───────────────────────────────────────── -->
+  <div class="card-body" id="cardBody">
+
+    <!-- Screen 1: Identification -->
+    <div class="screen active" id="screen-id" role="region" aria-label="Identificación">
+      <div class="screen-title">Identificación del contribuyente</div>
+      <div class="screen-desc">
+        Introduzca sus datos para iniciar el diagnóstico fiscal. La información que proporcione será tratada de manera confidencial.
+      </div>
+
+      <form id="idForm" novalidate>
+        <div class="form-group">
+          <label class="form-label" for="nombre">Nombre completo</label>
+          <input
+            class="form-input"
+            type="text"
+            id="nombre"
+            name="nombre"
+            placeholder="Ej. María García López"
+            autocomplete="name"
+            required
+          />
+          <span class="field-error" id="nombre-error">Introduzca su nombre completo.</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="dni">DNI / NIE</label>
+          <input
+            class="form-input"
+            type="text"
+            id="dni"
+            name="dni"
+            placeholder="Ej. 12345678A"
+            autocomplete="off"
+            required
+            maxlength="10"
+          />
+          <span class="field-error" id="dni-error">Introduzca un DNI o NIE válido.</span>
+        </div>
+
+        <button class="btn-primary" type="submit">Iniciar diagnóstico &rarr;</button>
+      </form>
+    </div>
+
+    <!-- Screen 2: Question (template — rendered by JS) -->
+    <div class="screen" id="screen-question" role="region" aria-label="Cuestionario">
+      <div class="question-meta">
+        <span class="question-category" id="qCategory"></span>
+        <span class="question-counter" id="qCounter"></span>
+      </div>
+      <div class="question-text" id="qText"></div>
+      <div class="answer-grid" id="answerGrid">
+        <button class="answer-btn yes" id="btnYes" type="button" aria-label="Responder Sí">
+          <span class="answer-icon" aria-hidden="true">✓</span>
+          <span>Sí</span>
+        </button>
+        <button class="answer-btn no" id="btnNo" type="button" aria-label="Responder No">
+          <span class="answer-icon" aria-hidden="true">✕</span>
+          <span>No</span>
+        </button>
+      </div>
+      <div class="info-box">
+        <div class="info-box-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          Relevancia fiscal
+        </div>
+        <div class="info-box-text" id="qInfo"></div>
+      </div>
+    </div>
+
+    <!-- Screen 3: Success -->
+    <div class="screen" id="screen-success" role="region" aria-label="Diagnóstico completado">
+      <div class="success-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <div class="success-title">Diagnóstico completado</div>
+      <div class="success-text">
+        Hemos registrado sus respuestas correctamente. A continuación encontrará un resumen de su situación.
+      </div>
+
+      <div class="summary-box" id="summaryBox" aria-label="Resumen de respuestas"></div>
+
+      <div class="divider"></div>
+
+      <div class="contact-note">
+        <strong>Un asesor se pondrá en contacto con usted</strong>
+        En breve recibirá una llamada o correo electrónico por parte de nuestro equipo fiscal para analizar su situación en detalle.
+      </div>
+    </div>
+
+  </div><!-- /card-body -->
+
+  <!-- ── FOOTER ─────────────────────────────────────── -->
+  <div class="card-footer">
+    <p class="footer-text">
+      NH Gestión Integral &bull; Diagnóstico Fiscal 2025 &bull; Información confidencial y protegida
+    </p>
+  </div>
+
+</div><!-- /card -->
+
+
+<script>
+(function () {
+  'use strict';
+
+  /* ── Question data ──────────────────────────────────────────────── */
+  const QUESTIONS = [
+    {
+      category: 'Rendimientos del trabajo',
+      text: '¿Ha percibido rentas del trabajo de más de un pagador durante el ejercicio 2024?',
+      info: 'Cuando existen dos o más pagadores y la suma del segundo y sucesivos supera los 1.500 €, el límite para estar exento de declarar se reduce de 22.000 € a 15.000 €. Este punto determina la obligatoriedad de presentar la declaración.',
+    },
+    {
+      category: 'Rendimientos del trabajo',
+      text: '¿Ha recibido alguna prestación por desempleo, ERTE o incapacidad temporal en 2024?',
+      info: 'Estas prestaciones son rendimientos íntegros del trabajo que deben ser declarados. Adicionalmente, en caso de ERTE parcial, el trabajador tiene dos pagadores (empresa y SEPE), lo que puede afectar al límite de exención.',
+    },
+    {
+      category: 'Rendimientos del capital inmobiliario',
+      text: '¿Ha tenido inmuebles arrendados (alquiler de vivienda habitual u otros) durante 2024?',
+      info: 'Los rendimientos netos del capital inmobiliario tributan en la base general. El arrendamiento de vivienda habitual permite aplicar una reducción del 50 % (antes 60 %) sobre el rendimiento neto positivo según la Ley 12/2023. Identificar el tipo de arrendamiento es esencial para aplicar la reducción correcta.',
+    },
+    {
+      category: 'Rendimientos del capital inmobiliario',
+      text: '¿Es titular de algún bien inmueble distinto de su vivienda habitual que no ha estado arrendado?',
+      info: 'Los inmuebles a disposición del contribuyente generan una imputación de renta inmobiliaria del 2 % del valor catastral (1,1 % si el valor catastral fue revisado con posterioridad al 1 de enero de 1994). Esta imputación debe incluirse aunque el inmueble no produzca ingresos efectivos.',
+    },
+    {
+      category: 'Ganancias y pérdidas patrimoniales',
+      text: '¿Ha vendido, donado o transmitido algún activo (acciones, fondos, inmuebles, criptomonedas) en 2024?',
+      info: 'Las ganancias y pérdidas patrimoniales derivadas de transmisiones forman parte de la base del ahorro, tributando a tipos entre el 19 % y el 28 %. Una correcta declaración de pérdidas permite compensar ganancias, reduciendo significativamente la carga fiscal.',
+    },
+    {
+      category: 'Ganancias y pérdidas patrimoniales',
+      text: '¿Ha obtenido rendimientos de cuentas de ahorro, depósitos, dividendos o seguros de vida?',
+      info: 'Los rendimientos del capital mobiliario (dividendos, intereses, cupones, prestaciones de seguros) integran la base del ahorro. La aplicación correcta de la exención de 1.500 € en dividendos y la retención practicada evita sobrepagos o infracciones.',
+    },
+    {
+      category: 'Deducciones y beneficios fiscales',
+      text: '¿Ha realizado aportaciones a planes de pensiones o mutualidades de previsión social en 2024?',
+      info: 'Las aportaciones a planes de pensiones individuales reducen la base imponible general con el límite menor entre 1.500 € o el 30 % de la suma de rendimientos netos del trabajo y actividades económicas. Planificar las aportaciones maximiza el ahorro fiscal.',
+    },
+    {
+      category: 'Deducciones y beneficios fiscales',
+      text: '¿Ha efectuado donativos a fundaciones, entidades declaradas de utilidad pública u ONGs en 2024?',
+      info: 'Las donaciones a entidades acogidas a la Ley 49/2002 generan deducciones de entre el 80 % (sobre los primeros 250 €) y el 40 % del importe restante en la cuota íntegra estatal. Si la donación lleva 3 años consecutivos a la misma entidad, el porcentaje se eleva al 45 %.',
+    },
+    {
+      category: 'Actividades económicas',
+      text: '¿Ha desarrollado alguna actividad económica (autónomo, profesional o empresarial) en 2024?',
+      info: 'Los contribuyentes con actividades económicas en estimación directa simplificada o normal deben cumplimentar los rendimientos netos, contemplar deducciones por gastos afectos y analizar si existe obligación de aplicar el módulo de retención correcto en sus facturas.',
+    },
+    {
+      category: 'Circunstancias personales y familiares',
+      text: '¿Ha habido cambios en su situación personal o familiar en 2024 (matrimonio, separación, nacimiento, discapacidad reconocida)?',
+      info: 'Circunstancias como el nacimiento de un hijo, la adopción, el grado de discapacidad reconocido o el estado civil determinan la aplicación de mínimos personales y familiares, deducciones por maternidad, familia numerosa o descendientes con discapacidad, con impacto directo en la cuota diferencial.',
+    },
+  ];
+
+  /* ── State ──────────────────────────────────────────────────────── */
+  let state = {
+    userName: '',
+    userDNI: '',
+    currentQ: 0,
+    answers: [],   // { question, answer }[]
+    transitioning: false,
+  };
+
+  /* ── DOM references ─────────────────────────────────────────────── */
+  const screens = {
+    id:       document.getElementById('screen-id'),
+    question: document.getElementById('screen-question'),
+    success:  document.getElementById('screen-success'),
+  };
+  const progressBar   = document.getElementById('progressBar');
+  const progressLabel = document.getElementById('progressLabel');
+  const progressWrap  = progressBar.parentElement;
+  const idForm        = document.getElementById('idForm');
+  const nombreInput   = document.getElementById('nombre');
+  const dniInput      = document.getElementById('dni');
+  const nombreError   = document.getElementById('nombre-error');
+  const dniError      = document.getElementById('dni-error');
+  const qCategory     = document.getElementById('qCategory');
+  const qCounter      = document.getElementById('qCounter');
+  const qText         = document.getElementById('qText');
+  const qInfo         = document.getElementById('qInfo');
+  const btnYes        = document.getElementById('btnYes');
+  const btnNo         = document.getElementById('btnNo');
+  const summaryBox    = document.getElementById('summaryBox');
+
+  /* ── Utilities ──────────────────────────────────────────────────── */
+  function validateDNI(value) {
+    const dniRegex = /^[0-9]{8}[A-Za-z]$/;
+    const nieRegex = /^[XYZxyz][0-9]{7}[A-Za-z]$/;
+    return dniRegex.test(value.trim()) || nieRegex.test(value.trim());
+  }
+
+  function setProgress(percent, label) {
+    progressBar.style.width = percent + '%';
+    progressWrap.setAttribute('aria-valuenow', Math.round(percent));
+    progressLabel.textContent = label;
+  }
+
+  /* ── Screen transitions ─────────────────────────────────────────── */
+  function activateScreen(name) {
+    Object.values(screens).forEach(el => {
+      el.classList.remove('active', 'exit-left');
+      el.setAttribute('aria-hidden', 'true');
+    });
+    const target = screens[name];
+    target.classList.add('active');
+    target.removeAttribute('aria-hidden');
+
+    // Focus first interactive element for a11y
+    const firstFocusable = target.querySelector('input, button');
+    if (firstFocusable) {
+      setTimeout(() => firstFocusable.focus(), 280);
+    }
+  }
+
+  function transitionToScreen(name, exitCurrent) {
+    if (state.transitioning) return;
+    state.transitioning = true;
+
+    const currentKey = Object.keys(screens).find(k => screens[k].classList.contains('active'));
+    const currentEl  = currentKey ? screens[currentKey] : null;
+
+    if (currentEl && exitCurrent) {
+      currentEl.classList.add('exit-left');
+    }
+
+    setTimeout(() => {
+      activateScreen(name);
+      state.transitioning = false;
+    }, exitCurrent ? 180 : 0);
+  }
+
+  /* ── Render question ────────────────────────────────────────────── */
+  function renderQuestion(index) {
+    const q = QUESTIONS[index];
+    const total = QUESTIONS.length;
+    const progress = ((index) / total) * 80 + 10; // 10%–90% during questions
+
+    qCategory.textContent = q.category;
+    qCounter.textContent  = `${index + 1} / ${total}`;
+    qText.textContent     = q.text;
+    qInfo.textContent     = q.info;
+
+    btnYes.classList.remove('selected');
+    btnNo.classList.remove('selected');
+    btnYes.disabled = false;
+    btnNo.disabled  = false;
+
+    setProgress(progress, `Pregunta ${index + 1} de ${total}`);
+  }
+
+  /* ── Answer handler ─────────────────────────────────────────────── */
+  function handleAnswer(answer) {
+    if (state.transitioning) return;
+
+    const btn = answer === 'Sí' ? btnYes : btnNo;
+    btn.classList.add('selected');
+    btnYes.disabled = true;
+    btnNo.disabled  = true;
+
+    state.answers.push({ question: QUESTIONS[state.currentQ].text, answer });
+
+    state.currentQ++;
+
+    setTimeout(() => {
+      if (state.currentQ < QUESTIONS.length) {
+        // Apply slide-out on the question panel content (pseudo-transition)
+        screens.question.style.opacity = '0';
+        screens.question.style.transform = 'translateX(-30px)';
+
+        setTimeout(() => {
+          renderQuestion(state.currentQ);
+          screens.question.style.transition = 'none';
+          screens.question.style.opacity = '0';
+          screens.question.style.transform = 'translateX(30px)';
+
+          // Force reflow
+          void screens.question.offsetWidth;
+
+          screens.question.style.transition = '';
+          screens.question.style.opacity = '1';
+          screens.question.style.transform = 'translateX(0)';
+        }, 200);
+
+      } else {
+        showSuccess();
+      }
+    }, 350);
+  }
+
+  /* ── Success screen ─────────────────────────────────────────────── */
+  function showSuccess() {
+    setProgress(100, 'Completado');
+
+    // Build summary
+    const rows = state.answers.map(({ question, answer }) => {
+      const short = question.length > 60 ? question.slice(0, 58) + '…' : question;
+      const cls   = answer === 'Sí' ? 'badge-yes' : 'badge-no';
+      return `<div class="summary-row">
+        <span>${short}</span>
+        <span class="${cls}">${answer}</span>
+      </div>`;
+    }).join('');
+
+    const totalYes = state.answers.filter(a => a.answer === 'Sí').length;
+
+    summaryBox.innerHTML = `
+      <div class="summary-title">Resumen de respuestas — ${state.userName}</div>
+      ${rows}
+      <div class="summary-row" style="margin-top:8px; padding-top:8px; border-top:1px solid var(--gray-200);">
+        <span style="font-weight:600">Situaciones relevantes detectadas</span>
+        <span style="font-weight:700; color:var(--blue-700)">${totalYes} de ${QUESTIONS.length}</span>
+      </div>
+    `;
+
+    transitionToScreen('success', true);
+  }
+
+  /* ── Form validation & submit ───────────────────────────────────── */
+  idForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    let valid = true;
+
+    const nombre = nombreInput.value.trim();
+    const dni    = dniInput.value.trim().toUpperCase();
+
+    // Nombre
+    if (nombre.length < 3) {
+      nombreInput.classList.add('error');
+      nombreError.classList.add('visible');
+      valid = false;
+    } else {
+      nombreInput.classList.remove('error');
+      nombreError.classList.remove('visible');
+    }
+
+    // DNI/NIE
+    if (!validateDNI(dni)) {
+      dniInput.classList.add('error');
+      dniError.classList.add('visible');
+      valid = false;
+    } else {
+      dniInput.classList.remove('error');
+      dniError.classList.remove('visible');
+    }
+
+    if (!valid) return;
+
+    state.userName = nombre;
+    state.userDNI  = dni;
+    state.currentQ = 0;
+    state.answers  = [];
+
+    renderQuestion(0);
+    transitionToScreen('question', true);
+  });
+
+  /* ── Answer buttons ─────────────────────────────────────────────── */
+  btnYes.addEventListener('click', () => handleAnswer('Sí'));
+  btnNo.addEventListener('click',  () => handleAnswer('No'));
+
+  /* ── Keyboard support for answer buttons ────────────────────────── */
+  document.addEventListener('keydown', function (e) {
+    if (!screens.question.classList.contains('active')) return;
+    if (e.key === 'y' || e.key === 'Y' || e.key === '1') {
+      if (!btnYes.disabled) handleAnswer('Sí');
+    } else if (e.key === 'n' || e.key === 'N' || e.key === '2') {
+      if (!btnNo.disabled) handleAnswer('No');
+    }
+  });
+
+  /* ── Initial state ──────────────────────────────────────────────── */
+  setProgress(0, 'Inicio');
+  activateScreen('id');
+
+}());
+</script>
+
+</body>
+</html>
