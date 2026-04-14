@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from './AuthContext.jsx'
-import { listDeclaraciones, changePassword } from './apiClient.js'
+import { listDeclaraciones, changePassword, getPreguntas } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
 import Footer from './Footer.jsx'
 import { generateDeclaracionPDF, downloadRentaPdf } from './pdfUtils.js'
@@ -26,33 +26,15 @@ const ESTADO_CLASS = {
 
 const YN_LABELS = { si: 'Sí', no: 'No' }
 
-const CAMPOS_LABELS = {
+const ID_CAMPOS_LABELS = {
   nombre: 'Nombre',
   apellidos: 'Apellidos',
   dniNie: 'DNI / NIE',
   email: 'Correo electrónico',
   telefono: 'Teléfono',
-  viviendaAlquiler: '¿Vive de alquiler?',
-  alquilerMenos35: '¿Alquiler inferior al 35% de ingresos?',
-  viviendaPropiedad: '¿Tiene vivienda en propiedad?',
-  propiedadAntes2013: '¿Adquirida antes de 2013?',
-  pisosAlquiladosTerceros: '¿Tiene pisos alquilados a terceros?',
-  segundaResidencia: '¿Tiene segunda residencia?',
-  familiaNumerosa: '¿Familia numerosa?',
-  ayudasGobierno: '¿Ha recibido ayudas del gobierno?',
-  mayores65ACargo: '¿Tiene mayores de 65 años a cargo?',
-  mayoresConviven: '¿Conviven con usted?',
-  hijosMenores26: '¿Tiene hijos menores de 26 años?',
-  ingresosJuego: '¿Ha obtenido ingresos por juego?',
-  ingresosInversiones: '¿Ha obtenido ingresos por inversiones?',
 }
 
-const SECCIONES = [
-  { titulo: '1. Datos de Identificación', campos: ['nombre', 'apellidos', 'dniNie', 'email', 'telefono'] },
-  { titulo: '2. Situación de Vivienda', campos: ['viviendaAlquiler', 'alquilerMenos35', 'viviendaPropiedad', 'propiedadAntes2013', 'pisosAlquiladosTerceros', 'segundaResidencia'] },
-  { titulo: '3. Cargas Familiares y Ayudas Públicas', campos: ['familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'mayoresConviven', 'hijosMenores26'] },
-  { titulo: '4. Ingresos Extraordinarios e Inversiones', campos: ['ingresosJuego', 'ingresosInversiones'] },
-]
+const ID_CAMPOS = ['nombre', 'apellidos', 'dniNie', 'email', 'telefono']
 
 function formatFecha(iso) {
   if (!iso) return '—'
@@ -63,6 +45,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
   const { user, logout } = useAuth()
   const { lang, setLang, t, availableLanguages } = useLanguage()
   const [declaraciones, setDeclaraciones] = useState([])
+  const [secciones, setSecciones] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [expanded, setExpanded] = useState(null)
@@ -80,10 +63,14 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
 
   useEffect(() => {
     if (!user) return
-    listDeclaraciones({ query: { dniNie: user.dniNie, limit: 10 } })
-      .then(({ data, error: apiError }) => {
+    Promise.all([
+      listDeclaraciones({ query: { dniNie: user.dniNie, limit: 10 } }),
+      getPreguntas(),
+    ])
+      .then(([{ data, error: apiError }, { data: pData }]) => {
         if (apiError) throw new Error(apiError.message ?? 'Error desconocido')
         setDeclaraciones(data?.data ?? [])
+        setSecciones(pData?.secciones ?? [])
       })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false))
@@ -218,27 +205,45 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
 
                 {expanded === dec.id && (
                   <div className="declaracion-body">
-                    {SECCIONES.map(seccion => (
-                      <div key={seccion.titulo}>
-                        <div className="section-title">{seccion.titulo}</div>
-                        <table className="respuestas-table">
-                          <tbody>
-                            {seccion.campos.map(campo => {
-                              const valor = dec[campo]
-                              if (valor === undefined || valor === null) return null
-                              return (
-                                <tr key={campo}>
-                                  <td className="campo-label">{CAMPOS_LABELS[campo] ?? campo}</td>
-                                  <td className="campo-valor">
-                                    {YN_LABELS[valor] ?? valor}
-                                  </td>
+                    {/* 1. Identification fields (always static) */}
+                    <div>
+                      <div className="section-title">1. Datos de Identificación</div>
+                      <table className="respuestas-table">
+                        <tbody>
+                          {ID_CAMPOS.map(campo => {
+                            const valor = dec[campo]
+                            if (valor === undefined || valor === null) return null
+                            return (
+                              <tr key={campo}>
+                                <td className="campo-label">{ID_CAMPOS_LABELS[campo] ?? campo}</td>
+                                <td className="campo-valor">{valor}</td>
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Dynamic question sections from DB */}
+                    {secciones.map(seccion => {
+                      const preguntasConValor = (seccion.preguntas ?? []).filter(p => dec[p.id] !== undefined && dec[p.id] !== null)
+                      if (!preguntasConValor.length) return null
+                      return (
+                        <div key={seccion.id}>
+                          <div className="section-title">{(seccion.titulos && seccion.titulos[lang]) ? seccion.titulos[lang] : seccion.titulo}</div>
+                          <table className="respuestas-table">
+                            <tbody>
+                              {preguntasConValor.map(pregunta => (
+                                <tr key={pregunta.id}>
+                                  <td className="campo-label">{(pregunta.textos && pregunta.textos[lang]) ? pregunta.textos[lang] : pregunta.texto}</td>
+                                  <td className="campo-valor">{YN_LABELS[dec[pregunta.id]] ?? dec[pregunta.id]}</td>
                                 </tr>
-                              )
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    ))}
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )
+                    })}
 
                     <div className="btn-row">
                       {dec.estado === 'completado' ? (
@@ -255,7 +260,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
                       <button
                         type="button"
                         className="btn btn-secondary"
-                        onClick={() => generateDeclaracionPDF(dec)}
+                        onClick={() => generateDeclaracionPDF(dec, secciones, lang)}
                       >
                         {t('btnDownloadPDF')}
                       </button>

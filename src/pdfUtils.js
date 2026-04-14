@@ -2,33 +2,57 @@ import { jsPDF } from 'jspdf'
 
 const YN_LABELS = { si: 'Sí', no: 'No' }
 
-const CAMPOS_LABELS = {
+const ID_CAMPOS_LABELS = {
   nombre: 'Nombre',
   apellidos: 'Apellidos',
   dniNie: 'DNI / NIE',
   email: 'Correo electrónico',
   telefono: 'Teléfono',
-  viviendaAlquiler: '¿Vive de alquiler?',
-  alquilerMenos35: '¿Alquiler inferior al 35% de ingresos?',
-  viviendaPropiedad: '¿Tiene vivienda en propiedad?',
-  propiedadAntes2013: '¿Adquirida antes de 2013?',
-  pisosAlquiladosTerceros: '¿Tiene pisos alquilados a terceros?',
-  segundaResidencia: '¿Tiene segunda residencia?',
-  familiaNumerosa: '¿Familia numerosa?',
-  ayudasGobierno: '¿Ha recibido ayudas del gobierno?',
-  mayores65ACargo: '¿Tiene mayores de 65 años a cargo?',
-  mayoresConviven: '¿Conviven con usted?',
-  hijosMenores26: '¿Tiene hijos menores de 26 años?',
-  ingresosJuego: '¿Ha obtenido ingresos por juego?',
-  ingresosInversiones: '¿Ha obtenido ingresos por inversiones?',
 }
 
-const SECCIONES = [
-  { titulo: '1. Datos de Identificación', campos: ['nombre', 'apellidos', 'dniNie', 'email', 'telefono'] },
-  { titulo: '2. Situación de Vivienda', campos: ['viviendaAlquiler', 'alquilerMenos35', 'viviendaPropiedad', 'propiedadAntes2013', 'pisosAlquiladosTerceros', 'segundaResidencia'] },
-  { titulo: '3. Cargas Familiares y Ayudas Públicas', campos: ['familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'mayoresConviven', 'hijosMenores26'] },
-  { titulo: '4. Ingresos Extraordinarios e Inversiones', campos: ['ingresosJuego', 'ingresosInversiones'] },
-]
+const ID_SECCION = { titulo: '1. Datos de Identificación', campos: ['nombre', 'apellidos', 'dniNie', 'email', 'telefono'] }
+
+// Build an effective secciones list combining the static ID section and dynamic DB sections.
+// If dbSecciones is null/empty, falls back to the original hardcoded sections.
+function buildSecciones(dbSecciones, lang) {
+  const FALLBACK_SECCIONES = [
+    { titulo: '1. Datos de Identificación', campos: ['nombre', 'apellidos', 'dniNie', 'email', 'telefono'], labels: ID_CAMPOS_LABELS },
+    { titulo: '2. Situación de Vivienda', campos: ['viviendaAlquiler', 'alquilerMenos35', 'viviendaPropiedad', 'propiedadAntes2013', 'pisosAlquiladosTerceros', 'segundaResidencia'], labels: {
+      viviendaAlquiler: '¿Vive de alquiler?', alquilerMenos35: '¿Alquiler inferior al 35% de ingresos?',
+      viviendaPropiedad: '¿Tiene vivienda en propiedad?', propiedadAntes2013: '¿Adquirida antes de 2013?',
+      pisosAlquiladosTerceros: '¿Tiene pisos alquilados a terceros?', segundaResidencia: '¿Tiene segunda residencia?',
+    } },
+    { titulo: '3. Cargas Familiares y Ayudas Públicas', campos: ['familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'mayoresConviven', 'hijosMenores26'], labels: {
+      familiaNumerosa: '¿Familia numerosa?', ayudasGobierno: '¿Ha recibido ayudas del gobierno?',
+      mayores65ACargo: '¿Tiene mayores de 65 años a cargo?', mayoresConviven: '¿Conviven con usted?',
+      hijosMenores26: '¿Tiene hijos menores de 26 años?',
+    } },
+    { titulo: '4. Ingresos Extraordinarios e Inversiones', campos: ['ingresosJuego', 'ingresosInversiones'], labels: {
+      ingresosJuego: '¿Ha obtenido ingresos por juego?', ingresosInversiones: '¿Ha obtenido ingresos por inversiones?',
+    } },
+  ]
+
+  if (!dbSecciones || !dbSecciones.length) return FALLBACK_SECCIONES
+
+  const dynamicSections = dbSecciones.map((sec, idx) => {
+    const labels = {}
+    const campos = (sec.preguntas ?? []).map(p => {
+      labels[p.id] = (p.textos && p.textos[lang]) ? p.textos[lang] : p.texto
+      return p.id
+    })
+    return {
+      titulo: (sec.titulos && sec.titulos[lang]) ? sec.titulos[lang] : sec.titulo,
+      numero: idx + 2,
+      campos,
+      labels,
+    }
+  })
+
+  return [
+    { titulo: ID_SECCION.titulo, campos: ID_SECCION.campos, labels: ID_CAMPOS_LABELS },
+    ...dynamicSections,
+  ]
+}
 
 const ESTADO_LABELS = {
   recibido: 'Recibido',
@@ -57,7 +81,7 @@ function addPageIfNeeded(doc, y) {
   return y
 }
 
-export function generateDeclaracionPDF(dec) {
+export function generateDeclaracionPDF(dec, secciones = null, lang = 'es') {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
 
   let y = MARGIN
@@ -118,7 +142,8 @@ export function generateDeclaracionPDF(dec) {
   y += LINE_H + 3
 
   // Sections
-  for (const seccion of SECCIONES) {
+  const effectiveSecciones = buildSecciones(secciones, lang)
+  for (const seccion of effectiveSecciones) {
     const camposConValor = seccion.campos.filter(c => dec[c] !== undefined && dec[c] !== null && dec[c] !== '')
     if (camposConValor.length === 0) continue
 
@@ -139,7 +164,7 @@ export function generateDeclaracionPDF(dec) {
 
     for (const campo of camposConValor) {
       y = addPageIfNeeded(doc, y)
-      const label = CAMPOS_LABELS[campo] ?? campo
+      const label = (seccion.labels && seccion.labels[campo]) ? seccion.labels[campo] : campo
       const rawVal = dec[campo]
       const val = YN_LABELS[rawVal] ?? String(rawVal)
       const labelW = 80
