@@ -162,6 +162,40 @@ export async function sendEmailToUser({ dniNie, email, mensaje }) {
   })
 }
 
+// ── Idiomas & Traducciones ─────────────────────────────────────────────────
+
+export async function getIdiomas() {
+  return request('GET', '/irpf/idiomas')
+}
+
+export async function getTraducciones() {
+  return request('GET', '/irpf/traducciones')
+}
+
+export async function listIdiomasAdmin(options = {}) {
+  return request('GET', '/admin/idiomas', { query: options })
+}
+
+export async function createIdiomaAdmin(body) {
+  return request('POST', '/admin/idiomas', { body })
+}
+
+export async function updateIdiomaAdmin({ idiomaId, body }) {
+  return request('PUT', `/admin/idiomas/${encodeURIComponent(idiomaId)}`, { body })
+}
+
+export async function deleteIdiomaAdmin({ idiomaId }) {
+  return request('DELETE', `/admin/idiomas/${encodeURIComponent(idiomaId)}`)
+}
+
+export async function getIdiomaContent({ idiomaId }) {
+  return request('GET', `/admin/idiomas/${encodeURIComponent(idiomaId)}/content`)
+}
+
+export async function updateIdiomaContent({ idiomaId, body }) {
+  return request('PUT', `/admin/idiomas/${encodeURIComponent(idiomaId)}/content`, { body })
+}
+
 // ── PDF upload (stored as part of declaración) ─────────────────────────────
 // We update the declaración with the rentaPdf field so the data persists
 // across page reloads via the DB.

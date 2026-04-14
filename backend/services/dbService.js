@@ -447,6 +447,155 @@ async function sendEmailToUser({ dniNie, email, mensaje }) {
   return { data: { success: true, to: email }, error: null }
 }
 
+// ── Public: Idiomas & Traducciones ─────────────────────────────────────────
+
+async function getIdiomas() {
+  const { rows } = await pool.query(
+    `SELECT code, label FROM idiomas WHERE activo = TRUE ORDER BY code`
+  )
+  return { data: rows, error: null }
+}
+
+async function getTraducciones() {
+  const { rows } = await pool.query(
+    `SELECT i.code, t.clave, t.valor
+     FROM traducciones t
+     JOIN idiomas i ON i.id = t.idioma_id
+     WHERE i.activo = TRUE
+     ORDER BY i.code, t.clave`
+  )
+  const result = {}
+  for (const r of rows) {
+    if (!result[r.code]) result[r.code] = {}
+    result[r.code][r.clave] = r.valor
+  }
+  return { data: result, error: null }
+}
+
+// ── Admin: Idiomas CRUD ───────────────────────────────────────────────────
+
+function rowToIdioma(r) {
+  return {
+    id: r.id,
+    code: r.code,
+    label: r.label,
+    activo: r.activo,
+    creadoEn: r.creado_en,
+    actualizadoEn: r.actualizado_en,
+  }
+}
+
+async function listIdiomasAdmin({ activo, page = 1, limit = 20 } = {}) {
+  const conditions = []
+  const params = []
+  if (activo !== undefined) {
+    conditions.push(`activo = $${params.length + 1}`)
+    params.push(activo)
+  }
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
+  const countRes = await pool.query(`SELECT COUNT(*) FROM idiomas ${where}`, params)
+  const total = parseInt(countRes.rows[0].count, 10)
+  const offset = (page - 1) * limit
+  params.push(limit, offset)
+  const { rows } = await pool.query(
+    `SELECT * FROM idiomas ${where} ORDER BY code LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    params
+  )
+  return { data: { data: rows.map(rowToIdioma), total, page, limit }, error: null }
+}
+
+async function createIdiomaAdmin({ code, label, activo }) {
+  if (!code || !String(code).trim()) return { data: null, error: { message: 'El código es obligatorio' } }
+  if (!label || !String(label).trim()) return { data: null, error: { message: 'La etiqueta es obligatoria' } }
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO idiomas (code, label, activo) VALUES ($1, $2, $3) RETURNING *`,
+      [code.trim().toLowerCase(), label.trim(), activo ?? true]
+    )
+    return { data: rowToIdioma(rows[0]), error: null, status: 201 }
+  } catch (err) {
+    if (err.code === '23505') {
+      return { data: null, error: { message: 'Ya existe un idioma con ese código' }, status: 409 }
+    }
+    throw err
+  }
+}
+
+async function updateIdiomaAdmin(id, { label, activo }) {
+  if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
+  const setClauses = []
+  const params = []
+  if (label !== undefined) {
+    params.push(label.trim())
+    setClauses.push(`label = $${params.length}`)
+  }
+  if (activo !== undefined) {
+    params.push(activo)
+    setClauses.push(`activo = $${params.length}`)
+  }
+  if (!setClauses.length) return { data: null, error: { message: 'No hay cambios que guardar' } }
+  params.push(id)
+  const { rows } = await pool.query(
+    `UPDATE idiomas SET ${setClauses.join(', ')} WHERE id = $${params.length} RETURNING *`,
+    params
+  )
+  if (!rows.length) return { data: null, error: { message: 'Idioma no encontrado' } }
+  return { data: rowToIdioma(rows[0]), error: null }
+}
+
+async function deleteIdiomaAdmin(id) {
+  if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
+  // Prevent deleting the default language (es)
+  const check = await pool.query('SELECT code FROM idiomas WHERE id = $1', [id])
+  if (!check.rows.length) return { data: null, error: { message: 'Idioma no encontrado' }, status: 404 }
+  if (check.rows[0].code === 'es') {
+    return { data: null, error: { message: 'No se puede eliminar el idioma por defecto' }, status: 400 }
+  }
+  await pool.query('DELETE FROM idiomas WHERE id = $1', [id])
+  return { data: null, error: null, status: 204 }
+}
+
+async function getIdiomaContent(id) {
+  const idioma = await pool.query('SELECT id, code FROM idiomas WHERE id = $1', [id])
+  if (!idioma.rows.length) return { data: null, error: { message: 'Idioma no encontrado' }, status: 404 }
+  const { rows } = await pool.query(
+    `SELECT clave, valor FROM traducciones WHERE idioma_id = $1 ORDER BY clave`,
+    [id]
+  )
+  const content = {}
+  for (const r of rows) content[r.clave] = r.valor
+  return { data: { code: idioma.rows[0].code, content }, error: null }
+}
+
+async function updateIdiomaContent(id, { content }) {
+  if (!content || typeof content !== 'object') {
+    return { data: null, error: { message: 'El contenido es obligatorio' } }
+  }
+  const idioma = await pool.query('SELECT id, code FROM idiomas WHERE id = $1', [id])
+  if (!idioma.rows.length) return { data: null, error: { message: 'Idioma no encontrado' }, status: 404 }
+
+  const entries = Object.entries(content)
+  if (entries.length) {
+    const values = []
+    const placeholders = []
+    let idx = 1
+    for (const [clave, valor] of entries) {
+      placeholders.push(`($${idx}, $${idx + 1}, $${idx + 2})`)
+      values.push(id, clave, String(valor))
+      idx += 3
+    }
+    await pool.query(
+      `INSERT INTO traducciones (idioma_id, clave, valor)
+       VALUES ${placeholders.join(', ')}
+       ON CONFLICT (idioma_id, clave) DO UPDATE SET valor = EXCLUDED.valor`,
+      values
+    )
+  }
+
+  // Return the full content after update
+  return getIdiomaContent(id)
+}
+
 // ── Exports ────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -473,4 +622,12 @@ module.exports = {
   assignUserAccount,
   getUserByDniNie,
   sendEmailToUser,
+  getIdiomas,
+  getTraducciones,
+  listIdiomasAdmin,
+  createIdiomaAdmin,
+  updateIdiomaAdmin,
+  deleteIdiomaAdmin,
+  getIdiomaContent,
+  updateIdiomaContent,
 }
