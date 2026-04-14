@@ -40,45 +40,57 @@ const INITIAL_STATE = {
 
 const STEP_ICONS = ['👤', '🏠', '👨‍👩‍👧', '💶', '📁', '📝', '⭐', '❓']
 
-const YesNoField = ({ label, name, value, onChange, indent, t, questionNumber }) => (
-  <div className={`question-card${indent ? ' indent' : ''}${value ? ' answered' : ''}`}>
-    <div className="question-card-text">
-      {questionNumber != null && (
-        <span style={{
-          background: 'linear-gradient(135deg, #6c11c8, #9b23e8)',
-          color: '#fff',
-          borderRadius: '50%',
-          width: '28px',
-          height: '28px',
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '.8rem',
-          fontWeight: '900',
-          flexShrink: 0,
-          marginRight: '4px',
-        }}>{questionNumber}</span>
-      )}
-      {label}
+const YesNoField = ({ label, name, value, onChange, indent, t, questionNumber, onAnswer }) => {
+  const [ringKey, setRingKey] = useState(null)
+  return (
+    <div className={`question-card${indent ? ' indent' : ''}${value ? ' answered' : ''}`} style={{ position: 'relative' }}>
+      {ringKey != null && <div key={ringKey} className={`answer-ring${value === 'no' ? ' no' : ''}`} />}
+      <div className="question-card-text">
+        {questionNumber != null && (
+          <span style={{
+            background: 'linear-gradient(135deg, #6c11c8, #9b23e8)',
+            color: '#fff',
+            borderRadius: '50%',
+            width: '28px',
+            height: '28px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '.8rem',
+            fontWeight: '900',
+            flexShrink: 0,
+            marginRight: '4px',
+          }}>{questionNumber}</span>
+        )}
+        {label}
+      </div>
+      <div className="yesno-buttons">
+        <button
+          type="button"
+          className={`yesno-btn${value === 'si' ? ' selected yes' : ''}`}
+          onClick={() => {
+            const isNew = value !== 'si'
+            onChange({ target: { name, value: 'si' } })
+            if (isNew) { onAnswer?.(); setRingKey(Date.now()) }
+          }}
+        >
+          <span className="yesno-icon">✅</span> {t('yes')}
+        </button>
+        <button
+          type="button"
+          className={`yesno-btn${value === 'no' ? ' selected no' : ''}`}
+          onClick={() => {
+            const isNew = value !== 'no'
+            onChange({ target: { name, value: 'no' } })
+            if (isNew) { onAnswer?.(); setRingKey(Date.now()) }
+          }}
+        >
+          <span className="yesno-icon">❌</span> {t('no')}
+        </button>
+      </div>
     </div>
-    <div className="yesno-buttons">
-      <button
-        type="button"
-        className={`yesno-btn${value === 'si' ? ' selected yes' : ''}`}
-        onClick={() => onChange({ target: { name, value: 'si' } })}
-      >
-        <span className="yesno-icon">✅</span> {t('yes')}
-      </button>
-      <button
-        type="button"
-        className={`yesno-btn${value === 'no' ? ' selected no' : ''}`}
-        onClick={() => onChange({ target: { name, value: 'no' } })}
-      >
-        <span className="yesno-icon">❌</span> {t('no')}
-      </button>
-    </div>
-  </div>
-)
+  )
+}
 
 export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const { user, logout } = useAuth()
@@ -99,6 +111,15 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const [currentStep, setCurrentStep] = useState(0)
   const [stepDirection, setStepDirection] = useState('forward')
   const topRef = useRef(null)
+
+  // Game animation state
+  const [xpPopups, setXpPopups] = useState([])
+  const [streak, setStreak] = useState(0)
+  const [totalScore, setTotalScore] = useState(0)
+  const [questionShake, setQuestionShake] = useState(false)
+  const [showLevelUp, setShowLevelUp] = useState(null)
+  const [confettiPieces, setConfettiPieces] = useState([])
+  const xpCounterRef = useRef(0)
 
   useEffect(() => {
     if (!editData) return
@@ -175,6 +196,36 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
     setTimeout(() => setToast(null), 5000)
   }
 
+  // ── Game helpers ──
+  const spawnXpPopup = () => {
+    const id = ++xpCounterRef.current
+    setXpPopups(prev => [...prev, { id }])
+    setTimeout(() => setXpPopups(prev => prev.filter(p => p.id !== id)), 1100)
+  }
+
+  const handleAnswer = () => {
+    spawnXpPopup()
+    setStreak(s => s + 1)
+    setTotalScore(s => s + 10)
+  }
+
+  const spawnConfetti = () => {
+    const colors = ['#6c11c8', '#c333e0', '#00b09b', '#ffd700', '#ff6b00', '#fff', '#9b23e8', '#ff69b4', '#00cfff']
+    setConfettiPieces(Array.from({ length: 75 }, (_, i) => ({
+      id: i,
+      x: Math.random() * 100,
+      y: Math.random() * 55,
+      color: colors[i % colors.length],
+      size: 6 + Math.random() * 13,
+      duration: 1.8 + Math.random() * 2.5,
+      delay: Math.random() * 1.1,
+      rise: i % 2 === 0,
+      rotation: Math.random() * 360,
+      shape: i % 3,
+    })))
+    setTimeout(() => setConfettiPieces([]), 5500)
+  }
+
   // Wizard step helpers
   // Steps: 0 = ID fields, 1..N = API sections, N+1 = Docs + Comments (last)
   // Build a flat list of visible steps: id → individual questions → docs
@@ -202,13 +253,28 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
     if (info?.type === 'id') {
       if (!form.nombre.trim() || !form.apellidos.trim() || !form.dniNie.trim() || !form.telefono.trim()) {
         showToast(t('errValidationRequired'), 'error')
+        setQuestionShake(true)
+        setTimeout(() => setQuestionShake(false), 620)
         return
       }
     } else if (info?.type === 'question') {
       const { pregunta } = info
       if (form[pregunta.id] == null || form[pregunta.id] === '') {
         showToast(t('errValidationQuestions'), 'error')
+        setQuestionShake(true)
+        setTimeout(() => setQuestionShake(false), 620)
         return
+      }
+    }
+    // Section-change level-up banner
+    const nextStep = visibleSteps[safeStep + 1]
+    if (nextStep?.type === 'question') {
+      const currSectionTitle = info?.type === 'question' ? info.seccion?.titulo : '__none__'
+      const nextSectionTitle = nextStep.seccion?.titulo
+      if (currSectionTitle !== nextSectionTitle) {
+        const banner = nextStep.seccion.titulos?.[lang] ?? nextStep.seccion.titulo
+        setShowLevelUp(banner)
+        setTimeout(() => setShowLevelUp(null), 2300)
       }
     }
     setStepDirection('forward')
@@ -218,6 +284,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
 
   const handlePrev = () => {
     setStepDirection('backward')
+    setStreak(0)
     setCurrentStep(prev => Math.max(0, prev - 1))
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
@@ -322,6 +389,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
           setEditId(null)
           setEditDocumentos([])
           setSubmitted(true)
+          spawnConfetti()
           showToast(t('toastSuccess'), 'success')
           setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
         } else {
@@ -331,6 +399,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
         const { data, error, response } = await createDeclaracion({ body })
         if (data) {
           setSubmitted(true)
+          spawnConfetti()
           if (!user) {
             setSubmissionToken(data.id)
             try {
@@ -430,19 +499,31 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
             <div className="quiz-progress-top">
               <div>
                 {currentStepInfo?.type === 'id' && (
-                  <span className="quiz-section-badge">👤 {t('stepId')}</span>
+                  <span key="badge-id" className="quiz-section-badge">👤 {t('stepId')}</span>
                 )}
                 {currentStepInfo?.type === 'question' && (
-                  <span className="quiz-section-badge">
+                  <span key={`badge-${currentStepInfo.seccion?.titulo}`} className="quiz-section-badge">
                     {STEP_ICONS[secciones.indexOf(currentStepInfo.seccion) + 1] ?? '❓'}&nbsp;
                     {currentStepInfo.seccion.titulos?.[lang] ?? currentStepInfo.seccion.titulo}
                   </span>
                 )}
                 {currentStepInfo?.type === 'docs' && (
-                  <span className="quiz-section-badge">📁 {t('stepDocs')}</span>
+                  <span key="badge-docs" className="quiz-section-badge">📁 {t('stepDocs')}</span>
                 )}
               </div>
-              <div className="quiz-counter">{safeStep + 1} <span>/ {totalSteps}</span></div>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                {streak > 1 && currentStepInfo?.type === 'question' && (
+                  <span key={`streak-${streak}`} className={`streak-badge${streak >= 5 ? ' hot' : ''}`}>
+                    <span className="streak-badge-icon">🔥</span> {streak}
+                  </span>
+                )}
+                {totalScore > 0 && (
+                  <div key={`score-${totalScore}`} className="score-display">
+                    ⭐ {totalScore}
+                  </div>
+                )}
+                <div className="quiz-counter">{safeStep + 1} <span>/ {totalSteps}</span></div>
+              </div>
             </div>
             <div className="quiz-linear-bar-wrap">
               <div
@@ -456,7 +537,12 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
           <div className="quiz-progress-header">
             <div className="quiz-progress-top">
               <span className="quiz-section-badge">🎉 {t('successTitle')}</span>
-              <div className="quiz-counter">✓</div>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {totalScore > 0 && (
+                  <div className="score-display">⭐ {totalScore}</div>
+                )}
+                <div className="quiz-counter">✓</div>
+              </div>
             </div>
             <div className="quiz-linear-bar-wrap">
               <div className="quiz-linear-bar" style={{ width: '100%' }} />
@@ -509,7 +595,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                 {/* Animated wizard step container – key change triggers CSS animation */}
                 <div
                   key={`step-${currentStep}`}
-                  className={`wizard-step${stepDirection === 'backward' ? ' reverse' : ''}`}
+                  className={`wizard-step${stepDirection === 'backward' ? ' reverse' : ''}${questionShake ? ' shake' : ''}`}
                 >
 
                   {/* ── Step: Identification ── */}
@@ -559,6 +645,10 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                     const questionIdx = questionSteps.findIndex(s => s.key === currentStepInfo.key)
                     return (
                       <div className="quiz-single-question">
+                        {/* XP floating popups */}
+                        {xpPopups.map(p => (
+                          <div key={p.id} className="xp-popup">+10 ⭐</div>
+                        ))}
                         <div className="wizard-step-header">
                           <div className="wizard-step-icon">{icon}</div>
                           <div>
@@ -578,6 +668,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                           indent={false}
                           t={t}
                           questionNumber={questionIdx + 1}
+                          onAnswer={handleAnswer}
                         />
                       </div>
                     )
@@ -707,6 +798,33 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       <Footer showApiDocs />
 
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
+
+      {/* Confetti on submission */}
+      {confettiPieces.map(p => (
+        <div
+          key={p.id}
+          className="confetti-piece"
+          style={{
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            background: p.color,
+            width: `${p.size}px`,
+            height: `${p.size}px`,
+            borderRadius: p.shape === 0 ? '50%' : p.shape === 1 ? '2px' : '0',
+            transform: `rotate(${p.rotation}deg)`,
+            animation: `${p.rise ? 'confettiRise' : 'confettiFall'} ${p.duration}s ease ${p.delay}s forwards`,
+          }}
+        />
+      ))}
+
+      {/* Level-up / section-change banner */}
+      {showLevelUp && (
+        <div key={showLevelUp} className="level-up-banner">
+          <span className="level-up-icon">🏆</span>
+          <div className="level-up-title">¡Nueva sección!</div>
+          <div className="level-up-subtitle">{showLevelUp}</div>
+        </div>
+      )}
     </>
   )
 }
