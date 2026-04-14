@@ -33,7 +33,7 @@ body::before {
 header {
   background: linear-gradient(135deg, #5a0dab 0%, #8a1ed4 50%, #b82fd4 100%);
   color: #fff;
-  border-radius: 0 0 18px 18px;
+  border-radius: 0;
   padding: 0 16px;
   display: block;
   position: sticky;
@@ -41,20 +41,22 @@ header {
   z-index: 500;
   box-shadow: 0 4px 28px rgba(90,13,171,.65), 0 2px 8px rgba(0,0,0,.35);
   margin: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 .header-inner {
-  max-width: 920px;
-  margin: 0 auto;
-  padding: 18px 12px 16px;
+  width: 100%;
+  padding: 14px 24px;
   display: flex;
   align-items: center;
   gap: 16px;
+  box-sizing: border-box;
 }
 header::after {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 0 0 18px 18px;
+  border-radius: 0;
   background: linear-gradient(180deg, rgba(255,255,255,.08) 0%, transparent 100%);
   pointer-events: none;
 }
@@ -438,16 +440,12 @@ footer.footer-main {
   max-width: 540px;
 }
 
-/* ── Language flags top bar */
+/* ── Language flags in header nav */
 .lang-flags-top {
-  position: fixed;
-  top: 10px;
-  right: 16px;
-  z-index: 9999;
   display: flex;
   gap: 4px;
   align-items: center;
-  padding: 4px 8px;
+  padding: 0;
 }
 
 .lang-flag-btn {

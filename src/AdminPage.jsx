@@ -343,10 +343,6 @@ export default function AdminPage({ onNavigate }) {
       <header>
         <div className="header-inner">
           <div className="logo">NH Gestión Integral</div>
-          <div className="header-text">
-            <h1>Panel de Administración</h1>
-            <p>Gestión de declaraciones IRPF 2025 · Usuario: {user?.dniNie}</p>
-          </div>
           <nav className="header-nav">
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/')}>
               📋 Formulario

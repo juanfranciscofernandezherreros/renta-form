@@ -5,6 +5,7 @@ import { ERROR_USER_BLOCKED } from './constants.js'
 import { useLanguage } from './LanguageContext.jsx'
 
 const DNI_NIE_REGEX = /^[0-9XYZ][0-9]{7}[A-Z]$/
+const LANG_FLAGS = { es: '🇪🇸', fr: '🇫🇷', en: '🇬🇧', de: '🇩🇪', pt: '🇵🇹', it: '🇮🇹' }
 
 export default function LoginPage({ onNavigate }) {
   const { login } = useAuth()
@@ -55,21 +56,22 @@ export default function LoginPage({ onNavigate }) {
       <header>
         <div className="header-inner">
           <div className="logo">NH Gestión Integral</div>
-          <div className="header-text">
-            <h1>{t('loginTitle')}</h1>
-            <p>{t('headerSubtitle')}</p>
-          </div>
           <nav className="header-nav">
-            <select
-              className="lang-select"
-              value={lang}
-              onChange={e => setLang(e.target.value)}
-              aria-label={t('langLabel')}
-            >
+            <div className="lang-flags-top" role="group" aria-label={t('langLabel')}>
               {availableLanguages.map(l => (
-                <option key={l.code} value={l.code}>{l.label}</option>
+                <button
+                  key={l.code}
+                  type="button"
+                  className={`lang-flag-btn${lang === l.code ? ' active' : ''}`}
+                  onClick={() => setLang(l.code)}
+                  aria-label={l.label}
+                  title={l.label}
+                >
+                  <span className="lang-flag-emoji">{LANG_FLAGS[l.code] ?? '🌐'}</span>
+                  <span className="lang-flag-code">{l.code.toUpperCase()}</span>
+                </button>
               ))}
-            </select>
+            </div>
           </nav>
         </div>
       </header>
