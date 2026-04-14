@@ -1,14 +1,14 @@
-Feature: Rellenar el formulario de declaracion de la Renta
+Feature: Rellenar el formulario de declaración de la Renta
 
   Scenario: Captura de la pantalla de acceso a intranet
     Given el usuario abre la pantalla de intranet
     Then se toma un screenshot "00_pantalla_intranet"
 
-  Scenario: Captura de la pagina de inicio
+  Scenario: Captura de la página de inicio
     Given el usuario abre la pagina principal
     Then se toma un screenshot "01_pagina_inicio"
 
-  Scenario: Validacion campos obligatorios vacios
+  Scenario: Validación campos obligatorios vacíos
     Given el usuario abre la pagina principal
     When el usuario hace clic en Siguiente sin rellenar nada
     Then se toma un screenshot "02_validacion_campos_vacios"

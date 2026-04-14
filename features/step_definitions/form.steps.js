@@ -100,7 +100,7 @@ Given('el usuario responde No a todas las preguntas de ingresos', async function
 Given('el usuario rellena los comentarios finales', async function () {
   const textarea = this.page.locator('textarea[name="comentarios"]')
   if (await textarea.isVisible()) {
-    await textarea.fill('Sin comentarios adicionales para la declaracion.')
+    await textarea.fill('Sin comentarios adicionales para la declaración.')
     await this.page.waitForTimeout(300)
   }
 })
