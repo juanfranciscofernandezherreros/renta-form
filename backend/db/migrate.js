@@ -175,28 +175,30 @@ async function migrate() {
       console.log('[migrate] uq_declaraciones_dni_nie constraint added.')
     }
 
-    // Seed translations if the table is empty
-    const { rows: tCount } = await client.query('SELECT COUNT(*) FROM traducciones')
-    if (parseInt(tCount[0].count, 10) === 0) {
-      console.log('[migrate] Seeding traducciones ...')
-      const rows = []
-      const params = []
-      let idx = 1
-      for (const [code, keys] of Object.entries(staticTranslations)) {
-        for (const [clave, valor] of Object.entries(keys)) {
-          rows.push(`($${idx}, $${idx + 1}, $${idx + 2})`)
-          params.push(code, clave, String(valor))
-          idx += 3
+    // Seed translations only if the traducciones table exists and is empty
+    if (await tableExists(client, 'traducciones')) {
+      const { rows: tCount } = await client.query('SELECT COUNT(*) FROM traducciones')
+      if (parseInt(tCount[0].count, 10) === 0) {
+        console.log('[migrate] Seeding traducciones ...')
+        const rows = []
+        const params = []
+        let idx = 1
+        for (const [code, keys] of Object.entries(staticTranslations)) {
+          for (const [clave, valor] of Object.entries(keys)) {
+            rows.push(`($${idx}, $${idx + 1}, $${idx + 2})`)
+            params.push(code, clave, String(valor))
+            idx += 3
+          }
         }
+        await client.query(
+          `INSERT INTO traducciones (code, clave, valor) VALUES ${rows.join(', ')}
+           ON CONFLICT (code, clave) DO NOTHING`,
+          params
+        )
+        console.log('[migrate] traducciones seeded.')
+      } else {
+        console.log('[migrate] traducciones already seeded, skipping.')
       }
-      await client.query(
-        `INSERT INTO traducciones (code, clave, valor) VALUES ${rows.join(', ')}
-         ON CONFLICT (code, clave) DO NOTHING`,
-        params
-      )
-      console.log('[migrate] traducciones seeded.')
-    } else {
-      console.log('[migrate] traducciones already seeded, skipping.')
     }
   } finally {
     client.release()
