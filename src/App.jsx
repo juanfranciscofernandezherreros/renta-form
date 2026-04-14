@@ -34,6 +34,18 @@ const INITIAL_STATE = {
 
 const STEP_ICONS = ['👤', '🏠', '👨‍👩‍👧', '💶', '📝', '⭐', '❓']
 
+const LANG_FLAGS = {
+  es: '🇪🇸',
+  fr: '🇫🇷',
+  en: '🇬🇧',
+  de: '🇩🇪',
+  pt: '🇵🇹',
+  it: '🇮🇹',
+  ca: '🏴󠁥󠁳󠁣󠁴󠁿',
+  eu: '🏴',
+  gl: '🏴',
+}
+
 const YesNoField = ({ label, name, value, onChange, indent, t, questionNumber, onAnswer }) => {
   const [ringKey, setRingKey] = useState(null)
   return (
@@ -398,16 +410,21 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
           <p>{t('headerSubtitle')}</p>
         </div>
         <nav className="header-nav">
-          <select
-            className="lang-select"
-            value={lang}
-            onChange={e => setLang(e.target.value)}
-            aria-label={t('langLabel')}
-          >
+          <div className="lang-flags" role="group" aria-label={t('langLabel')}>
             {availableLanguages.map(l => (
-              <option key={l.code} value={l.code}>{l.label}</option>
+              <button
+                key={l.code}
+                type="button"
+                className={`lang-flag-btn${lang === l.code ? ' active' : ''}`}
+                onClick={() => setLang(l.code)}
+                aria-label={l.label}
+                title={l.label}
+              >
+                <span className="lang-flag-emoji">{LANG_FLAGS[l.code] ?? '🌐'}</span>
+                <span className="lang-flag-code">{l.code.toUpperCase()}</span>
+              </button>
             ))}
-          </select>
+          </div>
           {user ? (
             <>
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/perfil')}>
