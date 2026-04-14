@@ -21,7 +21,7 @@ FOR EACH ROW EXECUTE FUNCTION fn_set_actualizado_en();
 -- ── Seed data ─────────────────────────────────────────────────────────────
 
 INSERT INTO preguntas_formulario (campo, texto, textos, seccion_id, orden)
-SELECT campo, texto, textos::jsonb, s.id, orden
+SELECT seed.campo, seed.texto, seed.textos::jsonb, s.id, seed.orden
 FROM (VALUES
     ('viviendaAlquiler',
      '¿Vive actualmente en régimen de alquiler?',

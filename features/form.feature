@@ -56,6 +56,29 @@ Feature: Rellenar el formulario de declaración de la Renta
     When el usuario envia el formulario
     Then se toma un screenshot "10_formulario_enviado_exito"
 
+  Scenario: Envio duplicado - mismo DNI/NIE muestra error
+    Given el usuario abre la pagina principal
+    Given el usuario rellena los datos de identificacion con DNI "99999999R"
+    Given el usuario avanza al siguiente paso
+    Given el usuario responde No a todas las preguntas de vivienda
+    Given el usuario avanza al siguiente paso
+    Given el usuario responde No a todas las preguntas de familia
+    Given el usuario avanza al siguiente paso
+    Given el usuario responde No a todas las preguntas de ingresos
+    When el usuario envia el formulario
+    Then se toma un screenshot "11_primer_envio_exito"
+    Given el usuario abre la pagina principal
+    Given el usuario rellena los datos de identificacion con DNI "99999999R"
+    Given el usuario avanza al siguiente paso
+    Given el usuario responde No a todas las preguntas de vivienda
+    Given el usuario avanza al siguiente paso
+    Given el usuario responde No a todas las preguntas de familia
+    Given el usuario avanza al siguiente paso
+    Given el usuario responde No a todas las preguntas de ingresos
+    When el usuario intenta enviar el formulario duplicado
+    Then se muestra un error de declaracion duplicada
+    Then se toma un screenshot "12_envio_duplicado_error"
+
   Scenario: Pantalla de login de usuario
     Given el usuario navega a la pantalla de login
     Then se toma un screenshot "13_pantalla_login"
