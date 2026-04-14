@@ -265,6 +265,7 @@ async function updatePreguntaFormulario(id, { texto, campo, textos, seccionId, o
 
 async function createPreguntaFormulario({ texto, campo, textos, seccionId, orden }) {
   if (!texto || !String(texto).trim()) return { data: null, error: { message: 'El texto es obligatorio' } }
+  if (!campo || !String(campo).trim()) return { data: null, error: { message: 'El campo es obligatorio' } }
 
   const { rows } = await pool.query(
     `INSERT INTO preguntas_formulario (campo, texto, textos, seccion_id, orden)

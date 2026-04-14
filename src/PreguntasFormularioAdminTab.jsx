@@ -69,7 +69,10 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
 
   const handleFormChange = e => {
     const { name, value, type, checked } = e.target
-    setForm(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : (name === 'orden' ? parseInt(value, 10) || 0 : value) }))
+    let parsed = value
+    if (type === 'checkbox') parsed = checked
+    else if (name === 'orden') parsed = parseInt(value, 10) || 0
+    setForm(prev => ({ ...prev, [name]: parsed }))
   }
 
   const handleTextosChange = (lang, value) => {
