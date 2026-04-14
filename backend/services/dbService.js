@@ -351,24 +351,32 @@ async function createDeclaracion(body) {
     hijosMenores26, ingresosJuego, ingresosInversiones,
   } = body
 
-  const { rows } = await pool.query(
-    `INSERT INTO declaraciones (
-      nombre, apellidos, dni_nie, email, telefono,
-      vivienda_alquiler, alquiler_menos_35, vivienda_propiedad, propiedad_antes_2013,
-      pisos_alquilados_terceros, segunda_residencia,
-      familia_numerosa, ayudas_gobierno, mayores_65_a_cargo, mayores_conviven,
-      hijos_menores_26, ingresos_juego, ingresos_inversiones
-    ) VALUES (
-      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18
-    ) RETURNING id, estado, creado_en`,
-    [
-      nombre, apellidos, dniNie, email, telefono,
-      viviendaAlquiler, alquilerMenos35 ?? null, viviendaPropiedad, propiedadAntes2013 ?? null,
-      pisosAlquiladosTerceros, segundaResidencia,
-      familiaNumerosa, ayudasGobierno, mayores65ACargo, mayoresConviven ?? null,
-      hijosMenores26, ingresosJuego, ingresosInversiones,
-    ]
-  )
+  let rows
+  try {
+    ;({ rows } = await pool.query(
+      `INSERT INTO declaraciones (
+        nombre, apellidos, dni_nie, email, telefono,
+        vivienda_alquiler, alquiler_menos_35, vivienda_propiedad, propiedad_antes_2013,
+        pisos_alquilados_terceros, segunda_residencia,
+        familia_numerosa, ayudas_gobierno, mayores_65_a_cargo, mayores_conviven,
+        hijos_menores_26, ingresos_juego, ingresos_inversiones
+      ) VALUES (
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18
+      ) RETURNING id, estado, creado_en`,
+      [
+        nombre, apellidos, dniNie, email, telefono,
+        viviendaAlquiler, alquilerMenos35 ?? null, viviendaPropiedad, propiedadAntes2013 ?? null,
+        pisosAlquiladosTerceros, segundaResidencia,
+        familiaNumerosa, ayudasGobierno, mayores65ACargo, mayoresConviven ?? null,
+        hijosMenores26, ingresosJuego, ingresosInversiones,
+      ]
+    ))
+  } catch (err) {
+    if (err.code === '23505' && err.constraint === 'uq_declaraciones_dni_nie') {
+      return { data: null, error: { message: 'Ya existe una declaración con este DNI/NIE' }, status: 409 }
+    }
+    throw err
+  }
   const row = rows[0]
   const declaracionId = row.id
 
