@@ -12,7 +12,6 @@ import {
 } from './apiClient.js'
 import { downloadRentaPdf } from './pdfUtils.js'
 import PreguntasFormularioAdminTab from './PreguntasFormularioAdminTab.jsx'
-import SeccionesAdminTab from './SeccionesAdminTab.jsx'
 import UsuariosAdminTab from './UsuariosAdminTab.jsx'
 import IdiomasAdminTab from './IdiomasAdminTab.jsx'
 
@@ -381,13 +380,6 @@ export default function AdminPage({ onNavigate }) {
           </button>
           <button
             type="button"
-            className={`admin-tab${activeTab === 'secciones' ? ' active' : ''}`}
-            onClick={() => setActiveTab('secciones')}
-          >
-            📂 Secciones
-          </button>
-          <button
-            type="button"
             className={`admin-tab${activeTab === 'usuarios' ? ' active' : ''}`}
             onClick={() => setActiveTab('usuarios')}
           >
@@ -412,10 +404,6 @@ export default function AdminPage({ onNavigate }) {
             </p>
             <PreguntasFormularioAdminTab showToast={showToast} />
           </>
-        )}
-
-        {activeTab === 'secciones' && (
-          <SeccionesAdminTab showToast={showToast} />
         )}
 
         {activeTab === 'usuarios' && (
