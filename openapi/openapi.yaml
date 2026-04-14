@@ -668,10 +668,6 @@ paths:
             type: string
             format: binary
           description: Documentación adicional (nóminas, certificados, etc.)
-        # 6. Información adicional
-        comentarios:
-          type: string
-          description: Situaciones especiales a tener en cuenta
 
     # ------------------------------------------------------------------
     # Declaración – Output
@@ -773,8 +769,6 @@ paths:
               $ref: '#/components/schemas/RespuestaYN'
             ingresosInversiones:
               $ref: '#/components/schemas/RespuestaYN'
-            comentarios:
-              type: string
             actualizadoEn:
               type: string
               format: date-time

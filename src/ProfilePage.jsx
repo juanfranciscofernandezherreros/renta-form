@@ -44,7 +44,6 @@ const CAMPOS_LABELS = {
   hijosMenores26: '¿Tiene hijos menores de 26 años?',
   ingresosJuego: '¿Ha obtenido ingresos por juego?',
   ingresosInversiones: '¿Ha obtenido ingresos por inversiones?',
-  comentarios: 'Comentarios',
 }
 
 const SECCIONES = [
@@ -53,8 +52,6 @@ const SECCIONES = [
   { titulo: '3. Cargas Familiares y Ayudas Públicas', campos: ['familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'mayoresConviven', 'hijosMenores26'] },
   { titulo: '4. Ingresos Extraordinarios e Inversiones', campos: ['ingresosJuego', 'ingresosInversiones'] },
 ]
-
-const SECCION_INFO_ADICIONAL = { titulo: '6. Información Adicional', campos: ['comentarios'] }
 
 function formatFecha(iso) {
   if (!iso) return '—'
@@ -238,24 +235,6 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
                         </table>
                       </div>
                     ))}
-
-                    <div key={SECCION_INFO_ADICIONAL.titulo}>
-                      <div className="section-title">{SECCION_INFO_ADICIONAL.titulo}</div>
-                      <table className="respuestas-table">
-                        <tbody>
-                          {SECCION_INFO_ADICIONAL.campos.map(campo => {
-                            const valor = dec[campo]
-                            if (valor === undefined || valor === null) return null
-                            return (
-                              <tr key={campo}>
-                                <td className="campo-label">{CAMPOS_LABELS[campo] ?? campo}</td>
-                                <td className="campo-valor">{YN_LABELS[valor] ?? valor}</td>
-                              </tr>
-                            )
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
 
                     <div className="btn-row">
                       {dec.estado === 'completado' ? (

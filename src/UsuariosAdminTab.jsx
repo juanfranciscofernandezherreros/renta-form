@@ -40,7 +40,6 @@ const CAMPOS_LABELS = {
   hijosMenores26: '¿Tiene hijos menores de 26 años?',
   ingresosJuego: '¿Ha obtenido ingresos por juego?',
   ingresosInversiones: '¿Ha obtenido ingresos por inversiones?',
-  comentarios: 'Comentarios',
 }
 
 const SECCIONES_DATOS = [
@@ -49,7 +48,6 @@ const SECCIONES_DATOS = [
   { titulo: '3. Cargas Familiares y Ayudas Públicas', campos: ['familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'mayoresConviven', 'hijosMenores26'] },
   { titulo: '4. Ingresos Extraordinarios e Inversiones', campos: ['ingresosJuego', 'ingresosInversiones'] },
 ]
-const SECCION_INFO_ADICIONAL = { titulo: '6. Información Adicional', campos: ['comentarios'] }
 const YN_LABELS = { si: 'Sí', no: 'No' }
 
 function escHtml(str) {
@@ -77,7 +75,6 @@ async function downloadUserDeclaracionPdf(dniNie) {
   const allSections = [
     ...SECCIONES_DATOS,
     { titulo: '5. Documentación Adjunta', campos: [] },
-    SECCION_INFO_ADICIONAL,
   ]
 
   const rows = allSections.flatMap(sec => {

@@ -79,11 +79,6 @@ CREATE TABLE IF NOT EXISTS declaraciones (
     ingresos_inversiones    respuesta_yn    NOT NULL,
 
     -- =========================================================
-    -- 6. Información Adicional
-    -- =========================================================
-    comentarios             TEXT,
-
-    -- =========================================================
     -- Restricciones de integridad
     -- =========================================================
     CONSTRAINT chk_alquiler_menos_35
@@ -326,8 +321,7 @@ INSERT INTO declaraciones (
     familia_numerosa, ayudas_gobierno,
     mayores_65_a_cargo, mayores_conviven,
     hijos_menores_26,
-    ingresos_juego, ingresos_inversiones,
-    comentarios
+    ingresos_juego, ingresos_inversiones
 ) VALUES (
     'María', 'García López', '12345678A',
     'maria.garcia@ejemplo.es', '600123456',
@@ -337,7 +331,6 @@ INSERT INTO declaraciones (
     'no', 'no',
     'si', 'si',
     'si',
-    'no', 'si',
-    'Fondos de inversión en entidad bancaria extranjera.'
+    'no', 'si'
 );
 */

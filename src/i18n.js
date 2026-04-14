@@ -24,7 +24,6 @@ const translations = {
     // Section titles
     section1: '1. Datos de Identificación',
     section5: '5. Documentación Adjunta',
-    section6: '6. Información Adicional',
     // Fields
     fieldNombre: 'Nombre',
     fieldApellidos: 'Apellidos',
@@ -41,10 +40,6 @@ const translations = {
     docDniReverso: 'Copia escaneada del DNI/NIE — Reverso',
     docAdicional:
       'Documentación adicional (Nóminas, certificados de retenciones, facturas deducibles, etc.)',
-    // Comments
-    commentsLabel: 'Comentarios sobre situaciones especiales',
-    commentsPlaceholder:
-      'Indique aquí cualquier situación especial que deba tenerse en cuenta: ventas de inmuebles, inversiones en el extranjero, cambios en el estado civil, herencias, etc.',
     // Buttons
     btnClear: '🗑 Limpiar',
     btnSubmit: '📤 Enviar cuestionario',
@@ -206,7 +201,6 @@ const translations = {
     campaignName: 'Campagne Impôt sur le Revenu 2025',
     section1: '1. Données d\'Identification',
     section5: '5. Documents Joints',
-    section6: '6. Informations Supplémentaires',
     fieldNombre: 'Prénom',
     fieldApellidos: 'Nom(s)',
     fieldApellidosPlaceholder: 'Premier nom Deuxième nom',
@@ -220,9 +214,6 @@ const translations = {
     docDniAnverso: 'Copie numérisée du DNI/NIE — Recto',
     docDniReverso: 'Copie numérisée du DNI/NIE — Verso',
     docAdicional: 'Documentation supplémentaire (Bulletins de salaire, certificats, factures déductibles, etc.)',
-    commentsLabel: 'Commentaires sur des situations particulières',
-    commentsPlaceholder:
-      'Indiquez ici toute situation particulière à prendre en compte : ventes immobilières, investissements à l\'étranger, changements d\'état civil, héritages, etc.',
     btnClear: '🗑 Effacer',
     btnSubmit: '📤 Envoyer le questionnaire',
     btnSubmitting: '⏳ Envoi en cours…',
@@ -370,7 +361,6 @@ const translations = {
     campaignName: '2025 Income Tax Campaign',
     section1: '1. Identification Data',
     section5: '5. Attached Documents',
-    section6: '6. Additional Information',
     fieldNombre: 'First name',
     fieldApellidos: 'Surname(s)',
     fieldApellidosPlaceholder: 'First surname Second surname',
@@ -384,9 +374,6 @@ const translations = {
     docDniAnverso: 'Scanned copy of DNI/NIE — Front',
     docDniReverso: 'Scanned copy of DNI/NIE — Back',
     docAdicional: 'Additional documentation (Pay slips, withholding certificates, deductible invoices, etc.)',
-    commentsLabel: 'Comments on special situations',
-    commentsPlaceholder:
-      'Please describe any special situation to be taken into account: property sales, foreign investments, changes in marital status, inheritances, etc.',
     btnClear: '🗑 Clear',
     btnSubmit: '📤 Submit questionnaire',
     btnSubmitting: '⏳ Sending…',
@@ -534,7 +521,6 @@ const translations = {
     campaignName: 'Campanya de la Renda 2025',
     section1: '1. Dades d\'Identificació',
     section5: '5. Documentació Adjunta',
-    section6: '6. Informació Addicional',
     fieldNombre: 'Nom',
     fieldApellidos: 'Cognoms',
     fieldApellidosPlaceholder: 'Primer cognom Segon cognom',
@@ -548,9 +534,6 @@ const translations = {
     docDniAnverso: 'Còpia escanejada del DNI/NIE — Anvers',
     docDniReverso: 'Còpia escanejada del DNI/NIE — Revers',
     docAdicional: 'Documentació addicional (Nòmines, certificats de retencions, factures deduïbles, etc.)',
-    commentsLabel: 'Comentaris sobre situacions especials',
-    commentsPlaceholder:
-      'Indiqueu aquí qualsevol situació especial que s\'hagi de tenir en compte: vendes d\'immobles, inversions a l\'estranger, canvis en l\'estat civil, herències, etc.',
     btnClear: '🗑 Netejar',
     btnSubmit: '📤 Enviar qüestionari',
     btnSubmitting: '⏳ Enviant…',

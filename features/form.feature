@@ -44,7 +44,7 @@ Feature: Rellenar el formulario de declaración de la Renta
     When el usuario responde No a todas las preguntas de ingresos
     Then se toma un screenshot "09_ingresos_respondidos"
 
-  Scenario: Paso final - Comentarios y envio del formulario
+  Scenario: Paso final - Envio del formulario
     Given el usuario abre la pagina principal
     Given el usuario rellena los datos de identificacion
     Given el usuario avanza al siguiente paso
@@ -53,12 +53,8 @@ Feature: Rellenar el formulario de declaración de la Renta
     Given el usuario responde No a todas las preguntas de familia
     Given el usuario avanza al siguiente paso
     Given el usuario responde No a todas las preguntas de ingresos
-    Given el usuario avanza al siguiente paso
-    Then se toma un screenshot "10_paso_comentarios"
-    When el usuario rellena los comentarios finales
-    Then se toma un screenshot "11_comentarios_rellenos"
     When el usuario envia el formulario
-    Then se toma un screenshot "12_formulario_enviado_exito"
+    Then se toma un screenshot "10_formulario_enviado_exito"
 
   Scenario: Pantalla de login de usuario
     Given el usuario navega a la pantalla de login

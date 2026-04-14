@@ -47,7 +47,6 @@ function rowToDeclaracion(row) {
     hijosMenores26: row.hijos_menores_26,
     ingresosJuego: row.ingresos_juego,
     ingresosInversiones: row.ingresos_inversiones,
-    comentarios: row.comentarios ?? '',
   }
 }
 
@@ -349,7 +348,7 @@ async function createDeclaracion(body) {
     viviendaAlquiler, alquilerMenos35, viviendaPropiedad, propiedadAntes2013,
     pisosAlquiladosTerceros, segundaResidencia,
     familiaNumerosa, ayudasGobierno, mayores65ACargo, mayoresConviven,
-    hijosMenores26, ingresosJuego, ingresosInversiones, comentarios,
+    hijosMenores26, ingresosJuego, ingresosInversiones,
   } = body
 
   const { rows } = await pool.query(
@@ -358,16 +357,16 @@ async function createDeclaracion(body) {
       vivienda_alquiler, alquiler_menos_35, vivienda_propiedad, propiedad_antes_2013,
       pisos_alquilados_terceros, segunda_residencia,
       familia_numerosa, ayudas_gobierno, mayores_65_a_cargo, mayores_conviven,
-      hijos_menores_26, ingresos_juego, ingresos_inversiones, comentarios
+      hijos_menores_26, ingresos_juego, ingresos_inversiones
     ) VALUES (
-      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19
+      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18
     ) RETURNING id, estado, creado_en`,
     [
       nombre, apellidos, dniNie, email, telefono,
       viviendaAlquiler, alquilerMenos35 ?? null, viviendaPropiedad, propiedadAntes2013 ?? null,
       pisosAlquiladosTerceros, segundaResidencia,
       familiaNumerosa, ayudasGobierno, mayores65ACargo, mayoresConviven ?? null,
-      hijosMenores26, ingresosJuego, ingresosInversiones, comentarios ?? null,
+      hijosMenores26, ingresosJuego, ingresosInversiones,
     ]
   )
   const row = rows[0]
@@ -407,7 +406,6 @@ async function updateDeclaracion(id, body) {
     apellidos: 'apellidos',
     email: 'email',
     telefono: 'telefono',
-    comentarios: 'comentarios',
     viviendaAlquiler: 'vivienda_alquiler',
     alquilerMenos35: 'alquiler_menos_35',
     viviendaPropiedad: 'vivienda_propiedad',

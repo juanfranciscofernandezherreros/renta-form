@@ -54,7 +54,6 @@ const CAMPOS_LABELS = {
   hijosMenores26: '¿Tiene hijos menores de 26 años?',
   ingresosJuego: '¿Ha obtenido ingresos por juego?',
   ingresosInversiones: '¿Ha obtenido ingresos por inversiones?',
-  comentarios: 'Comentarios',
 }
 
 const SECCIONES_DATOS = [
@@ -63,8 +62,6 @@ const SECCIONES_DATOS = [
   { titulo: '3. Cargas Familiares y Ayudas Públicas', campos: ['familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'mayoresConviven', 'hijosMenores26'] },
   { titulo: '4. Ingresos Extraordinarios e Inversiones', campos: ['ingresosJuego', 'ingresosInversiones'] },
 ]
-
-const SECCION_INFO_ADICIONAL = { titulo: '6. Información Adicional', campos: ['comentarios'] }
 
 function formatFecha(iso) {
   if (!iso) return '—'
@@ -83,7 +80,6 @@ function escHtml(str) {
 function downloadDeclaracionPdf(dec) {
   const allSections = [
     ...SECCIONES_DATOS,
-    SECCION_INFO_ADICIONAL,
   ]
 
   const rows = allSections.flatMap(sec => {
@@ -253,7 +249,6 @@ export default function AdminPage({ onNavigate }) {
       hijosMenores26: dec.hijosMenores26 ?? '',
       ingresosJuego: dec.ingresosJuego ?? '',
       ingresosInversiones: dec.ingresosInversiones ?? '',
-      comentarios: dec.comentarios ?? '',
     })
     setEditModal(dec)
   }
@@ -522,27 +517,6 @@ export default function AdminPage({ onNavigate }) {
                       )
                     })}
 
-                    {/* Section 6: Additional info */}
-                    {(() => {
-                      const camposVisibles = SECCION_INFO_ADICIONAL.campos.filter(c => dec[c] !== undefined && dec[c] !== null && dec[c] !== '')
-                      if (!camposVisibles.length) return null
-                      return (
-                        <div>
-                          <div className="section-title">{SECCION_INFO_ADICIONAL.titulo}</div>
-                          <table className="respuestas-table">
-                            <tbody>
-                              {camposVisibles.map(campo => (
-                                <tr key={campo}>
-                                  <td className="campo-label">{CAMPOS_LABELS[campo] ?? campo}</td>
-                                  <td className="campo-valor">{YN_LABELS[dec[campo]] ?? dec[campo]}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      )
-                    })()}
-
                     {/* Section 7: PDF de la Renta (admin) */}
                     <div>
                       <div className="section-title">7. PDF de la Renta</div>
@@ -761,14 +735,6 @@ export default function AdminPage({ onNavigate }) {
                 </div>
               </div>
             ))}
-            <div className="field" style={{ marginTop: 12 }}>
-              <label>Comentarios</label>
-              <textarea
-                value={editForm.comentarios ?? ''}
-                onChange={e => setEditForm(prev => ({ ...prev, comentarios: e.target.value }))}
-                rows={3}
-              />
-            </div>
             <div className="btn-row" style={{ marginTop: 16 }}>
               <button type="button" className="btn btn-secondary" onClick={() => setEditModal(null)}>
                 Cancelar
