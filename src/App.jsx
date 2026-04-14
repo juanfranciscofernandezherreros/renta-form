@@ -92,6 +92,8 @@ const YesNoField = ({ label, name, value, onChange, indent, t, questionNumber, o
   )
 }
 
+const SHAKE_DURATION_MS = 620
+
 export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const { user, logout } = useAuth()
   const { lang, setLang, t, availableLanguages } = useLanguage()
@@ -254,7 +256,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       if (!form.nombre.trim() || !form.apellidos.trim() || !form.dniNie.trim() || !form.telefono.trim()) {
         showToast(t('errValidationRequired'), 'error')
         setQuestionShake(true)
-        setTimeout(() => setQuestionShake(false), 620)
+        setTimeout(() => setQuestionShake(false), SHAKE_DURATION_MS)
         return
       }
     } else if (info?.type === 'question') {
@@ -262,7 +264,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       if (form[pregunta.id] == null || form[pregunta.id] === '') {
         showToast(t('errValidationQuestions'), 'error')
         setQuestionShake(true)
-        setTimeout(() => setQuestionShake(false), 620)
+        setTimeout(() => setQuestionShake(false), SHAKE_DURATION_MS)
         return
       }
     }
@@ -821,7 +823,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       {showLevelUp && (
         <div key={showLevelUp} className="level-up-banner">
           <span className="level-up-icon">🏆</span>
-          <div className="level-up-title">¡Nueva sección!</div>
+          <div className="level-up-title">{t('levelUpNewSection')}</div>
           <div className="level-up-subtitle">{showLevelUp}</div>
         </div>
       )}

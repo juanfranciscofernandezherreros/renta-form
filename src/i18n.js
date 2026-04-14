@@ -182,6 +182,7 @@ const translations = {
     step1Subtitle: '🚀 ¡Vamos a empezar! Cuéntanos quién eres',
     questionSingular: 'pregunta',
     questionPlural: 'preguntas',
+    levelUpNewSection: '¡Nueva sección!',
   },
 
   fr: {
@@ -346,6 +347,7 @@ const translations = {
     step1Subtitle: '🚀 C\'est parti ! Dites-nous qui vous êtes',
     questionSingular: 'question',
     questionPlural: 'questions',
+    levelUpNewSection: 'Nouvelle section !',
   },
 
   en: {
@@ -508,6 +510,7 @@ const translations = {
     step1Subtitle: '🚀 Let\'s get started! Tell us who you are',
     questionSingular: 'question',
     questionPlural: 'questions',
+    levelUpNewSection: 'New section!',
   },
 
   ca: {
@@ -670,6 +673,7 @@ const translations = {
     step1Subtitle: '🚀 Comencem! Digueu-nos qui sou',
     questionSingular: 'pregunta',
     questionPlural: 'preguntes',
+    levelUpNewSection: 'Nova secció!',
   },
 }
 
