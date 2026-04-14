@@ -50,21 +50,6 @@ function rowToDeclaracion(row) {
   }
 }
 
-function rowToPregunta(row) {
-  if (!row) return null
-  return {
-    id: row.id,
-    texto: row.texto,
-    seccion: row.seccion,
-    tipoRespuesta: row.tipo_respuesta,
-    orden: row.orden,
-    activa: row.activa,
-    obligatoria: row.obligatoria ?? false,
-    creadaEn: row.creada_en,
-    actualizadaEn: row.actualizada_en,
-  }
-}
-
 function rowToSeccion(row) {
   if (!row) return null
   return {
@@ -494,190 +479,7 @@ async function getSeccionById(id) {
 async function deleteSeccionAdmin(id) {
   const sec = await getSeccionById(id)
   if (sec.error) return sec
-  const enUso = await pool.query(
-    'SELECT COUNT(*) FROM preguntas_adicionales WHERE seccion = $1',
-    [sec.data.nombre]
-  )
-  if (parseInt(enUso.rows[0].count, 10) > 0) {
-    return { data: null, error: { message: 'No se puede eliminar: hay preguntas asignadas a esta sección' } }
-  }
   await pool.query('DELETE FROM secciones WHERE id = $1', [id])
-  return { data: { success: true }, error: null }
-}
-
-async function getSeccionDeclaraciones(id) {
-  const sec = await getSeccionById(id)
-  if (sec.error) return sec
-  const { rows } = await pool.query(
-    `SELECT DISTINCT d.id, d.dni_nie, d.nombre || ' ' || d.apellidos AS nombre_completo
-     FROM declaraciones d
-     JOIN declaracion_pregunta dp ON dp.declaracion_id = d.id
-     JOIN preguntas_adicionales pa ON pa.id = dp.pregunta_id
-     WHERE pa.seccion = $1`,
-    [sec.data.nombre]
-  )
-  const data = rows.map((r) => ({ id: r.id, dniNie: r.dni_nie, nombre: r.nombre_completo }))
-  return { data: { data, total: data.length }, error: null }
-}
-
-async function getSeccionPreguntas(id) {
-  const sec = await getSeccionById(id)
-  if (sec.error) return sec
-  const { rows } = await pool.query(
-    'SELECT * FROM preguntas_adicionales WHERE seccion = $1',
-    [sec.data.nombre]
-  )
-  return { data: { data: rows.map(rowToPregunta), total: rows.length }, error: null }
-}
-
-// ── Admin: Preguntas adicionales ──────────────────────────────────────────
-
-async function listPreguntasAdmin({ activa, page = 1, limit = 10 } = {}) {
-  const conditions = []
-  const params = []
-  if (activa !== undefined) { conditions.push(`activa = $${params.length + 1}`); params.push(activa) }
-  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
-  const countRes = await pool.query(`SELECT COUNT(*) FROM preguntas_adicionales ${where}`, params)
-  const total = parseInt(countRes.rows[0].count, 10)
-  const offset = (page - 1) * limit
-  params.push(limit, offset)
-  const { rows } = await pool.query(
-    `SELECT * FROM preguntas_adicionales ${where} ORDER BY seccion, orden LIMIT $${params.length - 1} OFFSET $${params.length}`,
-    params
-  )
-  return { data: { data: rows.map(rowToPregunta), total, page, limit }, error: null }
-}
-
-async function createPreguntaAdmin(body) {
-  if (!body.texto?.trim() || !body.seccion?.trim() || !body.tipoRespuesta) {
-    return { data: null, error: { message: 'texto, seccion y tipoRespuesta son obligatorios' }, status: 400 }
-  }
-  const { rows } = await pool.query(
-    `INSERT INTO preguntas_adicionales (texto, seccion, tipo_respuesta, orden, activa, obligatoria)
-     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-    [
-      body.texto.trim(),
-      body.seccion.trim(),
-      body.tipoRespuesta,
-      body.orden ?? 0,
-      body.activa !== undefined ? body.activa : true,
-      body.obligatoria !== undefined ? body.obligatoria : false,
-    ]
-  )
-  return { data: rowToPregunta(rows[0]), error: null, status: 201 }
-}
-
-async function updatePreguntaAdmin(id, body) {
-  const FIELD_MAP = {
-    texto: 'texto',
-    seccion: 'seccion',
-    tipoRespuesta: 'tipo_respuesta',
-    orden: 'orden',
-    activa: 'activa',
-    obligatoria: 'obligatoria',
-  }
-  const sets = []
-  const params = []
-  for (const [camel, snake] of Object.entries(FIELD_MAP)) {
-    if (body[camel] !== undefined) {
-      params.push(body[camel])
-      sets.push(`${snake} = $${params.length}`)
-    }
-  }
-  if (!sets.length) {
-    const { rows } = await pool.query('SELECT * FROM preguntas_adicionales WHERE id = $1', [id])
-    if (!rows.length) return { data: null, error: { message: 'Pregunta no encontrada' } }
-    return { data: rowToPregunta(rows[0]), error: null }
-  }
-  sets.push('actualizada_en = NOW()')
-  params.push(id)
-  const { rows } = await pool.query(
-    `UPDATE preguntas_adicionales SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING *`,
-    params
-  )
-  if (!rows.length) return { data: null, error: { message: 'Pregunta no encontrada' } }
-  return { data: rowToPregunta(rows[0]), error: null }
-}
-
-async function deletePreguntaAdmin(id) {
-  const { rowCount } = await pool.query('DELETE FROM preguntas_adicionales WHERE id = $1', [id])
-  if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
-  return { data: { success: true }, error: null }
-}
-
-// ── Declaración ↔ Preguntas adicionales ──────────────────────────────────
-
-async function getDeclaracionPreguntas(declaracionId) {
-  const dec = await pool.query('SELECT id FROM declaraciones WHERE id = $1', [declaracionId])
-  if (!dec.rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
-  const { rows } = await pool.query(
-    `SELECT dp.id, dp.declaracion_id, dp.pregunta_id, dp.respuesta, dp.asignada_en, dp.respondida_en,
-            pa.id as pa_id, pa.texto, pa.seccion, pa.tipo_respuesta, pa.orden, pa.activa, pa.obligatoria
-     FROM declaracion_pregunta dp
-     JOIN preguntas_adicionales pa ON pa.id = dp.pregunta_id
-     WHERE dp.declaracion_id = $1
-     ORDER BY pa.seccion, pa.orden`,
-    [declaracionId]
-  )
-  const data = rows.map(r => ({
-    id: r.id,
-    declaracionId: r.declaracion_id,
-    preguntaId: r.pregunta_id,
-    respuesta: r.respuesta,
-    asignadaEn: r.asignada_en,
-    respondidaEn: r.respondida_en,
-    pregunta: {
-      id: r.pa_id,
-      texto: r.texto,
-      seccion: r.seccion,
-      tipoRespuesta: r.tipo_respuesta,
-      orden: r.orden,
-      activa: r.activa,
-      obligatoria: r.obligatoria,
-    },
-  }))
-  return { data: { data, total: data.length }, error: null }
-}
-
-async function upsertDeclaracionPreguntas(declaracionId, asignaciones) {
-  const dec = await pool.query('SELECT id FROM declaraciones WHERE id = $1', [declaracionId])
-  if (!dec.rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
-
-  // Validate all preguntaIds in a single query to avoid N+1
-  const preguntaIds = asignaciones.map(a => a.preguntaId)
-  if (preguntaIds.length > 0) {
-    const { rows: found } = await pool.query(
-      'SELECT id FROM preguntas_adicionales WHERE id = ANY($1)',
-      [preguntaIds]
-    )
-    const foundSet = new Set(found.map(r => r.id))
-    const missing = preguntaIds.find(id => !foundSet.has(id))
-    if (missing) return { data: null, error: { message: `Pregunta ${missing} no encontrada` } }
-  }
-
-  for (const a of asignaciones) {
-    await pool.query(
-      `INSERT INTO declaracion_pregunta (declaracion_id, pregunta_id, respuesta, respondida_en)
-       VALUES ($1, $2, $3, CASE WHEN $3 IS NOT NULL THEN NOW() ELSE NULL END)
-       ON CONFLICT (declaracion_id, pregunta_id) DO UPDATE SET
-         respuesta = EXCLUDED.respuesta,
-         respondida_en = CASE
-           WHEN EXCLUDED.respuesta IS NOT NULL THEN NOW()
-           ELSE declaracion_pregunta.respondida_en
-         END`,
-      [declaracionId, a.preguntaId, a.respuesta ?? null]
-    )
-  }
-
-  return getDeclaracionPreguntas(declaracionId)
-}
-
-async function removeDeclaracionPregunta(declaracionId, preguntaId) {
-  const { rowCount } = await pool.query(
-    'DELETE FROM declaracion_pregunta WHERE declaracion_id = $1 AND pregunta_id = $2',
-    [declaracionId, preguntaId]
-  )
-  if (!rowCount) return { data: null, error: { message: 'Asignación no encontrada' } }
   return { data: { success: true }, error: null }
 }
 
@@ -921,19 +723,10 @@ module.exports = {
   createPreguntaFormulario,
   updatePreguntaFormulario,
   deletePreguntaFormulario,
-  listPreguntasAdmin,
-  createPreguntaAdmin,
-  updatePreguntaAdmin,
-  deletePreguntaAdmin,
-  getDeclaracionPreguntas,
-  upsertDeclaracionPreguntas,
-  removeDeclaracionPregunta,
   listSeccionesAdmin,
   createSeccionAdmin,
   updateSeccionAdmin,
   deleteSeccionAdmin,
-  getSeccionDeclaraciones,
-  getSeccionPreguntas,
   listUsersAdmin,
   blockUser,
   reportUser,
