@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from './AuthContext.jsx'
+import { useLanguage } from './LanguageContext.jsx'
 import {
   listDeclaracionesAll,
   updateEstadoDeclaracion,
@@ -9,6 +10,7 @@ import {
   assignUserAccount,
   getUserByDniNie,
   uploadRentaPdf,
+  getPreguntas,
 } from './apiClient.js'
 import { downloadRentaPdf } from './pdfUtils.js'
 import PreguntasFormularioAdminTab from './PreguntasFormularioAdminTab.jsx'
@@ -36,33 +38,13 @@ const ESTADO_CLASS = {
 
 const YN_LABELS = { si: 'Sí', no: 'No' }
 
-const CAMPOS_LABELS = {
+const ID_CAMPOS_LABELS = {
   nombre: 'Nombre',
   apellidos: 'Apellidos',
   dniNie: 'DNI / NIE',
   email: 'Correo electrónico',
   telefono: 'Teléfono',
-  viviendaAlquiler: '¿Vive de alquiler?',
-  alquilerMenos35: '¿Alquiler inferior al 35% de ingresos?',
-  viviendaPropiedad: '¿Tiene vivienda en propiedad?',
-  propiedadAntes2013: '¿Adquirida antes de 2013?',
-  pisosAlquiladosTerceros: '¿Tiene pisos alquilados a terceros?',
-  segundaResidencia: '¿Tiene segunda residencia?',
-  familiaNumerosa: '¿Familia numerosa?',
-  ayudasGobierno: '¿Ha recibido ayudas del gobierno?',
-  mayores65ACargo: '¿Tiene mayores de 65 años a cargo?',
-  mayoresConviven: '¿Conviven con usted?',
-  hijosMenores26: '¿Tiene hijos menores de 26 años?',
-  ingresosJuego: '¿Ha obtenido ingresos por juego?',
-  ingresosInversiones: '¿Ha obtenido ingresos por inversiones?',
 }
-
-const SECCIONES_DATOS = [
-  { titulo: '1. Datos de Identificación', campos: ['nombre', 'apellidos', 'dniNie', 'email', 'telefono'] },
-  { titulo: '2. Situación de Vivienda', campos: ['viviendaAlquiler', 'alquilerMenos35', 'viviendaPropiedad', 'propiedadAntes2013', 'pisosAlquiladosTerceros', 'segundaResidencia'] },
-  { titulo: '3. Cargas Familiares y Ayudas Públicas', campos: ['familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'mayoresConviven', 'hijosMenores26'] },
-  { titulo: '4. Ingresos Extraordinarios e Inversiones', campos: ['ingresosJuego', 'ingresosInversiones'] },
-]
 
 function formatFecha(iso) {
   if (!iso) return '—'
@@ -78,10 +60,41 @@ function escHtml(str) {
     .replace(/'/g, '&#39;')
 }
 
-function downloadDeclaracionPdf(dec) {
-  const allSections = [
-    ...SECCIONES_DATOS,
-  ]
+function buildAdminSecciones(preguntasSecciones) {
+  const ID_CAMPOS = ['nombre', 'apellidos', 'dniNie', 'email', 'telefono']
+  const idSection = {
+    titulo: '1. Datos de Identificación',
+    campos: ID_CAMPOS,
+    labels: ID_CAMPOS_LABELS,
+  }
+  if (!preguntasSecciones || !preguntasSecciones.length) {
+    const FALLBACK = [
+      { titulo: '2. Situación de Vivienda', campos: ['viviendaAlquiler', 'alquilerMenos35', 'viviendaPropiedad', 'propiedadAntes2013', 'pisosAlquiladosTerceros', 'segundaResidencia'], labels: {
+        viviendaAlquiler: '¿Vive de alquiler?', alquilerMenos35: '¿Alquiler inferior al 35% de ingresos?',
+        viviendaPropiedad: '¿Tiene vivienda en propiedad?', propiedadAntes2013: '¿Adquirida antes de 2013?',
+        pisosAlquiladosTerceros: '¿Tiene pisos alquilados a terceros?', segundaResidencia: '¿Tiene segunda residencia?',
+      } },
+      { titulo: '3. Cargas Familiares y Ayudas Públicas', campos: ['familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'mayoresConviven', 'hijosMenores26'], labels: {
+        familiaNumerosa: '¿Familia numerosa?', ayudasGobierno: '¿Ha recibido ayudas del gobierno?',
+        mayores65ACargo: '¿Tiene mayores de 65 años a cargo?', mayoresConviven: '¿Conviven con usted?',
+        hijosMenores26: '¿Tiene hijos menores de 26 años?',
+      } },
+      { titulo: '4. Ingresos Extraordinarios e Inversiones', campos: ['ingresosJuego', 'ingresosInversiones'], labels: {
+        ingresosJuego: '¿Ha obtenido ingresos por juego?', ingresosInversiones: '¿Ha obtenido ingresos por inversiones?',
+      } },
+    ]
+    return [idSection, ...FALLBACK]
+  }
+  const dynamic = preguntasSecciones.map(sec => {
+    const labels = {}
+    const campos = (sec.preguntas ?? []).map(p => { labels[p.id] = p.texto; return p.id })
+    return { titulo: sec.titulo, campos, labels }
+  })
+  return [idSection, ...dynamic]
+}
+
+function downloadDeclaracionPdf(dec, preguntasSecciones) {
+  const allSections = buildAdminSecciones(preguntasSecciones)
 
   const rows = allSections.flatMap(sec => {
     const camposVisibles = sec.campos
@@ -91,7 +104,7 @@ function downloadDeclaracionPdf(dec) {
     return [
       `<tr><td colspan="2" class="sec-header">${escHtml(sec.titulo)}</td></tr>`,
       ...camposVisibles.map(
-        ([c, v]) => `<tr><td class="lbl">${escHtml(CAMPOS_LABELS[c] ?? c)}</td><td class="val">${escHtml(YN_LABELS[v] ?? v)}</td></tr>`
+        ([c, v]) => `<tr><td class="lbl">${escHtml((sec.labels && sec.labels[c]) ? sec.labels[c] : c)}</td><td class="val">${escHtml(YN_LABELS[v] ?? v)}</td></tr>`
       ),
     ]
   }).join('')
@@ -135,6 +148,7 @@ function downloadDeclaracionPdf(dec) {
 
 export default function AdminPage({ onNavigate }) {
   const { user, logout } = useAuth()
+  const { t } = useLanguage()
   const [activeTab, setActiveTab] = useState('declaraciones')
   const [declaraciones, setDeclaraciones] = useState([])
   const [total, setTotal] = useState(0)
@@ -162,6 +176,8 @@ export default function AdminPage({ onNavigate }) {
   const [assignExistingUser, setAssignExistingUser] = useState(null)
   const [assignSaving, setAssignSaving] = useState(false)
 
+  const [preguntasSecciones, setPreguntasSecciones] = useState([])
+
   // PDF de la renta
   const [uploadingPdfId, setUploadingPdfId] = useState(null)
   const pdfInputRefs = useRef({})
@@ -172,6 +188,10 @@ export default function AdminPage({ onNavigate }) {
   }, [])
 
   const refresh = useCallback(() => setRefreshKey(k => k + 1), [])
+
+  useEffect(() => {
+    getPreguntas().then(({ data }) => setPreguntasSecciones(data?.secciones ?? []))
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -231,25 +251,19 @@ export default function AdminPage({ onNavigate }) {
   }
 
   const openEditModal = (dec) => {
+    const dynamicFields = {}
+    for (const sec of preguntasSecciones) {
+      for (const p of sec.preguntas ?? []) {
+        dynamicFields[p.id] = dec[p.id] ?? ''
+      }
+    }
     setEditForm({
       nombre: dec.nombre ?? '',
       apellidos: dec.apellidos ?? '',
       dniNie: dec.dniNie ?? '',
       email: dec.email ?? '',
       telefono: dec.telefono ?? '',
-      viviendaAlquiler: dec.viviendaAlquiler ?? '',
-      alquilerMenos35: dec.alquilerMenos35 ?? '',
-      viviendaPropiedad: dec.viviendaPropiedad ?? '',
-      propiedadAntes2013: dec.propiedadAntes2013 ?? '',
-      pisosAlquiladosTerceros: dec.pisosAlquiladosTerceros ?? '',
-      segundaResidencia: dec.segundaResidencia ?? '',
-      familiaNumerosa: dec.familiaNumerosa ?? '',
-      ayudasGobierno: dec.ayudasGobierno ?? '',
-      mayores65ACargo: dec.mayores65ACargo ?? '',
-      mayoresConviven: dec.mayoresConviven ?? '',
-      hijosMenores26: dec.hijosMenores26 ?? '',
-      ingresosJuego: dec.ingresosJuego ?? '',
-      ingresosInversiones: dec.ingresosInversiones ?? '',
+      ...dynamicFields,
     })
     setEditModal(dec)
   }
@@ -495,19 +509,40 @@ export default function AdminPage({ onNavigate }) {
                       <span className="admin-updated">Actualizado: {formatFecha(dec.actualizadoEn)}</span>
                     </div>
 
-                    {/* Data sections 1–4 */}
-                    {SECCIONES_DATOS.map(sec => {
-                      const camposVisibles = sec.campos.filter(c => dec[c] !== undefined && dec[c] !== null)
-                      if (!camposVisibles.length) return null
+                    {/* Data section 1: Identification (static) */}
+                    {['nombre', 'apellidos', 'dniNie', 'email', 'telefono'].some(c => dec[c] !== undefined && dec[c] !== null) && (
+                      <div>
+                        <div className="section-title">{t('section1')}</div>
+                        <table className="respuestas-table">
+                          <tbody>
+                            {['nombre', 'apellidos', 'dniNie', 'email', 'telefono'].map(campo => {
+                              const val = dec[campo]
+                              if (val === undefined || val === null) return null
+                              return (
+                                <tr key={campo}>
+                                  <td className="campo-label">{ID_CAMPOS_LABELS[campo] ?? campo}</td>
+                                  <td className="campo-valor">{val}</td>
+                                </tr>
+                              )
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {/* Dynamic question sections from DB */}
+                    {preguntasSecciones.map(sec => {
+                      const preguntasConValor = (sec.preguntas ?? []).filter(p => dec[p.id] !== undefined && dec[p.id] !== null)
+                      if (!preguntasConValor.length) return null
                       return (
-                        <div key={sec.titulo}>
+                        <div key={sec.id}>
                           <div className="section-title">{sec.titulo}</div>
                           <table className="respuestas-table">
                             <tbody>
-                              {camposVisibles.map(campo => (
-                                <tr key={campo}>
-                                  <td className="campo-label">{CAMPOS_LABELS[campo] ?? campo}</td>
-                                  <td className="campo-valor">{YN_LABELS[dec[campo]] ?? dec[campo]}</td>
+                              {preguntasConValor.map(pregunta => (
+                                <tr key={pregunta.id}>
+                                  <td className="campo-label">{pregunta.texto}</td>
+                                  <td className="campo-valor">{YN_LABELS[dec[pregunta.id]] ?? dec[pregunta.id]}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -567,7 +602,7 @@ export default function AdminPage({ onNavigate }) {
                       <button
                         type="button"
                         className="btn btn-secondary"
-                        onClick={() => downloadDeclaracionPdf(dec)}
+                        onClick={() => downloadDeclaracionPdf(dec, preguntasSecciones)}
                         title="Abrir vista imprimible / Descargar PDF"
                       >
                         📄 Descargar PDF
@@ -695,40 +730,26 @@ export default function AdminPage({ onNavigate }) {
                 </div>
               ))}
             </div>
-            {[
-              { name: 'viviendaAlquiler', label: '¿Vive de alquiler?' },
-              { name: 'alquilerMenos35', label: '¿Alquiler inferior al 35% de ingresos?' },
-              { name: 'viviendaPropiedad', label: '¿Tiene vivienda en propiedad?' },
-              { name: 'propiedadAntes2013', label: '¿Adquirida antes de 2013?' },
-              { name: 'pisosAlquiladosTerceros', label: '¿Tiene pisos alquilados a terceros?' },
-              { name: 'segundaResidencia', label: '¿Tiene segunda residencia?' },
-              { name: 'familiaNumerosa', label: '¿Familia numerosa?' },
-              { name: 'ayudasGobierno', label: '¿Ha recibido ayudas del gobierno?' },
-              { name: 'mayores65ACargo', label: '¿Tiene mayores de 65 años a cargo?' },
-              { name: 'mayoresConviven', label: '¿Conviven con usted?' },
-              { name: 'hijosMenores26', label: '¿Tiene hijos menores de 26 años?' },
-              { name: 'ingresosJuego', label: '¿Ha obtenido ingresos por juego?' },
-              { name: 'ingresosInversiones', label: '¿Ha obtenido ingresos por inversiones?' },
-            ].map(({ name, label }) => (
-              <div className="question-row" key={name}>
-                <span className="question-text" style={{ flex: 1 }}>{label}</span>
+            {preguntasSecciones.flatMap(sec => sec.preguntas ?? []).map(pregunta => (
+              <div className="question-row" key={pregunta.id}>
+                <span className="question-text" style={{ flex: 1 }}>{pregunta.texto}</span>
                 <div className="radio-group">
                   <label className="radio-label">
                     <input
                       type="radio"
-                      name={`edit-${name}`}
+                      name={`edit-${pregunta.id}`}
                       value="si"
-                      checked={editForm[name] === 'si'}
-                      onChange={() => setEditForm(prev => ({ ...prev, [name]: 'si' }))}
+                      checked={editForm[pregunta.id] === 'si'}
+                      onChange={() => setEditForm(prev => ({ ...prev, [pregunta.id]: 'si' }))}
                     /> Sí
                   </label>
                   <label className="radio-label">
                     <input
                       type="radio"
-                      name={`edit-${name}`}
+                      name={`edit-${pregunta.id}`}
                       value="no"
-                      checked={editForm[name] === 'no'}
-                      onChange={() => setEditForm(prev => ({ ...prev, [name]: 'no' }))}
+                      checked={editForm[pregunta.id] === 'no'}
+                      onChange={() => setEditForm(prev => ({ ...prev, [pregunta.id]: 'no' }))}
                     /> No
                   </label>
                 </div>

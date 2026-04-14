@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getDeclaracionByToken } from './apiClient.js'
+import { getDeclaracionByToken, getPreguntas } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
 import { generateDeclaracionPDF, downloadRentaPdf } from './pdfUtils.js'
 import Footer from './Footer.jsx'
@@ -47,6 +47,11 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion, initi
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState(null)
   const [history, setHistory] = useState(loadHistory)
+  const [secciones, setSecciones] = useState([])
+
+  useEffect(() => {
+    getPreguntas().then(({ data }) => setSecciones(data?.secciones ?? []))
+  }, [])
 
   useEffect(() => {
     if (!initialToken) return
@@ -207,7 +212,7 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion, initi
                   <button
                     type="button"
                     className="btn btn-secondary btn-sm"
-                    onClick={() => generateDeclaracionPDF(result)}
+                    onClick={() => generateDeclaracionPDF(result, secciones, lang)}
                   >
                     {t('btnDownloadPDF')}
                   </button>
