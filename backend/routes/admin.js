@@ -34,33 +34,6 @@ module.exports = function adminRoutes(svc) {
     send(res, result)
   })
 
-  // ── Secciones ────────────────────────────────────────────────────────────
-
-  router.get('/secciones', async (req, res) => {
-    const { activa, page, limit } = req.query
-    const result = await svc.listSeccionesAdmin({
-      activa: activa !== undefined ? activa === 'true' : undefined,
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 10,
-    })
-    send(res, result)
-  })
-
-  router.post('/secciones', async (req, res) => {
-    const result = await svc.createSeccionAdmin(req.body ?? {})
-    send(res, result)
-  })
-
-  router.put('/secciones/:id', async (req, res) => {
-    const result = await svc.updateSeccionAdmin(req.params.id, req.body ?? {})
-    send(res, result)
-  })
-
-  router.delete('/secciones/:id', async (req, res) => {
-    const result = await svc.deleteSeccionAdmin(req.params.id)
-    send(res, result)
-  })
-
   // ── Usuarios ─────────────────────────────────────────────────────────────
 
   router.get('/users', async (req, res) => {
@@ -104,49 +77,6 @@ module.exports = function adminRoutes(svc) {
   router.post('/users/:dniNie/email', async (req, res) => {
     const { email, mensaje } = req.body ?? {}
     const result = await svc.sendEmailToUser({ dniNie: req.params.dniNie, email, mensaje })
-    send(res, result)
-  })
-
-  router.put('/users/:dniNie/secciones', async (req, res) => {
-    const { seccionIds = [] } = req.body ?? {}
-    const result = await svc.setUserSecciones(req.params.dniNie, seccionIds)
-    send(res, result)
-  })
-
-  // ── Idiomas ──────────────────────────────────────────────────────────────
-
-  router.get('/idiomas', async (req, res) => {
-    const { activo, page, limit } = req.query
-    const result = await svc.listIdiomasAdmin({
-      activo,
-      page: page ? parseInt(page, 10) : 1,
-      limit: limit ? parseInt(limit, 10) : 10,
-    })
-    send(res, result)
-  })
-
-  router.post('/idiomas', async (req, res) => {
-    const result = await svc.createIdiomaAdmin(req.body ?? {})
-    send(res, result)
-  })
-
-  router.put('/idiomas/:id', async (req, res) => {
-    const result = await svc.updateIdiomaAdmin(req.params.id, req.body ?? {})
-    send(res, result)
-  })
-
-  router.delete('/idiomas/:id', async (req, res) => {
-    const result = await svc.deleteIdiomaAdmin(req.params.id)
-    send(res, result)
-  })
-
-  router.get('/idiomas/:id/content', async (req, res) => {
-    const result = await svc.getIdiomaContent(req.params.id)
-    send(res, result)
-  })
-
-  router.put('/idiomas/:id/content', async (req, res) => {
-    const result = await svc.updateIdiomaContent(req.params.id, req.body ?? {})
     send(res, result)
   })
 

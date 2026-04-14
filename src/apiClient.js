@@ -51,16 +51,6 @@ export async function getPreguntas() {
   return request('GET', '/irpf/preguntas')
 }
 
-// ── Public idiomas & traducciones ──────────────────────────────────────────
-
-export async function getIdiomas() {
-  return request('GET', '/irpf/idiomas')
-}
-
-export async function getTraducciones() {
-  return request('GET', '/irpf/traducciones')
-}
-
 // ── Declaraciones ──────────────────────────────────────────────────────────
 
 export async function listDeclaraciones(options) {
@@ -134,13 +124,6 @@ export async function deletePreguntaFormulario(options) {
   return request('DELETE', `/admin/preguntas-formulario/${encodeURIComponent(id)}`)
 }
 
-// ── Admin: Secciones ───────────────────────────────────────────────────────
-
-export async function listSeccionesAdmin(options) {
-  const { activa, page, limit } = options?.query ?? {}
-  return request('GET', '/admin/secciones', { query: { activa, page, limit } })
-}
-
 // ── Admin: Usuarios ────────────────────────────────────────────────────────
 
 export async function listUsersAdmin(options) {
@@ -177,48 +160,6 @@ export async function sendEmailToUser({ dniNie, email, mensaje }) {
   return request('POST', `/admin/users/${encodeURIComponent(dniNie)}/email`, {
     body: { email, mensaje },
   })
-}
-
-export async function setUserSecciones(options) {
-  const { dniNie } = options?.path ?? {}
-  const { seccionIds } = options?.body ?? {}
-  return request('PUT', `/admin/users/${encodeURIComponent(dniNie)}/secciones`, {
-    body: { seccionIds },
-  })
-}
-
-// ── Admin: Idiomas ─────────────────────────────────────────────────────────
-
-export async function listIdiomasAdmin(options) {
-  const { activo, page, limit } = options?.query ?? {}
-  return request('GET', '/admin/idiomas', { query: { activo, page, limit } })
-}
-
-export async function createIdiomaAdmin(options) {
-  const body = options?.body ?? {}
-  return request('POST', '/admin/idiomas', { body })
-}
-
-export async function updateIdiomaAdmin(options) {
-  const id = options?.path?.id
-  const body = options?.body ?? {}
-  return request('PUT', `/admin/idiomas/${encodeURIComponent(id)}`, { body })
-}
-
-export async function deleteIdiomaAdmin(options) {
-  const id = options?.path?.id
-  return request('DELETE', `/admin/idiomas/${encodeURIComponent(id)}`)
-}
-
-export async function getIdiomaContent(options) {
-  const id = options?.path?.id
-  return request('GET', `/admin/idiomas/${encodeURIComponent(id)}/content`)
-}
-
-export async function updateIdiomaContent(options) {
-  const id = options?.path?.id
-  const body = options?.body ?? {}
-  return request('PUT', `/admin/idiomas/${encodeURIComponent(id)}/content`, { body })
 }
 
 // ── PDF upload (stored as part of declaración) ─────────────────────────────
