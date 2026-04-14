@@ -497,28 +497,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
         {!submitted && !loadingPreguntas && !errorPreguntas && totalSteps > 0 && (
           <div className="quiz-progress-header">
             <div className="quiz-progress-top">
-              <div>
-                {currentStepInfo?.type === 'id' && (
-                  <span key="badge-id" className="quiz-section-badge">👤 {t('stepId')}</span>
-                )}
-                {currentStepInfo?.type === 'question' && (
-                  <span key={`badge-${currentStepInfo.seccion?.titulo}`} className="quiz-section-badge">
-                    {STEP_ICONS[secciones.indexOf(currentStepInfo.seccion) + 1] ?? '❓'}&nbsp;
-                    {currentStepInfo.seccion.titulos?.[lang] ?? currentStepInfo.seccion.titulo}
-                  </span>
-                )}
-                {currentStepInfo?.type === 'comments' && (
-                  <span key="badge-comments" className="quiz-section-badge">📝 {t('section6')}</span>
-                )}
-              </div>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                {streak > 1 && currentStepInfo?.type === 'question' && (
-                  <span key={`streak-${streak}`} className={`streak-badge${streak >= 5 ? ' hot' : ''}`}>
-                    <span className="streak-badge-icon">🔥</span> {streak}
-                  </span>
-                )}
-                <div className="quiz-counter">{safeStep + 1} <span>/ {totalSteps}</span></div>
-              </div>
+              <div className="quiz-counter">{safeStep + 1} <span>/ {totalSteps}</span></div>
             </div>
             <div className="quiz-linear-bar-wrap">
               <div
@@ -635,27 +614,9 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
 
                   {/* ── Step: Single question (quiz style) ── */}
                   {currentStepInfo?.type === 'question' && (() => {
-                    const { seccion, pregunta } = currentStepInfo
-                    const icon = STEP_ICONS[secciones.indexOf(seccion) + 1] ?? '❓'
-                    const questionSteps = visibleSteps.filter(s => s.type === 'question')
-                    const questionIdx = questionSteps.findIndex(s => s.key === currentStepInfo.key)
+                    const { pregunta } = currentStepInfo
                     return (
                       <div className="quiz-single-question">
-                        {/* XP floating popups */}
-                        {xpPopups.map(p => (
-                          <div key={p.id} className="xp-popup">+10 ⭐</div>
-                        ))}
-                        <div className="wizard-step-header">
-                          <div className="wizard-step-icon">{icon}</div>
-                          <div>
-                            <div className="wizard-step-title">
-                              {seccion.titulos?.[lang] ?? seccion.titulo}
-                            </div>
-                            <div className="wizard-step-subtitle">
-                              🎯 {questionIdx + 1} / {questionSteps.length}
-                            </div>
-                          </div>
-                        </div>
                         <YesNoField
                           name={pregunta.id}
                           value={form[pregunta.id] ?? ''}
@@ -663,7 +624,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                           label={pregunta.textos?.[lang] ?? pregunta.texto}
                           indent={false}
                           t={t}
-                          questionNumber={questionIdx + 1}
                           onAnswer={handleAnswer}
                         />
                       </div>
