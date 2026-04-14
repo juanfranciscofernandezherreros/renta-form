@@ -41,9 +41,6 @@ const LANG_FLAGS = {
   de: '🇩🇪',
   pt: '🇵🇹',
   it: '🇮🇹',
-  ca: '🏴󠁥󠁳󠁣󠁴󠁿',
-  eu: '🏴',
-  gl: '🏴',
 }
 
 const YesNoField = ({ label, name, value, onChange, indent, t, questionNumber, onAnswer }) => {
