@@ -8,6 +8,7 @@ body {
   min-height: 100vh;
   color: #222;
   padding: 24px 16px 60px;
+  position: relative;
 }
 
 /* ── Stars background effect */
@@ -376,21 +377,15 @@ footer.footer-main {
   backdrop-filter: blur(12px);
   border: 1.5px solid rgba(255,255,255,.2);
   border-radius: 16px;
-  padding: 28px 32px 22px;
-  display: grid;
-  grid-template-columns: 1fr auto;
-  grid-template-rows: auto auto;
-  gap: 14px 24px;
-  align-items: start;
+  padding: 24px 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
 }
 
-.footer-brand {
-  grid-column: 1;
-  grid-row: 1;
-}
-
-.footer-logo {
-  display: inline-block;
+.footer-brand-name {
   font-size: 1.05rem;
   font-weight: 900;
   color: #fff;
@@ -398,75 +393,27 @@ footer.footer-main {
   border: 1.5px solid rgba(255,255,255,.3);
   border-radius: 10px;
   padding: 5px 14px;
-  margin-bottom: 8px;
   letter-spacing: .5px;
+  display: inline-block;
 }
 
-.footer-tagline {
+.footer-disclaimer {
   font-size: .78rem;
   color: rgba(255,255,255,.62);
   line-height: 1.5;
-  max-width: 480px;
+  max-width: 540px;
 }
 
-.footer-links {
-  grid-column: 2;
-  grid-row: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-end;
-}
-
-.footer-link {
-  font-size: .82rem;
-  font-weight: 700;
-  color: rgba(255,255,255,.8);
-  text-decoration: none;
-  background: rgba(255,255,255,.1);
-  border: 1.5px solid rgba(255,255,255,.18);
-  border-radius: 8px;
-  padding: 5px 12px;
-  transition: background .15s, color .15s;
-  white-space: nowrap;
-}
-.footer-link:hover {
-  background: rgba(255,255,255,.2);
-  color: #fff;
-}
-
-.footer-copy {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  font-size: .74rem;
-  color: rgba(255,255,255,.42);
-  border-top: 1px solid rgba(255,255,255,.12);
-  padding-top: 12px;
-  text-align: center;
-}
-
-@media (max-width: 600px) {
-  .footer-inner {
-    grid-template-columns: 1fr;
-    padding: 20px 16px 16px;
-  }
-  .footer-links {
-    grid-column: 1;
-    grid-row: 2;
-    align-items: flex-start;
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-  .footer-copy {
-    grid-row: 3;
-  }
-}
-
-/* ── Language flags */
-.lang-flags {
+/* ── Language flags top bar */
+.lang-flags-top {
+  position: absolute;
+  top: 0;
+  right: 0;
+  z-index: 9999;
   display: flex;
   gap: 4px;
   align-items: center;
+  padding: 8px 16px;
 }
 
 .lang-flag-btn {
@@ -1232,9 +1179,7 @@ footer.footer-main {
   .lang-select {
     width: 100%;
   }
-  .lang-flags {
-    width: 100%;
-    justify-content: flex-start;
+  .lang-flags-top {
     flex-wrap: wrap;
   }
   .header-nav .btn-sm {
