@@ -38,8 +38,8 @@ async function answerAllButtons(page, value) {
     const cssClass = value === 'si' ? 'yes' : 'no'
     const alreadySelected = card.locator(`.yesno-btn.selected.${cssClass}`)
     if ((await alreadySelected.count()) === 0) {
-      const icon = value === 'si' ? '✓' : '✗'
-      await card.locator(`.yesno-btn:has(.yesno-icon:text("${icon}"))`).click()
+      const btnIndex = value === 'si' ? 0 : 1
+      await card.locator('.yesno-btn').nth(btnIndex).click()
       await page.waitForTimeout(200)
     }
   }
