@@ -1,5 +1,5 @@
 -- =============================================================
---  Renta Form – Esquema con Soporte Multi-idioma (i18n)
+--  Renta Form – Esquema i18n (ES, FR, CA, EN)
 -- =============================================================
 
 BEGIN;
@@ -36,16 +36,15 @@ CREATE TABLE IF NOT EXISTS usuarios (
     creado_en     TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
--- 4. Tabla: Preguntas (Ahora con JSONB para traducciones)
+-- 4. Tabla: Preguntas (Traducciones en JSONB)
 CREATE TABLE IF NOT EXISTS preguntas (
     id      UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     campo   VARCHAR(100) NOT NULL UNIQUE,
-    -- 'texto' guarda un objeto: {"es": "...", "en": "...", "ca": "..."}
-    texto   JSONB        NOT NULL DEFAULT '{}',
+    texto   JSONB        NOT NULL DEFAULT '{}', -- Estructura: {"es": "", "fr": "", "ca": "", "en": ""}
     orden   INTEGER      NOT NULL DEFAULT 0
 );
 
--- 5. Tabla: Declaraciones (Resultados)
+-- 5. Tabla: Declaraciones
 CREATE TABLE IF NOT EXISTS declaraciones (
     id                        UUID              PRIMARY KEY DEFAULT gen_random_uuid(),
     creado_en                 TIMESTAMPTZ       NOT NULL DEFAULT NOW(),
@@ -56,8 +55,8 @@ CREATE TABLE IF NOT EXISTS declaraciones (
     dni_nie                   VARCHAR(9)        NOT NULL UNIQUE,
     email                     VARCHAR(254)      NOT NULL,
     telefono                  VARCHAR(20)       NOT NULL,
-
-    -- Campos del formulario
+    
+    -- Respuestas (mapeadas con preguntas.campo)
     vivienda_alquiler         respuesta_yn      NOT NULL,
     alquiler_menos_35         respuesta_yn,
     vivienda_propiedad        respuesta_yn      NOT NULL,
@@ -79,22 +78,26 @@ CREATE TABLE IF NOT EXISTS declaraciones (
 CREATE OR REPLACE TRIGGER trg_declaraciones_actualizado_en
     BEFORE UPDATE ON declaraciones FOR EACH ROW EXECUTE FUNCTION fn_set_actualizado_en();
 
--- 7. Datos de Inicio (Con traducciones)
+-- 7. Datos de Inicio (Admin y Preguntas traducidas)
 INSERT INTO usuarios (dni_nie, nombre, email, role, password_hash)
 VALUES ('ADMIN', 'Admin', 'admin@renta-form.local', 'admin', '$2b$12$a3QpSIVIiYpVQuwcWtYIbO.5/VbAKdDNClFrl0WTe4GVN7sjA0ruW')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO preguntas (campo, texto, orden) VALUES
-    ('vivienda_alquiler',
-     '{"es": "¿Vive de alquiler?", "en": "Do you live in a rental?", "ca": "Viu de lloguer?"}', 1),
-    ('vivienda_propiedad',
-     '{"es": "¿Es propietario?", "en": "Do you own your home?", "ca": "És propietari?"}', 2),
-    ('familia_numerosa',
-     '{"es": "¿Familia numerosa?", "en": "Large family?", "ca": "Família nombrosa?"}', 3),
-    ('hijos_menores_26',
-     '{"es": "¿Hijos < 26 años?", "en": "Children under 26?", "ca": "Fills < 26 anys?"}', 4),
-    ('ingresos_juego',
-     '{"es": "¿Ganancias de juego?", "en": "Gambling winnings?", "ca": "Guanys de joc?"}', 5)
+    ('vivienda_alquiler', 
+     '{"es": "¿Vive de alquiler?", "fr": "Vivez-vous en location?", "ca": "Viu de lloguer?", "en": "Do you live in a rental?"}', 1),
+    ('vivienda_propiedad', 
+     '{"es": "¿Es propietario?", "fr": "Êtes-vous propriétaire?", "ca": "És propietari?", "en": "Are you a homeowner?"}', 2),
+    ('familia_numerosa', 
+     '{"es": "¿Familia numerosa?", "fr": "Famille nombreuse?", "ca": "Família nombrosa?", "en": "Large family?"}', 3),
+    ('ayudas_gobierno', 
+     '{"es": "¿Ha recibido ayudas?", "fr": "Avez-vous reçu des aides?", "ca": "Ha rebut ajudes?", "en": "Have you received grants?"}', 4),
+    ('hijos_menores_26', 
+     '{"es": "¿Hijos &lt; 26 años?", "fr": "Enfants &lt; 26 ans?", "ca": "Fills &lt; 26 anys?", "en": "Children under 26?"}', 5),
+    ('ingresos_juego', 
+     '{"es": "¿Ganancias de juego?", "fr": "Gains de jeux?", "ca": "Guanys de joc?", "en": "Gambling winnings?"}', 6),
+    ('ingresos_inversiones', 
+     '{"es": "¿Rendimientos de capital?", "fr": "Revenus de capitaux?", "ca": "Rendiments de capital?", "en": "Investment income?"}', 7)
 ON CONFLICT DO NOTHING;
 
 COMMIT;
