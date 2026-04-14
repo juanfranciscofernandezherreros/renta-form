@@ -813,7 +813,7 @@ async function setUserSecciones(dniNie, seccionIds) {
 async function listPublicIdiomas() {
   try {
     const { rows } = await pool.query(
-      'SELECT id, code, label FROM idiomas WHERE activo = true ORDER BY creado_en ASC'
+      'SELECT code, label FROM idiomas WHERE activo = true ORDER BY creado_en ASC'
     )
     return { data: rows.map(r => ({ code: r.code, label: r.label })), error: null }
   } catch (err) {

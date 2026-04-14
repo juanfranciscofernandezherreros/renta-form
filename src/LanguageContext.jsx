@@ -27,7 +27,7 @@ export function LanguageProvider({ children }) {
           getTraducciones(),
         ])
         if (idiomasRes.data?.length) {
-          setIdiomas(idiomasRes.data.map(i => ({ ...i, activo: true })))
+          setIdiomas(idiomasRes.data)
         }
         if (traduccionesRes.data && Object.keys(traduccionesRes.data).length > 0) {
           const newTranslations = { ...defaultTranslations }
@@ -52,7 +52,7 @@ export function LanguageProvider({ children }) {
         getTraducciones(),
       ])
       if (idiomasRes.data?.length) {
-        setIdiomas(idiomasRes.data.map(i => ({ ...i, activo: true })))
+        setIdiomas(idiomasRes.data)
       }
       if (traduccionesRes.data && Object.keys(traduccionesRes.data).length > 0) {
         const newTranslations = { ...defaultTranslations }
@@ -73,7 +73,7 @@ export function LanguageProvider({ children }) {
     return translations[lang]?.[key] ?? translations['es']?.[key] ?? key
   }, [lang, translations])
 
-  const availableLanguages = idiomas.filter(i => i.activo).map(i => ({ code: i.code, label: i.label }))
+  const availableLanguages = idiomas.map(i => ({ code: i.code, label: i.label }))
 
   return (
     <LanguageContext.Provider value={{ lang, setLang, t, reloadTranslations, availableLanguages }}>
