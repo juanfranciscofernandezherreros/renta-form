@@ -14,6 +14,15 @@ async function fillIdentificacion(page) {
   await page.fill('input[name="telefono"]', '600123456')
 }
 
+async function fillIdentificacionWithDni(page, dni) {
+  await page.waitForSelector('input[name="nombre"]', { timeout: 20000 })
+  await page.fill('input[name="nombre"]', 'Test')
+  await page.fill('input[name="apellidos"]', 'Duplicado Prueba')
+  await page.fill('input[name="dniNie"]', dni)
+  await page.fill('input[name="email"]', 'test.duplicado@ejemplo.es')
+  await page.fill('input[name="telefono"]', '611222333')
+}
+
 async function clickContinuar(page) {
   // Wait for Continuar button to be visible
   const btn = page.locator('button:has-text("Continuar")').first()
@@ -100,6 +109,36 @@ Given('el usuario envia el formulario', async function () {
   await submitBtn.waitFor({ state: 'visible', timeout: 15000 })
   await submitBtn.click()
   await this.page.waitForSelector('.success-panel', { timeout: 20000 })
+})
+
+Given('el usuario rellena los datos de identificacion con DNI {string}', async function (dni) {
+  await fillIdentificacionWithDni(this.page, dni)
+})
+
+When('el usuario intenta enviar el formulario duplicado', async function () {
+  const submitBtn = this.page.locator('button:has-text("Enviar cuestionario")')
+  await submitBtn.waitFor({ state: 'visible', timeout: 15000 })
+  await submitBtn.click()
+  // Wait for either an error toast or an alert to appear after the API responds
+  await this.page.waitForSelector(
+    '.toast-error, [role="alert"], .Toastify__toast--error, .alert-danger',
+    { timeout: 10000 }
+  ).catch(() => {})
+  await this.page.waitForTimeout(500)
+})
+
+Then('se muestra un error de declaracion duplicada', async function () {
+  // The backend returns the message "Ya existe una declaración con este DNI/NIE" on 409
+  const bodyText = await this.page.evaluate(() => document.body.innerText)
+  const hasDuplicateError =
+    bodyText.includes('Ya existe') ||
+    bodyText.includes('409') ||
+    bodyText.includes('duplicad')
+  if (!hasDuplicateError) {
+    throw new Error(
+      `No se mostró el mensaje de error de declaración duplicada. Texto de la página: ${bodyText.slice(0, 300)}`
+    )
+  }
 })
 
 Then('se toma un screenshot {string}', async function (name) {
