@@ -2,8 +2,7 @@
 
 // ---------------------------------------------------------------------------
 //  Static translation strings – CommonJS mirror of src/i18n.js.
-//  Used to seed the `traducciones` table on first DB migration and to
-//  populate the in-memory mock store.
+//  Used to seed the `traducciones` table on first DB migration.
 // ---------------------------------------------------------------------------
 
 const translations = {

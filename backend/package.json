@@ -7,7 +7,6 @@
   "scripts": {
     "start": "PROFILE=db node server.js",
     "dev": "node --watch server.js",
-    "start:mock": "PROFILE=mock node server.js",
     "start:db": "PROFILE=db node server.js"
   },
   "engines": {
