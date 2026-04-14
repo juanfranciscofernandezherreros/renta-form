@@ -1,13 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
   listPreguntasFormulario,
-  listSeccionesFormulario,
   createPreguntaFormulario,
   updatePreguntaFormulario,
   deletePreguntaFormulario,
 } from './apiClient.js'
 
-const EMPTY_FORM = { campo: '', texto: '', seccionId: '', orden: 0, indentada: false, condicionCampo: '', condicionValor: '' }
+const EMPTY_FORM = { texto: '', orden: 0, indentada: false, condicionCampo: '', condicionValor: '' }
 
 function formatFecha(iso) {
   if (!iso) return '—'
@@ -16,7 +15,6 @@ function formatFecha(iso) {
 
 export default function PreguntasFormularioAdminTab({ showToast }) {
   const [preguntas, setPreguntas] = useState([])
-  const [secciones, setSecciones] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [modal, setModal] = useState(null) // null | 'create' | 'edit'
@@ -31,13 +29,11 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    Promise.all([listPreguntasFormulario(), listSeccionesFormulario()])
-      .then(([{ data: pData, error: pErr }, { data: sData, error: sErr }]) => {
+    listPreguntasFormulario()
+      .then(({ data, error: pErr }) => {
         if (cancelled) return
         if (pErr) throw new Error(pErr.message ?? 'Error desconocido')
-        if (sErr) throw new Error(sErr.message ?? 'Error desconocido')
-        setPreguntas(pData ?? [])
-        setSecciones(sData ?? [])
+        setPreguntas(data ?? [])
         setError(null)
       })
       .catch(err => { if (!cancelled) setError(err.message) })
@@ -46,17 +42,14 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
   }, [refreshKey])
 
   const openCreate = () => {
-    const defaultSeccion = secciones[0]?.id ?? ''
-    setForm({ ...EMPTY_FORM, seccionId: defaultSeccion })
+    setForm(EMPTY_FORM)
     setEditando(null)
     setModal('create')
   }
 
   const openEdit = (pregunta) => {
     setForm({
-      campo: pregunta.campo,
       texto: pregunta.texto,
-      seccionId: pregunta.seccionId ?? '',
       orden: pregunta.orden,
       indentada: pregunta.indentada,
       condicionCampo: pregunta.condicionCampo ?? '',
@@ -78,21 +71,11 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
       showToast('El texto de la pregunta no puede estar vacío', 'error')
       return
     }
-    if (modal === 'create' && !form.campo.trim()) {
-      showToast('El identificador de campo es obligatorio', 'error')
-      return
-    }
-    if (modal === 'create' && !form.seccionId) {
-      showToast('Debes seleccionar una sección', 'error')
-      return
-    }
     setSaving(true)
     try {
       if (modal === 'create') {
         const body = {
-          campo: form.campo.trim(),
           texto: form.texto.trim(),
-          seccionId: form.seccionId,
           orden: Number(form.orden),
           indentada: form.indentada,
           condicionCampo: form.condicionCampo.trim() || undefined,
@@ -103,7 +86,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
         showToast('Pregunta creada correctamente')
       } else {
         const { error: apiErr } = await updatePreguntaFormulario({
-          path: { campo: editando.campo },
+          path: { id: editando.id },
           body: {
             texto: form.texto.trim(),
             orden: Number(form.orden),
@@ -120,10 +103,10 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
     }
   }
 
-  const handleDelete = async (campo) => {
+  const handleDelete = async (id) => {
     setSaving(true)
     try {
-      const { error: apiErr } = await deletePreguntaFormulario({ path: { campo } })
+      const { error: apiErr } = await deletePreguntaFormulario({ path: { id } })
       if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
       showToast('Pregunta eliminada correctamente')
       setConfirmDelete(null)
@@ -132,14 +115,6 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
       setSaving(false)
     }
   }
-
-  // Group by section for display
-  const porSeccion = preguntas.reduce((acc, p) => {
-    const key = p.seccionTitulo ?? p.seccionId ?? 'Sin sección'
-    if (!acc[key]) acc[key] = []
-    acc[key].push(p)
-    return acc
-  }, {})
 
   return (
     <div>
@@ -159,74 +134,63 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
         <div className="info-box">No hay preguntas del formulario. Crea la primera con el botón «Nueva pregunta».</div>
       )}
 
-      {!loading && !error && Object.entries(porSeccion).map(([seccionTitulo, items]) => (
-        <div key={seccionTitulo} style={{ marginBottom: 24 }}>
-          <h3 style={{ fontSize: '.9rem', textTransform: 'uppercase', letterSpacing: '.04em', color: '#555', marginBottom: 8, fontWeight: 600 }}>
-            📂 {seccionTitulo}
-          </h3>
-          <div style={{ overflowX: 'auto' }}>
-            <table className="preguntas-table">
-              <thead>
-                <tr>
-                  <th>Pregunta</th>
-                  <th>Campo</th>
-                  <th>Orden</th>
-                  <th>Indentada</th>
-                  <th>Condición</th>
-                  <th>Última modificación</th>
-                  <th style={{ textAlign: 'right' }}>Acciones</th>
+      {!loading && !error && preguntas.length > 0 && (
+        <div style={{ overflowX: 'auto' }}>
+          <table className="preguntas-table">
+            <thead>
+              <tr>
+                <th>Pregunta (Sí/No)</th>
+                <th>Orden</th>
+                <th>Indentada</th>
+                <th>Condición</th>
+                <th>Última modificación</th>
+                <th style={{ textAlign: 'right' }}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {preguntas.map(p => (
+                <tr key={p.id}>
+                  <td>
+                    <div className="pregunta-texto">{p.texto}</div>
+                  </td>
+                  <td>{p.orden}</td>
+                  <td>
+                    <span className={`estado-badge ${p.indentada ? 'badge-activa' : 'badge-inactiva'}`}>
+                      {p.indentada ? 'Sí' : 'No'}
+                    </span>
+                  </td>
+                  <td style={{ fontSize: '.8rem', color: '#666' }}>
+                    {p.condicionCampo
+                      ? <><code style={{ fontSize: '.78rem', background: '#f0f0f0', padding: '1px 4px', borderRadius: 3 }}>{p.condicionCampo}</code> = {p.condicionValor}</>
+                      : '—'}
+                  </td>
+                  <td style={{ whiteSpace: 'nowrap' }}>{formatFecha(p.actualizadaEn)}</td>
+                  <td>
+                    <div className="pregunta-actions">
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm btn-xs"
+                        onClick={() => openEdit(p)}
+                        title="Editar pregunta"
+                      >
+                        ✏️ Editar
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm btn-xs"
+                        onClick={() => setConfirmDelete(p)}
+                        title="Eliminar pregunta"
+                      >
+                        🗑️ Eliminar
+                      </button>
+                    </div>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {items.map(p => (
-                  <tr key={p.campo}>
-                    <td>
-                      <div className="pregunta-texto">{p.texto}</div>
-                    </td>
-                    <td>
-                      <code style={{ fontSize: '.78rem', background: '#f0f0f0', padding: '1px 5px', borderRadius: 3 }}>
-                        {p.campo}
-                      </code>
-                    </td>
-                    <td>{p.orden}</td>
-                    <td>
-                      <span className={`estado-badge ${p.indentada ? 'badge-activa' : 'badge-inactiva'}`}>
-                        {p.indentada ? 'Sí' : 'No'}
-                      </span>
-                    </td>
-                    <td style={{ fontSize: '.8rem', color: '#666' }}>
-                      {p.condicionCampo
-                        ? <><code style={{ fontSize: '.78rem', background: '#f0f0f0', padding: '1px 4px', borderRadius: 3 }}>{p.condicionCampo}</code> = {p.condicionValor}</>
-                        : '—'}
-                    </td>
-                    <td style={{ whiteSpace: 'nowrap' }}>{formatFecha(p.actualizadaEn)}</td>
-                    <td>
-                      <div className="pregunta-actions">
-                        <button
-                          type="button"
-                          className="btn btn-secondary btn-sm btn-xs"
-                          onClick={() => openEdit(p)}
-                          title="Editar pregunta"
-                        >
-                          ✏️ Editar
-                        </button>
-                        <button
-                          type="button"
-                          className="btn btn-danger btn-sm btn-xs"
-                          onClick={() => setConfirmDelete(p)}
-                          title="Eliminar pregunta"
-                        >
-                          🗑️ Eliminar
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
-      ))}
+      )}
 
       {/* Create / Edit modal */}
       {modal && (
@@ -237,39 +201,8 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
             </h2>
 
             <div className="form-grid" style={{ marginBottom: 16 }}>
-              {modal === 'create' && (
-                <>
-                  <div className="field">
-                    <label>Identificador de campo *</label>
-                    <input
-                      type="text"
-                      name="campo"
-                      value={form.campo}
-                      onChange={handleFormChange}
-                      placeholder="ej: tieneHipoteca"
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Sección *</label>
-                    <select name="seccionId" value={form.seccionId} onChange={handleFormChange}>
-                      <option value="">— Selecciona una sección —</option>
-                      {secciones.map(s => (
-                        <option key={s.id} value={s.id}>{s.numero ? `${s.numero}. ` : ''}{s.titulo}</option>
-                      ))}
-                    </select>
-                  </div>
-                </>
-              )}
-              {modal === 'edit' && (
-                <div className="field" style={{ color: '#666', fontSize: '.85rem' }}>
-                  <label>Campo</label>
-                  <code style={{ display: 'block', background: '#f0f0f0', padding: '6px 10px', borderRadius: 4, fontSize: '.85rem' }}>
-                    {editando.campo}
-                  </code>
-                </div>
-              )}
               <div className="field full">
-                <label>Texto de la pregunta *</label>
+                <label>Texto de la pregunta (Sí/No) *</label>
                 <textarea
                   name="texto"
                   value={form.texto}
@@ -354,7 +287,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
                 type="button"
                 className="btn btn-danger"
                 disabled={saving}
-                onClick={() => handleDelete(confirmDelete.campo)}
+                onClick={() => handleDelete(confirmDelete.id)}
               >
                 {saving ? 'Eliminando…' : '🗑️ Eliminar'}
               </button>
