@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import './App.css'
 import { getPreguntas, createDeclaracion, updateDeclaracion, deleteDocumento, getDocumentoUrl } from './apiClient.js'
 import { useAuth } from './AuthContext.jsx'
@@ -178,7 +178,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   // Wizard step helpers
   // Steps: 0 = ID fields, 1..N = API sections, N+1 = Docs + Comments (last)
   // Build a flat list of visible steps: id → individual questions → docs
-  const getVisibleSteps = () => {
+  const visibleSteps = useMemo(() => {
     if (loadingPreguntas || secciones.length === 0) return []
     const steps = [{ type: 'id', key: 'id' }]
     for (const seccion of secciones) {
@@ -192,16 +192,13 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
     }
     steps.push({ type: 'docs', key: 'docs' })
     return steps
-  }
-  const visibleSteps = getVisibleSteps()
+  }, [loadingPreguntas, secciones, form])
   const totalSteps = visibleSteps.length
   const safeStep = Math.min(currentStep, Math.max(0, visibleSteps.length - 1))
   const currentStepInfo = visibleSteps[safeStep]
 
   const handleNext = () => {
-    const steps = getVisibleSteps()
-    const safe = Math.min(currentStep, Math.max(0, steps.length - 1))
-    const info = steps[safe]
+    const info = currentStepInfo
     if (info?.type === 'id') {
       if (!form.nombre.trim() || !form.apellidos.trim() || !form.dniNie.trim() || !form.telefono.trim()) {
         showToast(t('errValidationRequired'), 'error')
