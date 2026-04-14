@@ -400,6 +400,21 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
 
   return (
     <>
+      <div className="lang-flags-top" role="group" aria-label={t('langLabel')}>
+        {availableLanguages.map(l => (
+          <button
+            key={l.code}
+            type="button"
+            className={`lang-flag-btn${lang === l.code ? ' active' : ''}`}
+            onClick={() => setLang(l.code)}
+            aria-label={l.label}
+            title={l.label}
+          >
+            <span className="lang-flag-emoji">{LANG_FLAGS[l.code] ?? '🌐'}</span>
+            <span className="lang-flag-code">{l.code.toUpperCase()}</span>
+          </button>
+        ))}
+      </div>
       <header ref={topRef}>
         <div className="logo">NH Gestión Integral</div>
         <div className="header-text">
@@ -407,21 +422,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
           <p>{t('headerSubtitle')}</p>
         </div>
         <nav className="header-nav">
-          <div className="lang-flags" role="group" aria-label={t('langLabel')}>
-            {availableLanguages.map(l => (
-              <button
-                key={l.code}
-                type="button"
-                className={`lang-flag-btn${lang === l.code ? ' active' : ''}`}
-                onClick={() => setLang(l.code)}
-                aria-label={l.label}
-                title={l.label}
-              >
-                <span className="lang-flag-emoji">{LANG_FLAGS[l.code] ?? '🌐'}</span>
-                <span className="lang-flag-code">{l.code.toUpperCase()}</span>
-              </button>
-            ))}
-          </div>
           {user ? (
             <>
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/perfil')}>
