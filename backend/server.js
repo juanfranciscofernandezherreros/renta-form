@@ -1,15 +1,7 @@
 'use strict'
 
 // ---------------------------------------------------------------------------
-//  Renta Form – Backend API server
-//
-//  Profiles (PROFILE env var):
-//    mock  – in-memory data (default, no DB required)
-//    db    – PostgreSQL via the pg driver
-//
-//  Usage:
-//    PROFILE=mock node server.js      # or: npm run start:mock
-//    PROFILE=db   node server.js      # or: npm run start:db
+//  Renta Form – Backend API server (PostgreSQL)
 // ---------------------------------------------------------------------------
 
 const fs = require('fs')
@@ -18,12 +10,8 @@ const express = require('express')
 const cors = require('cors')
 const config = require('./config')
 
-console.log(`[server] Starting with profile: ${config.PROFILE}`)
-
 // ── Service layer ──────────────────────────────────────────────────────────
-const svc = config.isMock
-  ? require('./services/mockService')
-  : require('./services/dbService')
+const svc = require('./services/dbService')
 
 // ── Express app ────────────────────────────────────────────────────────────
 const app = express()
@@ -41,7 +29,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
 // ── Health check ──────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', profile: config.PROFILE, time: new Date().toISOString() })
+  res.json({ status: 'ok', time: new Date().toISOString() })
 })
 
 // ── Routes ────────────────────────────────────────────────────────────────
@@ -81,18 +69,14 @@ app.use((err, _req, res, _next) => {
 // ── Start ─────────────────────────────────────────────────────────────────
 function startListening() {
   app.listen(config.PORT, () => {
-    console.log(`[server] Listening on http://localhost:${config.PORT}  (profile: ${config.PROFILE})`)
+    console.log(`[server] Listening on http://localhost:${config.PORT}`)
   })
 }
 
-if (config.isDb) {
-  const migrate = require('./db/migrate')
-  migrate()
-    .then(startListening)
-    .catch((err) => {
-      console.error('[migrate] Migration failed, aborting startup:', err)
-      process.exit(1)
-    })
-} else {
-  startListening()
-}
+const migrate = require('./db/migrate')
+migrate()
+  .then(startListening)
+  .catch((err) => {
+    console.error('[migrate] Migration failed, aborting startup:', err)
+    process.exit(1)
+  })
