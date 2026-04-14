@@ -15,7 +15,6 @@ import {
 import { downloadRentaPdf } from './pdfUtils.js'
 import PreguntasFormularioAdminTab from './PreguntasFormularioAdminTab.jsx'
 import UsuariosAdminTab from './UsuariosAdminTab.jsx'
-import IdiomasAdminTab from './IdiomasAdminTab.jsx'
 import Footer from './Footer.jsx'
 
 const ESTADOS = ['recibido', 'en_revision', 'documentacion_pendiente', 'completado', 'archivado']
@@ -375,13 +374,6 @@ export default function AdminPage({ onNavigate }) {
           >
             👥 Usuarios
           </button>
-          <button
-            type="button"
-            className={`admin-tab${activeTab === 'idiomas' ? ' active' : ''}`}
-            onClick={() => setActiveTab('idiomas')}
-          >
-            🌐 Idiomas
-          </button>
         </div>
 
         {activeTab === 'preguntas' && (
@@ -398,10 +390,6 @@ export default function AdminPage({ onNavigate }) {
 
         {activeTab === 'usuarios' && (
           <UsuariosAdminTab showToast={showToast} />
-        )}
-
-        {activeTab === 'idiomas' && (
-          <IdiomasAdminTab showToast={showToast} />
         )}
 
         {activeTab === 'declaraciones' && (

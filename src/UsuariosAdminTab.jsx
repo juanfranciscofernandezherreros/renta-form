@@ -5,14 +5,11 @@ import {
   reportUser,
   deleteUser,
   sendEmailToUser,
-  setUserSecciones,
-  listSeccionesAdmin,
   listDeclaraciones,
 } from './apiClient.js'
 import Pagination from './Pagination.jsx'
 
 // Re-use the same PDF logic as AdminPage
-const MAX_ITEMS_FOR_DROPDOWN = 1000
 const ESTADOS_LABELS = {
   recibido: 'Recibido',
   en_revision: 'En revisión',
@@ -152,12 +149,6 @@ export default function UsuariosAdminTab({ showToast }) {
   const [emailMsg, setEmailMsg] = useState('')
   const [emailSending, setEmailSending] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
-  const [seccionesModal, setSeccionesModal] = useState(null) // { user }
-
-  // Assign modals state
-  const [allSecciones, setAllSecciones] = useState([])
-  const [selectedSeccionIds, setSelectedSeccionIds] = useState([])
-  const [assigning, setAssigning] = useState(false)
 
   const refresh = useCallback(() => setRefreshKey(k => k + 1), [])
 
@@ -180,11 +171,6 @@ export default function UsuariosAdminTab({ showToast }) {
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [filtroBloqueado, filtroDenunciado, page, refreshKey])
-
-  // Load all sections once (for modal)
-  useEffect(() => {
-    listSeccionesAdmin({ query: { page: 1, limit: MAX_ITEMS_FOR_DROPDOWN } }).then(({ data }) => setAllSecciones(data?.data ?? []))
-  }, [])
 
   const handleBlock = async (user) => {
     const nuevoEstado = !user.bloqueado
@@ -229,29 +215,6 @@ export default function UsuariosAdminTab({ showToast }) {
     setEmailMsg('')
     if (apiErr) { showToast(`Error al enviar email: ${apiErr.message}`, 'error'); return }
     showToast(`📧 Email enviado a ${emailModal.email}`)
-  }
-
-  const openSeccionesModal = (user) => {
-    setSelectedSeccionIds([...(user.seccionesAsignadas ?? [])])
-    setSeccionesModal(user)
-  }
-
-  const handleSaveSecciones = async () => {
-    if (!seccionesModal) return
-    setAssigning(true)
-    const { error: apiErr } = await setUserSecciones({
-      path: { dniNie: seccionesModal.dniNie },
-      body: { seccionIds: selectedSeccionIds },
-    })
-    setAssigning(false)
-    if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
-    showToast('Secciones asignadas correctamente')
-    setSeccionesModal(null)
-    refresh()
-  }
-
-  const toggleId = (list, setList, id) => {
-    setList(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
 
   return (
@@ -299,7 +262,6 @@ export default function UsuariosAdminTab({ showToast }) {
                 <th>DNI / NIE</th>
                 <th>Email</th>
                 <th>Estado</th>
-                <th>Secciones</th>
                 <th>Registrado</th>
                 <th style={{ textAlign: 'right' }}>Acciones</th>
               </tr>
@@ -328,12 +290,6 @@ export default function UsuariosAdminTab({ showToast }) {
                       )}
                     </div>
                   </td>
-                  <td>
-                    {u.seccionesAsignadas.length === 0
-                      ? <span style={{ color: '#aaa', fontSize: '.8rem' }}>—</span>
-                      : <span className="admin-stat-badge" style={{ fontSize: '.75rem' }}>{u.seccionesAsignadas.length} asignada{u.seccionesAsignadas.length !== 1 ? 's' : ''}</span>
-                    }
-                  </td>
                   <td style={{ whiteSpace: 'nowrap', fontSize: '.8rem' }}>{formatFecha(u.creadoEn)}</td>
                   <td>
                     <div className="pregunta-actions" style={{ flexWrap: 'wrap', gap: 4 }}>
@@ -352,14 +308,6 @@ export default function UsuariosAdminTab({ showToast }) {
                         title={u.denunciado ? 'Retirar denuncia' : 'Denunciar usuario'}
                       >
                         {u.denunciado ? '✅ Retirar denuncia' : '🚨 Denunciar'}
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm btn-xs"
-                        onClick={() => openSeccionesModal(u)}
-                        title="Asignar secciones al usuario"
-                      >
-                        📂 Secciones
                       </button>
                       <button
                         type="button"
@@ -456,41 +404,6 @@ export default function UsuariosAdminTab({ showToast }) {
       )}
 
       {/* Assign secciones modal */}
-      {seccionesModal && (
-        <div className="admin-modal-overlay" onClick={() => setSeccionesModal(null)}>
-          <div className="admin-modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
-            <h2 className="admin-modal-title">📂 Asignar secciones a {seccionesModal.nombre} {seccionesModal.apellidos}</h2>
-            <p className="admin-modal-desc">Selecciona las secciones visibles para este usuario.</p>
-            {allSecciones.length === 0 && (
-              <div className="info-box">No hay secciones disponibles. Créalas en la pestaña «Secciones».</div>
-            )}
-            <div style={{ maxHeight: 300, overflowY: 'auto', marginBottom: 16 }}>
-              {allSecciones.map(s => (
-                <label key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, cursor: 'pointer', fontSize: '.9rem' }}>
-                  <input
-                    type="checkbox"
-                    checked={selectedSeccionIds.includes(s.id)}
-                    onChange={() => toggleId(selectedSeccionIds, setSelectedSeccionIds, s.id)}
-                    style={{ width: 16, height: 16, flexShrink: 0 }}
-                  />
-                  <span>
-                    <strong>{s.nombre}</strong>
-                    {!s.activa && <span className="estado-badge badge-inactiva" style={{ marginLeft: 6, fontSize: '.7rem' }}>Inactiva</span>}
-                  </span>
-                </label>
-              ))}
-            </div>
-            <div className="btn-row">
-              <button type="button" className="btn btn-secondary" onClick={() => setSeccionesModal(null)}>
-                Cancelar
-              </button>
-              <button type="button" className="btn btn-primary" disabled={assigning} onClick={handleSaveSecciones}>
-                {assigning ? 'Guardando…' : '💾 Guardar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }

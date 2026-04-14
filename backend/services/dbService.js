@@ -50,20 +50,6 @@ function rowToDeclaracion(row) {
   }
 }
 
-function rowToSeccion(row) {
-  if (!row) return null
-  return {
-    id: row.id,
-    nombre: row.nombre,
-    clave: row.clave ?? '',
-    orden: row.orden,
-    titulos: row.titulos ?? {},
-    activa: row.activa,
-    creadaEn: row.creada_en,
-    actualizadaEn: row.actualizada_en,
-  }
-}
-
 function rowToUser(row) {
   if (!row) return null
   return {
@@ -76,20 +62,7 @@ function rowToUser(row) {
     bloqueado: row.bloqueado ?? false,
     denunciado: row.denunciado ?? false,
     preguntasAsignadas: row.preguntas_asignadas ?? [],
-    seccionesAsignadas: row.secciones_asignadas ?? [],
     creadoEn: row.creado_en,
-  }
-}
-
-function rowToIdioma(row) {
-  if (!row) return null
-  return {
-    id: row.id,
-    code: row.code,
-    label: row.label,
-    activo: row.activo,
-    creadoEn: row.creado_en,
-    actualizadoEn: row.actualizado_en,
   }
 }
 
@@ -128,20 +101,15 @@ async function changePassword({ dniNie, oldPassword, newPassword }) {
 async function getPreguntas() {
   try {
     const { rows } = await pool.query(
-      `SELECT pf.campo, pf.texto, pf.textos, pf.orden AS pregunta_orden,
-              s.clave AS seccion_clave, s.nombre AS seccion_nombre,
-              s.orden AS seccion_orden, s.titulos AS seccion_titulos
-       FROM preguntas pf
-       JOIN secciones s ON s.id = pf.seccion_id
-       WHERE s.activa = true
-       ORDER BY s.orden, pf.orden`
+      `SELECT campo, texto, textos, seccion, seccion_orden, seccion_titulos, orden
+       FROM preguntas
+       ORDER BY seccion_orden, orden`
     )
     if (!rows.length) return { data: { secciones: [] }, error: null }
 
-    // Group questions by section
     const seccionMap = new Map()
     for (const r of rows) {
-      const key = r.seccion_clave || r.seccion_nombre
+      const key = r.seccion || 'general'
       if (!seccionMap.has(key)) {
         const titulos = typeof r.seccion_titulos === 'string'
           ? JSON.parse(r.seccion_titulos)
@@ -149,7 +117,7 @@ async function getPreguntas() {
         seccionMap.set(key, {
           id: key,
           numero: r.seccion_orden + 1,
-          titulo: r.seccion_nombre,
+          titulo: titulos.es || key,
           titulos,
           preguntas: [],
         })
@@ -402,86 +370,7 @@ async function sendEmailDeclaracion({ declaracionId, email, mensaje }) {
 
 // ── Admin: Secciones ───────────────────────────────────────────────────────
 
-async function listSeccionesAdmin({ activa, page = 1, limit = 10 }) {
-  const conditions = []
-  const params = []
-  if (activa !== undefined) { conditions.push(`activa = $${params.length + 1}`); params.push(activa) }
-  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
-  const countRes = await pool.query(`SELECT COUNT(*) FROM secciones ${where}`, params)
-  const total = parseInt(countRes.rows[0].count, 10)
-  const offset = (page - 1) * limit
-  params.push(limit, offset)
-  const { rows } = await pool.query(
-    `SELECT * FROM secciones ${where} ORDER BY orden ASC LIMIT $${params.length - 1} OFFSET $${params.length}`,
-    params
-  )
-  return { data: { data: rows.map(rowToSeccion), total, page, limit }, error: null }
-}
-
-async function createSeccionAdmin(body) {
-  if (!body.nombre || !body.nombre.trim()) {
-    return { data: null, error: { message: 'El nombre es obligatorio' }, status: 400 }
-  }
-  const dup = await pool.query('SELECT id FROM secciones WHERE LOWER(nombre) = LOWER($1)', [body.nombre.trim()])
-  if (dup.rows.length) return { data: null, error: { message: 'Ya existe una sección con ese nombre' }, status: 409 }
-  const countRes = await pool.query('SELECT COUNT(*) FROM secciones')
-  const orden = body.orden ?? (parseInt(countRes.rows[0].count, 10) + 1)
-  const { rows } = await pool.query(
-    'INSERT INTO secciones (nombre, clave, orden, titulos, activa) VALUES ($1, $2, $3, $4::jsonb, $5) RETURNING *',
-    [
-      body.nombre.trim(),
-      (body.clave ?? '').trim(),
-      orden,
-      JSON.stringify(body.titulos ?? {}),
-      body.activa !== undefined ? body.activa : true,
-    ]
-  )
-  return { data: rowToSeccion(rows[0]), error: null, status: 201 }
-}
-
-async function updateSeccionAdmin(id, body) {
-  if (body.nombre !== undefined) {
-    const dup = await pool.query(
-      'SELECT id FROM secciones WHERE LOWER(nombre) = LOWER($1) AND id != $2',
-      [body.nombre.trim(), id]
-    )
-    if (dup.rows.length) return { data: null, error: { message: 'Ya existe una sección con ese nombre' } }
-  }
-  const FIELD_MAP = { nombre: 'nombre', clave: 'clave', orden: 'orden', activa: 'activa' }
-  const setClauses = []
-  const params = []
-  for (const [camel, snake] of Object.entries(FIELD_MAP)) {
-    if (body[camel] !== undefined) {
-      params.push(camel === 'nombre' ? body.nombre.trim() : camel === 'clave' ? (body.clave ?? '').trim() : body[camel])
-      setClauses.push(`${snake} = $${params.length}`)
-    }
-  }
-  if (body.titulos !== undefined) {
-    params.push(JSON.stringify(body.titulos))
-    setClauses.push(`titulos = $${params.length}::jsonb`)
-  }
-  if (!setClauses.length) return getSeccionById(id)
-  params.push(id)
-  const { rows } = await pool.query(
-    `UPDATE secciones SET ${setClauses.join(', ')} WHERE id = $${params.length} RETURNING *`,
-    params
-  )
-  if (!rows.length) return { data: null, error: { message: 'Sección no encontrada' } }
-  return { data: rowToSeccion(rows[0]), error: null }
-}
-
-async function getSeccionById(id) {
-  const { rows } = await pool.query('SELECT * FROM secciones WHERE id = $1', [id])
-  if (!rows.length) return { data: null, error: { message: 'Sección no encontrada' } }
-  return { data: rowToSeccion(rows[0]), error: null }
-}
-
-async function deleteSeccionAdmin(id) {
-  const sec = await getSeccionById(id)
-  if (sec.error) return sec
-  await pool.query('DELETE FROM secciones WHERE id = $1', [id])
-  return { data: { success: true }, error: null }
-}
+// (secciones table removed – no longer used)
 
 // ── Admin: Usuarios ────────────────────────────────────────────────────────
 
@@ -558,158 +447,12 @@ async function sendEmailToUser({ dniNie, email, mensaje }) {
   return { data: { success: true, to: email }, error: null }
 }
 
-async function setUserSecciones(dniNie, seccionIds) {
-  const check = await pool.query('SELECT dni_nie FROM usuarios WHERE dni_nie = $1', [dniNie])
-  if (!check.rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
-  await pool.query('UPDATE usuarios SET secciones_asignadas = $1 WHERE dni_nie = $2', [JSON.stringify(seccionIds), dniNie])
-  return { data: { success: true }, error: null }
-}
-
-// ── Public: Idiomas & Traducciones (load from DB) ──────────────────────────
-
-async function listPublicIdiomas() {
-  try {
-    const { rows } = await pool.query(
-      'SELECT code, label FROM idiomas WHERE activo = true ORDER BY creado_en ASC'
-    )
-    return { data: rows.map(r => ({ code: r.code, label: r.label })), error: null }
-  } catch (err) {
-    console.error('listPublicIdiomas error:', err.message)
-    return { data: [], error: null }
-  }
-}
-
-async function getPublicTraducciones() {
-  try {
-    const { rows } = await pool.query(
-      `SELECT i.code, t.clave, t.valor
-       FROM traducciones t
-       JOIN idiomas i ON i.code = t.code
-       WHERE i.activo = true
-       ORDER BY i.code, t.clave`
-    )
-    const result = {}
-    for (const r of rows) {
-      if (!result[r.code]) result[r.code] = {}
-      result[r.code][r.clave] = r.valor
-    }
-    return { data: result, error: null }
-  } catch (err) {
-    console.error('getPublicTraducciones error:', err.message)
-    return { data: {}, error: null }
-  }
-}
-
-// ── Admin: Idiomas ─────────────────────────────────────────────────────────
-
-async function listIdiomasAdmin({ activo, page = 1, limit = 10 }) {
-  const conditions = []
-  const params = []
-  if (activo !== undefined && activo !== '') {
-    const flag = activo === true || activo === 'true'
-    conditions.push(`activo = $${params.length + 1}`)
-    params.push(flag)
-  }
-  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
-  const countRes = await pool.query(`SELECT COUNT(*) FROM idiomas ${where}`, params)
-  const total = parseInt(countRes.rows[0].count, 10)
-  const offset = (page - 1) * limit
-  params.push(limit, offset)
-  const { rows } = await pool.query(
-    `SELECT * FROM idiomas ${where} ORDER BY creado_en ASC LIMIT $${params.length - 1} OFFSET $${params.length}`,
-    params
-  )
-  return { data: { data: rows.map(rowToIdioma), total, page, limit }, error: null }
-}
-
-async function createIdiomaAdmin(body) {
-  const { code, label } = body
-  if (!code?.trim() || !label?.trim()) {
-    return { data: null, error: { message: 'El código y la etiqueta son obligatorios' } }
-  }
-  const dup = await pool.query('SELECT id FROM idiomas WHERE code = $1', [code.trim()])
-  if (dup.rows.length) return { data: null, error: { message: `Ya existe un idioma con el código "${code}"` } }
-  const { rows } = await pool.query(
-    'INSERT INTO idiomas (code, label, activo) VALUES ($1, $2, $3) RETURNING *',
-    [code.trim(), label.trim(), body.activo !== false]
-  )
-  return { data: rowToIdioma(rows[0]), error: null }
-}
-
-async function updateIdiomaAdmin(id, body) {
-  const FIELD_MAP = { label: 'label', activo: 'activo' }
-  const setClauses = []
-  const params = []
-  for (const [camel, snake] of Object.entries(FIELD_MAP)) {
-    if (body[camel] !== undefined) {
-      params.push(camel === 'label' ? body.label.trim() : body[camel])
-      setClauses.push(`${snake} = $${params.length}`)
-    }
-  }
-  if (!setClauses.length) {
-    const { rows } = await pool.query('SELECT * FROM idiomas WHERE id = $1', [id])
-    if (!rows.length) return { data: null, error: { message: 'Idioma no encontrado' } }
-    return { data: rowToIdioma(rows[0]), error: null }
-  }
-  params.push(id)
-  const { rows } = await pool.query(
-    `UPDATE idiomas SET ${setClauses.join(', ')} WHERE id = $${params.length} RETURNING *`,
-    params
-  )
-  if (!rows.length) return { data: null, error: { message: 'Idioma no encontrado' } }
-  return { data: rowToIdioma(rows[0]), error: null }
-}
-
-async function deleteIdiomaAdmin(id) {
-  const { rows } = await pool.query('SELECT code FROM idiomas WHERE id = $1', [id])
-  if (!rows.length) return { data: null, error: { message: 'Idioma no encontrado' } }
-  if (rows[0].code === 'es') {
-    return { data: null, error: { message: 'No se puede eliminar el idioma por defecto (es)' } }
-  }
-  await pool.query('DELETE FROM idiomas WHERE id = $1', [id])
-  return { data: { success: true }, error: null }
-}
-
-async function getIdiomaContent(id) {
-  const { rows } = await pool.query('SELECT * FROM idiomas WHERE id = $1', [id])
-  if (!rows.length) return { data: null, error: { message: 'Idioma no encontrado' } }
-  const idioma = rows[0]
-  const { rows: tRows } = await pool.query(
-    'SELECT clave, valor FROM traducciones WHERE code = $1',
-    [idioma.code]
-  )
-  const content = Object.fromEntries(tRows.map((r) => [r.clave, r.valor]))
-  return { data: { code: idioma.code, content }, error: null }
-}
-
-async function updateIdiomaContent(id, body) {
-  const { rows } = await pool.query('SELECT code FROM idiomas WHERE id = $1', [id])
-  if (!rows.length) return { data: null, error: { message: 'Idioma no encontrado' } }
-  const { code } = rows[0]
-  const entries = Object.entries(body.content ?? {})
-  for (const [clave, valor] of entries) {
-    await pool.query(
-      `INSERT INTO traducciones (code, clave, valor) VALUES ($1, $2, $3)
-       ON CONFLICT (code, clave) DO UPDATE SET valor = EXCLUDED.valor`,
-      [code, clave, valor]
-    )
-  }
-  const { rows: tRows } = await pool.query(
-    'SELECT clave, valor FROM traducciones WHERE code = $1',
-    [code]
-  )
-  const content = Object.fromEntries(tRows.map((r) => [r.clave, r.valor]))
-  return { data: { code, content }, error: null }
-}
-
 // ── Exports ────────────────────────────────────────────────────────────────
 
 module.exports = {
   loginUser,
   changePassword,
   getPreguntas,
-  listPublicIdiomas,
-  getPublicTraducciones,
   listDeclaraciones,
   listDeclaracionesAll,
   createDeclaracion,
@@ -723,10 +466,6 @@ module.exports = {
   createPreguntaFormulario,
   updatePreguntaFormulario,
   deletePreguntaFormulario,
-  listSeccionesAdmin,
-  createSeccionAdmin,
-  updateSeccionAdmin,
-  deleteSeccionAdmin,
   listUsersAdmin,
   blockUser,
   reportUser,
@@ -734,11 +473,4 @@ module.exports = {
   assignUserAccount,
   getUserByDniNie,
   sendEmailToUser,
-  setUserSecciones,
-  listIdiomasAdmin,
-  createIdiomaAdmin,
-  updateIdiomaAdmin,
-  deleteIdiomaAdmin,
-  getIdiomaContent,
-  updateIdiomaContent,
 }
