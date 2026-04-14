@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cuestionario Renta – NH Gestión Integral</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ─── Reset & base ───────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue-900: #002d63;
+      --blue-700: #004593;
+      --blue-600: #0055b3;
+      --blue-100: #e8f0fb;
+      --blue-50:  #f0f5ff;
+      --gray-800: #1a1f36;
+      --gray-600: #4a5568;
+      --gray-400: #a0aec0;
+      --gray-200: #e2e8f0;
+      --gray-100: #f7f8fc;
+      --green-600: #1a9e6b;
+      --green-100: #e6f7f1;
+      --red-500:  #e53e3e;
+      --white:    #ffffff;
+      --radius:   12px;
+      --shadow:   0 4px 24px rgba(0, 45, 99, 0.10);
+      --transition: 0.25s ease;
+    }
+
+    html, body {
+      height: 100%;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: linear-gradient(135deg, #f0f5ff 0%, #e8f0fb 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      color: var(--gray-800);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── Navbar ─────────────────────────────────────────────────── */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--blue-700);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      height: 60px;
+      box-shadow: 0 2px 12px rgba(0,45,99,0.18);
+    }
+
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--white);
+    }
+
+    .navbar-logo {
+      width: 36px;
+      height: 36px;
+      background: var(--white);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .navbar-logo svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .navbar-title {
+      font-size: 1rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      line-height: 1.2;
+    }
+
+    .navbar-title span {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 400;
+      opacity: 0.8;
+    }
+
+    /* ─── Language selector ──────────────────────────────────────── */
+    .lang-selector {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .lang-btn {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 6px;
+      padding: 4px 9px;
+      cursor: pointer;
+      color: var(--white);
+      font-family: inherit;
+      font-size: 0.78rem;
+      font-weight: 500;
+      transition: background var(--transition), border-color var(--transition);
+    }
+
+    .lang-btn:hover {
+      background: rgba(255,255,255,0.15);
+      border-color: rgba(255,255,255,0.6);
+    }
+
+    .lang-btn.active {
+      background: rgba(255,255,255,0.22);
+      border-color: var(--white);
+    }
+
+    .lang-btn .flag {
+      font-size: 1.1rem;
+      line-height: 1;
+    }
+
+    /* ─── Main content ───────────────────────────────────────────── */
+    main {
+      flex: 1;
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 36px 16px 48px;
+    }
+
+    /* ─── Page header ────────────────────────────────────────────── */
+    .page-header {
+      margin-bottom: 28px;
+    }
+
+    .page-header h1 {
+      font-size: 1.55rem;
+      font-weight: 700;
+      color: var(--blue-700);
+      margin-bottom: 6px;
+    }
+
+    .page-header p {
+      font-size: 0.9rem;
+      color: var(--gray-600);
+      line-height: 1.5;
+    }
+
+    /* ─── Loading skeleton ───────────────────────────────────────── */
+    .skeleton-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .skeleton-item {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .skeleton-line {
+      height: 14px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, var(--gray-200) 25%, #edf0f5 50%, var(--gray-200) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+    }
+
+    .skeleton-line.short { width: 55%; margin-top: 10px; }
+
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* ─── Question card ──────────────────────────────────────────── */
+    .question-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .question-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 20px 24px;
+      border-left: 4px solid transparent;
+      transition: border-color var(--transition), box-shadow var(--transition);
+    }
+
+    .question-card:hover {
+      border-left-color: var(--blue-600);
+      box-shadow: 0 6px 28px rgba(0,45,99,0.14);
+    }
+
+    .question-card.answered {
+      border-left-color: var(--green-600);
+    }
+
+    .question-index {
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--blue-600);
+      margin-bottom: 6px;
+    }
+
+    .question-text {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--gray-800);
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+
+    .radio-group {
+      display: flex;
+      gap: 12px;
+    }
+
+    .radio-label {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      padding: 7px 16px;
+      border-radius: 8px;
+      border: 1.5px solid var(--gray-200);
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: var(--gray-600);
+      transition: background var(--transition), border-color var(--transition), color var(--transition);
+      user-select: none;
+    }
+
+    .radio-label input[type="radio"] {
+      accent-color: var(--blue-600);
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+    }
+
+    .radio-label:hover {
+      background: var(--blue-50);
+      border-color: var(--blue-600);
+      color: var(--blue-700);
+    }
+
+    .radio-label.selected-si {
+      background: var(--green-100);
+      border-color: var(--green-600);
+      color: var(--green-600);
+    }
+
+    .radio-label.selected-no {
+      background: #fff5f5;
+      border-color: var(--red-500);
+      color: var(--red-500);
+    }
+
+    /* ─── Progress bar ───────────────────────────────────────────── */
+    .progress-bar-wrap {
+      margin-bottom: 24px;
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 14px 20px;
+    }
+
+    .progress-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: var(--gray-600);
+      margin-bottom: 8px;
+    }
+
+    .progress-info strong {
+      color: var(--blue-700);
+    }
+
+    .progress-track {
+      height: 7px;
+      background: var(--gray-200);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--blue-700), var(--blue-600));
+      border-radius: 99px;
+      transition: width 0.4s ease;
+    }
+
+    /* ─── Submit button ──────────────────────────────────────────── */
+    .form-actions {
+      margin-top: 32px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .btn-submit {
+      background: var(--blue-700);
+      color: var(--white);
+      border: none;
+      border-radius: 8px;
+      padding: 12px 32px;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background var(--transition), box-shadow var(--transition), transform 0.1s;
+      box-shadow: 0 2px 10px rgba(0,45,99,0.18);
+    }
+
+    .btn-submit:hover:not(:disabled) {
+      background: var(--blue-600);
+      box-shadow: 0 4px 16px rgba(0,45,99,0.25);
+    }
+
+    .btn-submit:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    /* ─── Success state ──────────────────────────────────────────── */
+    .success-box {
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 48px 32px;
+      text-align: center;
+      display: none;
+    }
+
+    .success-box.visible {
+      display: block;
+    }
+
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      background: var(--green-100);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+    }
+
+    .success-icon svg {
+      width: 32px;
+      height: 32px;
+      color: var(--green-600);
+    }
+
+    .success-box h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--green-600);
+      margin-bottom: 10px;
+    }
+
+    .success-box p {
+      font-size: 0.9rem;
+      color: var(--gray-600);
+      line-height: 1.6;
+    }
+
+    /* ─── Error message ──────────────────────────────────────────── */
+    .error-banner {
+      background: #fff5f5;
+      border: 1px solid var(--red-500);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      color: var(--red-500);
+      margin-bottom: 18px;
+      display: none;
+    }
+
+    .error-banner.visible {
+      display: block;
+    }
+
+    /* ─── Footer ─────────────────────────────────────────────────── */
+    footer {
+      background: var(--blue-900);
+      color: rgba(255,255,255,0.65);
+      text-align: center;
+      padding: 18px 16px;
+      font-size: 0.78rem;
+      line-height: 1.6;
+    }
+
+    footer a {
+      color: rgba(255,255,255,0.85);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    footer strong {
+      color: var(--white);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ─── Navbar ──────────────────────────────────────────────────── -->
+  <nav class="navbar" role="banner">
+    <a class="navbar-brand" href="#" aria-label="NH Gestión Integral">
+      <div class="navbar-logo" aria-hidden="true">
+        <!-- NH monogram -->
+        <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="22" height="22" rx="4" fill="#004593"/>
+          <text x="3" y="16" font-family="Inter,sans-serif" font-weight="700" font-size="11" fill="white">NH</text>
+        </svg>
+      </div>
+      <div class="navbar-title">
+        NH Gestión Integral
+        <span id="nav-subtitle">Cuestionario de Renta</span>
+      </div>
+    </a>
+
+    <div class="lang-selector" role="navigation" aria-label="Selector de idioma">
+      <button class="lang-btn active" data-lang="es" onclick="setLang('es')" aria-pressed="true">
+        <span class="flag" aria-hidden="true">🇪🇸</span> ES
+      </button>
+      <button class="lang-btn" data-lang="en" onclick="setLang('en')" aria-pressed="false">
+        <span class="flag" aria-hidden="true">🇬🇧</span> EN
+      </button>
+      <button class="lang-btn" data-lang="ca" onclick="setLang('ca')" aria-pressed="false">
+        <span class="flag" aria-hidden="true">🏴󠁥󠁳󠁣󠁴󠁿</span> CA
+      </button>
+      <button class="lang-btn" data-lang="fr" onclick="setLang('fr')" aria-pressed="false">
+        <span class="flag" aria-hidden="true">🇫🇷</span> FR
+      </button>
+    </div>
+  </nav>
+
+  <!-- ─── Main ────────────────────────────────────────────────────── -->
+  <main>
+    <div class="page-header">
+      <h1 id="page-title">Cuestionario Renta 2024</h1>
+      <p id="page-desc">Responda a todas las preguntas con Sí o No. Sus respuestas nos permiten orientarle adecuadamente.</p>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="progress-bar-wrap" id="progress-wrap" style="display:none">
+      <div class="progress-info">
+        <span id="progress-label">Progreso</span>
+        <strong id="progress-count">0 / 0</strong>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Error banner -->
+    <div class="error-banner" id="error-banner" role="alert"></div>
+
+    <!-- Question list (skeleton while loading) -->
+    <div id="question-container">
+      <div class="skeleton-list" id="skeleton">
+        <div class="skeleton-item"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+        <div class="skeleton-item"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+        <div class="skeleton-item"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+        <div class="skeleton-item"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+        <div class="skeleton-item"><div class="skeleton-line"></div><div class="skeleton-line short"></div></div>
+      </div>
+      <div class="question-list" id="question-list" style="display:none"></div>
+    </div>
+
+    <!-- Form actions -->
+    <div class="form-actions" id="form-actions" style="display:none">
+      <button class="btn-submit" id="btn-submit" disabled onclick="submitForm()">
+        <span id="btn-label">Enviar cuestionario</span>
+      </button>
+    </div>
+
+    <!-- Success state -->
+    <div class="success-box" id="success-box">
+      <div class="success-icon">
+        <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="5 17 13 24 27 9"/>
+        </svg>
+      </div>
+      <h2 id="success-title">¡Cuestionario enviado!</h2>
+      <p id="success-desc">Hemos recibido sus respuestas. Nuestro equipo las revisará y se pondrá en contacto con usted en breve.</p>
+    </div>
+  </main>
+
+  <!-- ─── Footer ──────────────────────────────────────────────────── -->
+  <footer>
+    <strong>NH Gestión Integral</strong> &nbsp;·&nbsp;
+    <span id="footer-text">Cuestionario de Renta &copy; 2024</span>
+    &nbsp;·&nbsp; Todos los derechos reservados
+  </footer>
+
+  <script>
+    /* ================================================================
+       i18n – translations
+    ================================================================ */
+    const TRANSLATIONS = {
+      es: {
+        navSubtitle:    'Cuestionario de Renta',
+        pageTitle:      'Cuestionario Renta 2024',
+        pageDesc:       'Responda a todas las preguntas con Sí o No. Sus respuestas nos permiten orientarle adecuadamente.',
+        progressLabel:  'Progreso',
+        optionYes:      'Sí',
+        optionNo:       'No',
+        btnSubmit:      'Enviar cuestionario',
+        errorRequired:  'Por favor, responda a todas las preguntas antes de enviar.',
+        successTitle:   '¡Cuestionario enviado!',
+        successDesc:    'Hemos recibido sus respuestas. Nuestro equipo las revisará y se pondrá en contacto con usted en breve.',
+        footerText:     'Cuestionario de Renta © 2024',
+        loadError:      'No se pudieron cargar las preguntas. Inténtelo de nuevo más tarde.',
+        questionLabel:  'Pregunta',
+      },
+      en: {
+        navSubtitle:    'Income Tax Questionnaire',
+        pageTitle:      'Income Tax Questionnaire 2024',
+        pageDesc:       'Please answer all questions with Yes or No. Your answers help us guide you appropriately.',
+        progressLabel:  'Progress',
+        optionYes:      'Yes',
+        optionNo:       'No',
+        btnSubmit:      'Submit questionnaire',
+        errorRequired:  'Please answer all questions before submitting.',
+        successTitle:   'Questionnaire submitted!',
+        successDesc:    'We have received your answers. Our team will review them and contact you shortly.',
+        footerText:     'Income Tax Questionnaire © 2024',
+        loadError:      'Could not load the questions. Please try again later.',
+        questionLabel:  'Question',
+      },
+      ca: {
+        navSubtitle:    'Qüestionari de Renda',
+        pageTitle:      'Qüestionari de Renda 2024',
+        pageDesc:       'Responeu a totes les preguntes amb Sí o No. Les vostres respostes ens permeten orientar-vos adequadament.',
+        progressLabel:  'Progrés',
+        optionYes:      'Sí',
+        optionNo:       'No',
+        btnSubmit:      'Enviar qüestionari',
+        errorRequired:  'Si us plau, responeu a totes les preguntes abans d\'enviar.',
+        successTitle:   'Qüestionari enviat!',
+        successDesc:    'Hem rebut les vostres respostes. El nostre equip les revisarà i es posarà en contacte amb vosaltres aviat.',
+        footerText:     'Qüestionari de Renda © 2024',
+        loadError:      'No s\'han pogut carregar les preguntes. Torneu-ho a intentar més tard.',
+        questionLabel:  'Pregunta',
+      },
+      fr: {
+        navSubtitle:    'Questionnaire sur les revenus',
+        pageTitle:      'Questionnaire Revenus 2024',
+        pageDesc:       'Répondez à toutes les questions par Oui ou Non. Vos réponses nous permettent de vous orienter correctement.',
+        progressLabel:  'Progression',
+        optionYes:      'Oui',
+        optionNo:       'Non',
+        btnSubmit:      'Soumettre le questionnaire',
+        errorRequired:  'Veuillez répondre à toutes les questions avant de soumettre.',
+        successTitle:   'Questionnaire soumis\u00a0!',
+        successDesc:    'Nous avons bien reçu vos réponses. Notre équipe les examinera et vous contactera sous peu.',
+        footerText:     'Questionnaire Revenus © 2024',
+        loadError:      'Impossible de charger les questions. Veuillez réessayer ultérieurement.',
+        questionLabel:  'Question',
+      },
+    };
+
+    /* ================================================================
+       Question database (simulated API response)
+       In production this would be: fetch('/v1/irpf/preguntas')
+    ================================================================ */
+    const QUESTIONS_DB = {
+      es: [
+        { id: 1,  text: '¿Ha obtenido rendimientos del trabajo durante el ejercicio 2024?' },
+        { id: 2,  text: '¿Ha percibido alguna pensión de la Seguridad Social o de clases pasivas?' },
+        { id: 3,  text: '¿Ha obtenido rendimientos de actividades económicas (autónomo, profesional, etc.)?' },
+        { id: 4,  text: '¿Ha percibido rentas del capital mobiliario (dividendos, intereses bancarios, etc.)?' },
+        { id: 5,  text: '¿Ha obtenido rendimientos de capital inmobiliario (alquiler de inmuebles)?' },
+        { id: 6,  text: '¿Ha realizado alguna transmisión patrimonial (venta de acciones, inmuebles, fondos de inversión)?' },
+        { id: 7,  text: '¿Ha recibido subvenciones o ayudas públicas (ayuda al alquiler, bono joven, etc.)?' },
+        { id: 8,  text: '¿Ha efectuado aportaciones a planes de pensiones o seguros colectivos?' },
+        { id: 9,  text: '¿Tiene a su cargo hijos menores de 25 años o con discapacidad?' },
+        { id: 10, text: '¿Convive con ascendientes (padres, abuelos) a su cargo?' },
+        { id: 11, text: '¿Tiene reconocido algún grado de discapacidad?' },
+        { id: 12, text: '¿Ha adquirido su vivienda habitual antes del 1 de enero de 2013 y aplica la deducción?' },
+        { id: 13, text: '¿Ha realizado obras de mejora de eficiencia energética en su vivienda habitual?' },
+        { id: 14, text: '¿Ha donado a entidades sin fines de lucro o partidos políticos?' },
+        { id: 15, text: '¿Ha obtenido rentas en el extranjero o tiene bienes fuera de España?' },
+        { id: 16, text: '¿Está en situación de desempleo o ha cobrado prestación por desempleo?' },
+        { id: 17, text: '¿Ha percibido ingresos por impartir cursos, conferencias o derechos de autor?' },
+        { id: 18, text: '¿Ha tenido pérdidas patrimoniales pendientes de compensar de ejercicios anteriores?' },
+        { id: 19, text: '¿Es residente fiscal en España durante todo el año 2024?' },
+        { id: 20, text: '¿Desea aplicar la tributación conjunta (unidad familiar)?' },
+      ],
+      en: [
+        { id: 1,  text: 'Did you receive employment income during the 2024 tax year?' },
+        { id: 2,  text: 'Did you receive a Social Security pension or civil service pension?' },
+        { id: 3,  text: 'Did you obtain income from economic activities (self-employed, professional, etc.)?' },
+        { id: 4,  text: 'Did you receive capital income (dividends, bank interest, etc.)?' },
+        { id: 5,  text: 'Did you obtain real estate rental income?' },
+        { id: 6,  text: 'Did you make any asset transfer (sale of shares, properties, investment funds)?' },
+        { id: 7,  text: 'Did you receive public subsidies or grants (rent assistance, youth bonus, etc.)?' },
+        { id: 8,  text: 'Did you contribute to pension plans or collective insurance?' },
+        { id: 9,  text: 'Do you have dependant children under 25 or with disabilities?' },
+        { id: 10, text: 'Do you cohabit with dependant ascendants (parents, grandparents)?' },
+        { id: 11, text: 'Do you have a recognised degree of disability?' },
+        { id: 12, text: 'Did you acquire your primary residence before 1 January 2013 and claim the deduction?' },
+        { id: 13, text: 'Did you carry out energy-efficiency improvements in your primary residence?' },
+        { id: 14, text: 'Did you donate to non-profit organisations or political parties?' },
+        { id: 15, text: 'Did you earn income abroad or hold assets outside Spain?' },
+        { id: 16, text: 'Were you unemployed or did you receive unemployment benefit?' },
+        { id: 17, text: 'Did you receive income from teaching courses, conferences or copyrights?' },
+        { id: 18, text: 'Did you carry forward capital losses from previous years?' },
+        { id: 19, text: 'Were you a tax resident in Spain for the entire year 2024?' },
+        { id: 20, text: 'Do you wish to file a joint return (family unit)?' },
+      ],
+      ca: [
+        { id: 1,  text: 'Heu obtingut rendiments del treball durant l\'exercici 2024?' },
+        { id: 2,  text: 'Heu percebut alguna pensió de la Seguretat Social o de classes passives?' },
+        { id: 3,  text: 'Heu obtingut rendiments d\'activitats econòmiques (autònom, professional, etc.)?' },
+        { id: 4,  text: 'Heu percebut rendes del capital mobiliari (dividends, interessos bancaris, etc.)?' },
+        { id: 5,  text: 'Heu obtingut rendiments de capital immobiliari (lloguer d\'immobles)?' },
+        { id: 6,  text: 'Heu realitzat alguna transmissió patrimonial (venda d\'accions, immobles, fons d\'inversió)?' },
+        { id: 7,  text: 'Heu rebut subvencions o ajudes públiques (ajuda al lloguer, bo jove, etc.)?' },
+        { id: 8,  text: 'Heu efectuat aportacions a plans de pensions o assegurances col·lectives?' },
+        { id: 9,  text: 'Teniu al vostre càrrec fills menors de 25 anys o amb discapacitat?' },
+        { id: 10, text: 'Conviviu amb ascendents (pares, avis) al vostre càrrec?' },
+        { id: 11, text: 'Teniu reconegut algun grau de discapacitat?' },
+        { id: 12, text: 'Vau adquirir el vostre habitatge habitual abans de l\'1 de gener de 2013 i apliqueu la deducció?' },
+        { id: 13, text: 'Heu realitzat obres de millora d\'eficiència energètica al vostre habitatge habitual?' },
+        { id: 14, text: 'Heu donat a entitats sense ànim de lucre o partits polítics?' },
+        { id: 15, text: 'Heu obtingut rendes a l\'estranger o teniu béns fora d\'Espanya?' },
+        { id: 16, text: 'Esteu en situació d\'atur o heu cobrat prestació per desocupació?' },
+        { id: 17, text: 'Heu percebut ingressos per impartir cursos, conferències o drets d\'autor?' },
+        { id: 18, text: 'Heu tingut pèrdues patrimonials pendents de compensar d\'exercicis anteriors?' },
+        { id: 19, text: 'Sou resident fiscal a Espanya durant tot l\'any 2024?' },
+        { id: 20, text: 'Voleu aplicar la tributació conjunta (unitat familiar)?' },
+      ],
+      fr: [
+        { id: 1,  text: 'Avez-vous perçu des revenus d\'emploi au cours de l\'exercice 2024?' },
+        { id: 2,  text: 'Avez-vous perçu une pension de Sécurité sociale ou de retraite civile?' },
+        { id: 3,  text: 'Avez-vous obtenu des revenus d\'activités économiques (travailleur indépendant, professionnel, etc.)?' },
+        { id: 4,  text: 'Avez-vous perçu des revenus du capital mobilier (dividendes, intérêts bancaires, etc.)?' },
+        { id: 5,  text: 'Avez-vous obtenu des revenus fonciers (location immobilière)?' },
+        { id: 6,  text: 'Avez-vous réalisé une cession de patrimoine (vente d\'actions, d\'immobilier, de fonds de placement)?' },
+        { id: 7,  text: 'Avez-vous reçu des subventions ou aides publiques (aide au logement, bonus jeune, etc.)?' },
+        { id: 8,  text: 'Avez-vous effectué des versements sur des plans d\'épargne retraite ou des assurances collectives?' },
+        { id: 9,  text: 'Avez-vous à charge des enfants de moins de 25 ans ou en situation de handicap?' },
+        { id: 10, text: 'Cohabitez-vous avec des ascendants (parents, grands-parents) à votre charge?' },
+        { id: 11, text: 'Avez-vous un taux de handicap reconnu?' },
+        { id: 12, text: 'Avez-vous acquis votre résidence principale avant le 1er janvier 2013 et bénéficiez-vous de la déduction?' },
+        { id: 13, text: 'Avez-vous réalisé des travaux d\'amélioration de l\'efficacité énergétique dans votre résidence principale?' },
+        { id: 14, text: 'Avez-vous effectué des dons à des organismes sans but lucratif ou à des partis politiques?' },
+        { id: 15, text: 'Avez-vous perçu des revenus à l\'étranger ou détenez-vous des biens hors d\'Espagne?' },
+        { id: 16, text: 'Êtes-vous au chômage ou avez-vous perçu des allocations chômage?' },
+        { id: 17, text: 'Avez-vous perçu des revenus pour des cours, conférences ou droits d\'auteur?' },
+        { id: 18, text: 'Aviez-vous des pertes en capital reportables d\'exercices antérieurs?' },
+        { id: 19, text: 'Étiez-vous résident fiscal en Espagne pendant toute l\'année 2024?' },
+        { id: 20, text: 'Souhaitez-vous opter pour l\'imposition commune (foyer fiscal)?' },
+      ],
+    };
+
+    /* ================================================================
+       App state
+    ================================================================ */
+    let currentLang  = 'es';
+    let questions    = [];
+    let answers      = {};   // { [id]: 'si' | 'no' }
+
+    /* ================================================================
+       Simulated API call
+    ================================================================ */
+    function fetchQuestions(lang) {
+      return new Promise((resolve, reject) => {
+        // Simulate network latency (300–700 ms)
+        const delay = 300 + Math.random() * 400;
+        setTimeout(() => {
+          const data = QUESTIONS_DB[lang];
+          if (data) {
+            resolve(data);
+          } else {
+            reject(new Error('Language not supported'));
+          }
+        }, delay);
+      });
+    }
+
+    /* ================================================================
+       Render helpers
+    ================================================================ */
+    function t(key) {
+      return TRANSLATIONS[currentLang][key] || key;
+    }
+
+    function updateTexts() {
+      document.getElementById('nav-subtitle').textContent   = t('navSubtitle');
+      document.getElementById('page-title').textContent     = t('pageTitle');
+      document.getElementById('page-desc').textContent      = t('pageDesc');
+      document.getElementById('progress-label').textContent = t('progressLabel');
+      document.getElementById('btn-label').textContent      = t('btnSubmit');
+      document.getElementById('success-title').textContent  = t('successTitle');
+      document.getElementById('success-desc').textContent   = t('successDesc');
+      document.getElementById('footer-text').textContent    = t('footerText');
+    }
+
+    function renderQuestions() {
+      const list = document.getElementById('question-list');
+      list.innerHTML = '';
+      answers = {};
+
+      questions.forEach((q, idx) => {
+        const card = document.createElement('div');
+        card.className = 'question-card';
+        card.id = `card-${q.id}`;
+
+        const yesId = `q${q.id}_si`;
+        const noId  = `q${q.id}_no`;
+
+        card.innerHTML = `
+          <div class="question-index">${t('questionLabel')} ${idx + 1}</div>
+          <div class="question-text">${escapeHtml(q.text)}</div>
+          <div class="radio-group" role="radiogroup" aria-label="${escapeHtml(q.text)}">
+            <label class="radio-label" id="lbl-${yesId}" for="${yesId}">
+              <input type="radio" name="q${q.id}" id="${yesId}" value="si" />
+              ${t('optionYes')}
+            </label>
+            <label class="radio-label" id="lbl-${noId}" for="${noId}">
+              <input type="radio" name="q${q.id}" id="${noId}" value="no" />
+              ${t('optionNo')}
+            </label>
+          </div>
+        `;
+
+        // Attach change listeners
+        card.querySelectorAll('input[type="radio"]').forEach(radio => {
+          radio.addEventListener('change', () => onAnswer(q.id, radio.value, card));
+        });
+
+        list.appendChild(card);
+      });
+
+      updateProgress();
+    }
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function onAnswer(qId, value, card) {
+      answers[qId] = value;
+
+      // Visual feedback on card
+      card.classList.add('answered');
+
+      // Highlight selected label, clear other
+      const labels = card.querySelectorAll('.radio-label');
+      labels.forEach(lbl => {
+        lbl.classList.remove('selected-si', 'selected-no');
+      });
+      const selectedLabel = card.querySelector(`input[value="${value}"]`).parentElement;
+      selectedLabel.classList.add(value === 'si' ? 'selected-si' : 'selected-no');
+
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const total     = questions.length;
+      const answered  = Object.keys(answers).length;
+      const pct       = total > 0 ? Math.round((answered / total) * 100) : 0;
+
+      document.getElementById('progress-count').textContent = `${answered} / ${total}`;
+      document.getElementById('progress-fill').style.width  = `${pct}%`;
+
+      const btn = document.getElementById('btn-submit');
+      btn.disabled = answered < total;
+    }
+
+    /* ================================================================
+       Load questions
+    ================================================================ */
+    async function loadQuestions(lang) {
+      // Reset UI
+      document.getElementById('skeleton').style.display       = '';
+      document.getElementById('question-list').style.display  = 'none';
+      document.getElementById('form-actions').style.display   = 'none';
+      document.getElementById('progress-wrap').style.display  = 'none';
+      document.getElementById('success-box').classList.remove('visible');
+      document.getElementById('error-banner').classList.remove('visible');
+
+      try {
+        questions = await fetchQuestions(lang);
+
+        document.getElementById('skeleton').style.display      = 'none';
+        document.getElementById('question-list').style.display = '';
+        document.getElementById('form-actions').style.display  = '';
+        document.getElementById('progress-wrap').style.display = '';
+
+        renderQuestions();
+      } catch (err) {
+        document.getElementById('skeleton').style.display      = 'none';
+        const banner = document.getElementById('error-banner');
+        banner.textContent = t('loadError');
+        banner.classList.add('visible');
+        console.error('Error loading questions:', err);
+      }
+    }
+
+    /* ================================================================
+       Language switcher
+    ================================================================ */
+    function setLang(lang) {
+      if (lang === currentLang) return;
+      currentLang = lang;
+
+      // Update button states
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        const isActive = btn.dataset.lang === lang;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+
+      // Update HTML lang attribute
+      document.documentElement.lang = lang;
+
+      // Update static texts
+      updateTexts();
+
+      // Reload questions in new language
+      loadQuestions(lang);
+    }
+
+    /* ================================================================
+       Submit
+    ================================================================ */
+    function submitForm() {
+      const total    = questions.length;
+      const answered = Object.keys(answers).length;
+
+      if (answered < total) {
+        const banner = document.getElementById('error-banner');
+        banner.textContent = t('errorRequired');
+        banner.classList.add('visible');
+        banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        return;
+      }
+
+      document.getElementById('error-banner').classList.remove('visible');
+
+      // Simulate API submission
+      const btn = document.getElementById('btn-submit');
+      btn.disabled = true;
+      btn.style.opacity = '0.7';
+
+      setTimeout(() => {
+        // Build submission payload
+        const payload = {
+          lang: currentLang,
+          submittedAt: new Date().toISOString(),
+          answers: questions.map(q => ({
+            id:       q.id,
+            question: q.text,
+            answer:   answers[q.id],
+          })),
+        };
+
+        console.info('[cuestionario-renta] Submission payload:', payload);
+
+        // Show success
+        document.getElementById('question-list').style.display  = 'none';
+        document.getElementById('form-actions').style.display   = 'none';
+        document.getElementById('progress-wrap').style.display  = 'none';
+        document.getElementById('success-box').classList.add('visible');
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 600);
+    }
+
+    /* ================================================================
+       Bootstrap
+    ================================================================ */
+    document.addEventListener('DOMContentLoaded', () => {
+      updateTexts();
+      loadQuestions(currentLang);
+    });
+  </script>
+</body>
+</html>
