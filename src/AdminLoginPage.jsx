@@ -50,10 +50,12 @@ export default function AdminLoginPage() {
   return (
     <>
       <header>
-        <div className="logo">NH Gestión Integral</div>
-        <div className="header-text">
-          <h1>Acceso al Panel de Administración</h1>
-          <p>Gestión interna · Agencia Tributaria · Campaña Renta 2025</p>
+        <div className="header-inner">
+          <div className="logo">NH Gestión Integral</div>
+          <div className="header-text">
+            <h1>Acceso al Panel de Administración</h1>
+            <p>Gestión interna · Agencia Tributaria · Campaña Renta 2025</p>
+          </div>
         </div>
       </header>
 

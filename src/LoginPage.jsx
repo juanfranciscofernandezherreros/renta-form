@@ -53,23 +53,25 @@ export default function LoginPage({ onNavigate }) {
   return (
     <>
       <header>
-        <div className="logo">NH Gestión Integral</div>
-        <div className="header-text">
-          <h1>{t('loginTitle')}</h1>
-          <p>{t('headerSubtitle')}</p>
+        <div className="header-inner">
+          <div className="logo">NH Gestión Integral</div>
+          <div className="header-text">
+            <h1>{t('loginTitle')}</h1>
+            <p>{t('headerSubtitle')}</p>
+          </div>
+          <nav className="header-nav">
+            <select
+              className="lang-select"
+              value={lang}
+              onChange={e => setLang(e.target.value)}
+              aria-label={t('langLabel')}
+            >
+              {availableLanguages.map(l => (
+                <option key={l.code} value={l.code}>{l.label}</option>
+              ))}
+            </select>
+          </nav>
         </div>
-        <nav className="header-nav">
-          <select
-            className="lang-select"
-            value={lang}
-            onChange={e => setLang(e.target.value)}
-            aria-label={t('langLabel')}
-          >
-            {availableLanguages.map(l => (
-              <option key={l.code} value={l.code}>{l.label}</option>
-            ))}
-          </select>
-        </nav>
       </header>
 
       <div className="card">

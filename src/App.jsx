@@ -420,37 +420,39 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
         ))}
       </div>
       <header ref={topRef}>
-        <div className="logo">NH Gestión Integral</div>
-        <div className="header-text">
-          <h1>{t('headerTitle')}</h1>
-          <p>{t('headerSubtitle')}</p>
-        </div>
-        <nav className="header-nav">
-          {user ? (
-            <>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/perfil')}>
-                {t('navProfile')}
-              </button>
-              {user.role === 'admin' && (
-                <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/admin')}>
-                  🛡️ Admin
+        <div className="header-inner">
+          <div className="logo">NH Gestión Integral</div>
+          <div className="header-text">
+            <h1>{t('headerTitle')}</h1>
+            <p>{t('headerSubtitle')}</p>
+          </div>
+          <nav className="header-nav">
+            {user ? (
+              <>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/perfil')}>
+                  {t('navProfile')}
                 </button>
-              )}
-              <button type="button" className="btn btn-danger btn-sm" onClick={() => { logout(); onNavigate('#/') }}>
-                {t('navLogout')}
-              </button>
-            </>
-          ) : (
-            <>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/consulta')}>
-                {t('navConsulta')}
-              </button>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/login')}>
-                {t('navLogin')}
-              </button>
-            </>
-          )}
-        </nav>
+                {user.role === 'admin' && (
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/admin')}>
+                    🛡️ Admin
+                  </button>
+                )}
+                <button type="button" className="btn btn-danger btn-sm" onClick={() => { logout(); onNavigate('#/') }}>
+                  {t('navLogout')}
+                </button>
+              </>
+            ) : (
+              <>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/consulta')}>
+                  {t('navConsulta')}
+                </button>
+                <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/login')}>
+                  {t('navLogin')}
+                </button>
+              </>
+            )}
+          </nav>
+        </div>
       </header>
 
       <div className="card">

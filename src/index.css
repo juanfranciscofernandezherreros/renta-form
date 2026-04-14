@@ -7,7 +7,7 @@ body {
   background: linear-gradient(135deg, #1a0533 0%, #2d0b69 35%, #0d2b7a 70%, #0a3d7c 100%);
   min-height: 100vh;
   color: #222;
-  padding: 24px 16px 60px;
+  padding: 0 16px 60px;
   position: relative;
 }
 
@@ -31,24 +31,33 @@ body::before {
 
 /* ── Header */
 header {
-  background: linear-gradient(135deg, #6c11c8 0%, #9b23e8 50%, #c333e0 100%);
+  background: linear-gradient(135deg, #5a0dab 0%, #8a1ed4 50%, #b82fd4 100%);
   color: #fff;
-  border-radius: 20px 20px 0 0;
-  padding: 24px 28px 20px;
+  border-radius: 0 0 18px 18px;
+  padding: 0 16px;
+  display: block;
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 500;
+  box-shadow: 0 4px 28px rgba(90,13,171,.65), 0 2px 8px rgba(0,0,0,.35);
+  max-width: 100%;
+  margin: 0;
+}
+.header-inner {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 18px 12px 16px;
   display: flex;
   align-items: center;
   gap: 16px;
-  max-width: 920px;
-  margin: 0 auto;
-  position: relative;
-  z-index: 1;
-  box-shadow: 0 4px 24px rgba(108,17,200,.4);
 }
 header::after {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 20px 20px 0 0;
+  border-radius: 0 0 18px 18px;
   background: linear-gradient(180deg, rgba(255,255,255,.08) 0%, transparent 100%);
   pointer-events: none;
 }
@@ -434,14 +443,14 @@ footer.footer-main {
 
 /* ── Language flags top bar */
 .lang-flags-top {
-  position: absolute;
-  top: 0;
-  right: 0;
+  position: fixed;
+  top: 10px;
+  right: 16px;
   z-index: 9999;
   display: flex;
   gap: 4px;
   align-items: center;
-  padding: 8px 16px;
+  padding: 4px 8px;
 }
 
 .lang-flag-btn {
@@ -1187,14 +1196,16 @@ footer.footer-main {
 
 @media (max-width: 600px) {
   body {
-    padding: 12px 8px 48px;
+    padding: 0 8px 48px;
   }
 
   header {
+    border-radius: 0 0 14px 14px;
+  }
+  .header-inner {
     flex-wrap: wrap;
-    padding: 16px 16px 14px;
+    padding: 14px 8px 12px;
     gap: 12px;
-    border-radius: 14px 14px 0 0;
   }
   header .header-text h1 { font-size: 1.15rem; }
   header .header-text p  { font-size: .78rem; }
