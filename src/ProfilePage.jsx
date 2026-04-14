@@ -127,34 +127,36 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
   return (
     <>
       <header>
-        <div className="logo">NH Gestión Integral</div>
-        <div className="header-text">
-          <h1>{t('profileTitle')}</h1>
-          <p>{t('headerSubtitle')}</p>
-        </div>
-        <nav className="header-nav">
-          <select
-            className="lang-select"
-            value={lang}
-            onChange={e => setLang(e.target.value)}
-            aria-label={t('langLabel')}
-          >
-            {availableLanguages.map(l => (
-              <option key={l.code} value={l.code}>{l.label}</option>
-            ))}
-          </select>
-          <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/')}>
-            {t('navNewForm')}
-          </button>
-          {user?.role === 'admin' && (
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/admin')}>
-              🛡️ Admin
+        <div className="header-inner">
+          <div className="logo">NH Gestión Integral</div>
+          <div className="header-text">
+            <h1>{t('profileTitle')}</h1>
+            <p>{t('headerSubtitle')}</p>
+          </div>
+          <nav className="header-nav">
+            <select
+              className="lang-select"
+              value={lang}
+              onChange={e => setLang(e.target.value)}
+              aria-label={t('langLabel')}
+            >
+              {availableLanguages.map(l => (
+                <option key={l.code} value={l.code}>{l.label}</option>
+              ))}
+            </select>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/')}>
+              {t('navNewForm')}
             </button>
-          )}
-          <button type="button" className="btn btn-danger btn-sm" onClick={handleLogout}>
-            {t('navLogout')}
-          </button>
-        </nav>
+            {user?.role === 'admin' && (
+              <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/admin')}>
+                🛡️ Admin
+              </button>
+            )}
+            <button type="button" className="btn btn-danger btn-sm" onClick={handleLogout}>
+              {t('navLogout')}
+            </button>
+          </nav>
+        </div>
       </header>
 
       {toast && (
