@@ -249,7 +249,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
         steps.push({ type: 'question', key: `q:${pregunta.id}`, seccion, pregunta })
       }
     }
-    
     return steps
   }, [loadingPreguntas, secciones])
   const totalSteps = visibleSteps.length
