@@ -182,6 +182,49 @@ export async function sendEmailDeclaracion({ declaracionId, email, mensaje }) {
   })
 }
 
+// ── Admin: Preguntas adicionales ──────────────────────────────────────────
+
+export async function listPreguntasAdmin(options) {
+  const { activa, page, limit } = options?.query ?? {}
+  return request('GET', '/admin/preguntas', { query: { activa, page, limit } })
+}
+
+export async function createPreguntaAdmin(options) {
+  const body = options?.body ?? {}
+  return request('POST', '/admin/preguntas', { body })
+}
+
+export async function updatePreguntaAdmin(options) {
+  const id = options?.path?.id
+  const body = options?.body ?? {}
+  return request('PUT', `/admin/preguntas/${encodeURIComponent(id)}`, { body })
+}
+
+export async function deletePreguntaAdmin(options) {
+  const id = options?.path?.id
+  return request('DELETE', `/admin/preguntas/${encodeURIComponent(id)}`)
+}
+
+// ── Declaración ↔ Preguntas adicionales ──────────────────────────────────
+
+export async function getDeclaracionPreguntas(options) {
+  const id = options?.path?.id
+  return request('GET', `/irpf/declaraciones/${encodeURIComponent(id)}/preguntas`)
+}
+
+export async function upsertDeclaracionPreguntas(options) {
+  const id = options?.path?.id
+  const { asignaciones = [] } = options?.body ?? {}
+  return request('POST', `/irpf/declaraciones/${encodeURIComponent(id)}/preguntas`, {
+    body: { asignaciones },
+  })
+}
+
+export async function removeDeclaracionPregunta(options) {
+  const { id, preguntaId } = options?.path ?? {}
+  return request('DELETE', `/irpf/declaraciones/${encodeURIComponent(id)}/preguntas/${encodeURIComponent(preguntaId)}`)
+}
+
 // ── Admin: Preguntas del formulario ───────────────────────────────────────
 
 export async function listPreguntasFormulario() {
