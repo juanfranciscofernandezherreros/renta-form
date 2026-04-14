@@ -928,8 +928,10 @@ export type DeleteIdiomaAdminResponses = {
     /**
      * Idioma eliminado correctamente
      */
-    200: unknown;
+    204: void;
 };
+
+export type DeleteIdiomaAdminResponse = DeleteIdiomaAdminResponses[keyof DeleteIdiomaAdminResponses];
 
 export type UpdateIdiomaAdminData = {
     body: IdiomaUpdateInput;

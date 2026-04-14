@@ -611,7 +611,7 @@ paths:
       parameters:
         - $ref: '#/components/parameters/IdiomaIdParam'
       responses:
-        '200':
+        '204':
           description: Idioma eliminado correctamente
         '400':
           description: No se puede eliminar el idioma por defecto
