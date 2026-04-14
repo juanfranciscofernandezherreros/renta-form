@@ -113,7 +113,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const [xpPopups, setXpPopups] = useState([])
   const [streak, setStreak] = useState(0)
   const [questionShake, setQuestionShake] = useState(false)
-  const [showLevelUp, setShowLevelUp] = useState(null)
   const [confettiPieces, setConfettiPieces] = useState([])
   const xpCounterRef = useRef(0)
 
@@ -206,15 +205,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
     // Auto-advance after answering a yes/no question
     const nextStep = visibleSteps[safeStep + 1]
     if (nextStep) {
-      if (nextStep.type === 'question') {
-        const currSectionTitle = currentStepInfo?.type === 'question' ? currentStepInfo.seccion?.titulo : '__none__'
-        const nextSectionTitle = nextStep.seccion?.titulo
-        if (currSectionTitle !== nextSectionTitle) {
-          const banner = nextStep.seccion.titulos?.[lang] ?? nextStep.seccion.titulo
-          setShowLevelUp(banner)
-          setTimeout(() => setShowLevelUp(null), 2300)
-        }
-      }
       setStepDirection('forward')
       setCurrentStep(prev => prev + 1)
       setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
@@ -276,17 +266,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
         setQuestionShake(true)
         setTimeout(() => setQuestionShake(false), SHAKE_DURATION_MS)
         return
-      }
-    }
-    // Section-change level-up banner
-    const nextStep = visibleSteps[safeStep + 1]
-    if (nextStep?.type === 'question') {
-      const currSectionTitle = info?.type === 'question' ? info.seccion?.titulo : '__none__'
-      const nextSectionTitle = nextStep.seccion?.titulo
-      if (currSectionTitle !== nextSectionTitle) {
-        const banner = nextStep.seccion.titulos?.[lang] ?? nextStep.seccion.titulo
-        setShowLevelUp(banner)
-        setTimeout(() => setShowLevelUp(null), 2300)
       }
     }
     setStepDirection('forward')
@@ -675,14 +654,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
         />
       ))}
 
-      {/* Level-up / section-change banner */}
-      {showLevelUp && (
-        <div key={showLevelUp} className="level-up-banner">
-          <span className="level-up-icon">🏆</span>
-          <div className="level-up-title">{t('levelUpNewSection')}</div>
-          <div className="level-up-subtitle">{showLevelUp}</div>
-        </div>
-      )}
     </>
   )
 }
