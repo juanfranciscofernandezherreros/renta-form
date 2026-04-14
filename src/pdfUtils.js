@@ -34,7 +34,7 @@ function buildSecciones(dbSecciones, lang) {
 
   if (!dbSecciones || !dbSecciones.length) return FALLBACK_SECCIONES
 
-  const dynamicSections = dbSecciones.map((sec, idx) => {
+  const dynamicSections = dbSecciones.map((sec) => {
     const labels = {}
     const campos = (sec.preguntas ?? []).map(p => {
       labels[p.id] = (p.textos && p.textos[lang]) ? p.textos[lang] : p.texto
@@ -42,7 +42,6 @@ function buildSecciones(dbSecciones, lang) {
     })
     return {
       titulo: (sec.titulos && sec.titulos[lang]) ? sec.titulos[lang] : sec.titulo,
-      numero: idx + 2,
       campos,
       labels,
     }

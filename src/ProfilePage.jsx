@@ -207,7 +207,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
                   <div className="declaracion-body">
                     {/* 1. Identification fields (always static) */}
                     <div>
-                      <div className="section-title">1. Datos de Identificación</div>
+                      <div className="section-title">{t('section1')}</div>
                       <table className="respuestas-table">
                         <tbody>
                           {ID_CAMPOS.map(campo => {

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useAuth } from './AuthContext.jsx'
+import { useLanguage } from './LanguageContext.jsx'
 import {
   listDeclaracionesAll,
   updateEstadoDeclaracion,
@@ -147,6 +148,7 @@ function downloadDeclaracionPdf(dec, preguntasSecciones) {
 
 export default function AdminPage({ onNavigate }) {
   const { user, logout } = useAuth()
+  const { t } = useLanguage()
   const [activeTab, setActiveTab] = useState('declaraciones')
   const [declaraciones, setDeclaraciones] = useState([])
   const [total, setTotal] = useState(0)
@@ -510,7 +512,7 @@ export default function AdminPage({ onNavigate }) {
                     {/* Data section 1: Identification (static) */}
                     {['nombre', 'apellidos', 'dniNie', 'email', 'telefono'].some(c => dec[c] !== undefined && dec[c] !== null) && (
                       <div>
-                        <div className="section-title">1. Datos de Identificación</div>
+                        <div className="section-title">{t('section1')}</div>
                         <table className="respuestas-table">
                           <tbody>
                             {['nombre', 'apellidos', 'dniNie', 'email', 'telefono'].map(campo => {
