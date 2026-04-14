@@ -174,32 +174,6 @@ export async function listSeccionesAdmin(options) {
   return request('GET', '/admin/secciones', { query: { activa, page, limit } })
 }
 
-export async function createSeccionAdmin(options) {
-  const body = options?.body ?? {}
-  return request('POST', '/admin/secciones', { body })
-}
-
-export async function updateSeccionAdmin(options) {
-  const id = options?.path?.id
-  const body = options?.body ?? {}
-  return request('PUT', `/admin/secciones/${encodeURIComponent(id)}`, { body })
-}
-
-export async function deleteSeccionAdmin(options) {
-  const id = options?.path?.id
-  return request('DELETE', `/admin/secciones/${encodeURIComponent(id)}`)
-}
-
-export async function getSeccionDeclaraciones(options) {
-  const id = options?.path?.id
-  return request('GET', `/admin/secciones/${encodeURIComponent(id)}/declaraciones`)
-}
-
-export async function getSeccionPreguntas(options) {
-  const id = options?.path?.id
-  return request('GET', `/admin/secciones/${encodeURIComponent(id)}/preguntas`)
-}
-
 // ── Admin: Usuarios ────────────────────────────────────────────────────────
 
 export async function listUsersAdmin(options) {
