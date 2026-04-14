@@ -513,6 +513,8 @@ async function updateIdiomaContent(id, body) {
 
 // ── Admin: Preguntas adicionales ───────────────────────────────────────────
 
+const TIPOS_RESPUESTA_VALIDOS = ['yn', 'texto', 'numero', 'fecha', 'importe', 'porcentaje', 'multilinea']
+
 async function listPreguntasAdmin({ activa, page = 1, limit = 10 } = {}) {
   let resultado = [...store.preguntasAdicionales]
   if (activa !== undefined) {
@@ -528,12 +530,14 @@ async function listPreguntasAdmin({ activa, page = 1, limit = 10 } = {}) {
 async function createPreguntaAdmin({ texto, seccion, tipoRespuesta, orden = 0, activa = true, obligatoria = false } = {}) {
   if (!texto || !String(texto).trim()) return { data: null, error: { message: 'El texto es obligatorio' } }
   if (!seccion || !String(seccion).trim()) return { data: null, error: { message: 'La sección es obligatoria' } }
+  const tipo = tipoRespuesta ?? 'yn'
+  if (!TIPOS_RESPUESTA_VALIDOS.includes(tipo)) return { data: null, error: { message: 'Tipo de respuesta no válido' } }
   const ahora = new Date().toISOString()
   const nueva = {
     id: store.generarPreguntaId(),
     texto: texto.trim(),
     seccion: seccion.trim(),
-    tipoRespuesta: tipoRespuesta ?? 'yn',
+    tipoRespuesta: tipo,
     orden: Number(orden),
     activa: Boolean(activa),
     obligatoria: Boolean(obligatoria),
@@ -545,6 +549,9 @@ async function createPreguntaAdmin({ texto, seccion, tipoRespuesta, orden = 0, a
 }
 
 async function updatePreguntaAdmin(id, body) {
+  if (body.tipoRespuesta !== undefined && !TIPOS_RESPUESTA_VALIDOS.includes(body.tipoRespuesta)) {
+    return { data: null, error: { message: 'Tipo de respuesta no válido' } }
+  }
   const idx = store.preguntasAdicionales.findIndex((p) => p.id === id)
   if (idx === -1) return { data: null, error: { message: 'Pregunta no encontrada' } }
   store.preguntasAdicionales[idx] = {

@@ -888,6 +888,9 @@ async function deleteDocumento(docId) {
 
 // ── Admin: Preguntas adicionales ───────────────────────────────────────────
 
+// Valid response types for preguntas adicionales
+const TIPOS_RESPUESTA_VALIDOS = ['yn', 'texto', 'numero', 'fecha', 'importe', 'porcentaje', 'multilinea']
+
 function rowToPreguntaAdicional(r) {
   return {
     id: r.id,
@@ -924,8 +927,7 @@ async function listPreguntasAdmin({ activa, page = 1, limit = 10 } = {}) {
 async function createPreguntaAdmin({ texto, seccion, tipoRespuesta, orden = 0, activa = true, obligatoria = false } = {}) {
   if (!texto || !String(texto).trim()) return { data: null, error: { message: 'El texto es obligatorio' } }
   if (!seccion || !String(seccion).trim()) return { data: null, error: { message: 'La sección es obligatoria' } }
-  const TIPOS_VALIDOS = ['yn', 'texto', 'numero', 'fecha', 'importe', 'porcentaje', 'multilinea']
-  if (!TIPOS_VALIDOS.includes(tipoRespuesta)) return { data: null, error: { message: 'Tipo de respuesta no válido' } }
+  if (!TIPOS_RESPUESTA_VALIDOS.includes(tipoRespuesta)) return { data: null, error: { message: 'Tipo de respuesta no válido' } }
   const { rows } = await pool.query(
     `INSERT INTO preguntas_adicionales (texto, seccion, tipo_respuesta, orden, activa, obligatoria)
      VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
@@ -936,6 +938,9 @@ async function createPreguntaAdmin({ texto, seccion, tipoRespuesta, orden = 0, a
 
 async function updatePreguntaAdmin(id, body) {
   if (!id) return { data: null, error: { message: 'ID obligatorio' } }
+  if (body.tipoRespuesta !== undefined && !TIPOS_RESPUESTA_VALIDOS.includes(body.tipoRespuesta)) {
+    return { data: null, error: { message: 'Tipo de respuesta no válido' } }
+  }
   const { rows: existing } = await pool.query('SELECT id FROM preguntas_adicionales WHERE id = $1', [id])
   if (!existing.length) return { data: null, error: { message: 'Pregunta no encontrada' } }
   const allowed = { texto: 'texto', seccion: 'seccion', tipoRespuesta: 'tipo_respuesta', orden: 'orden', activa: 'activa', obligatoria: 'obligatoria' }
