@@ -40,7 +40,9 @@ export function LanguageProvider({ children }) {
     let cancelled = false
     fetchLanguageData().then((data) => {
       if (!cancelled) applyData(data)
-    }).catch(() => { /* fallback: keep static */ })
+    }).catch((err) => {
+      console.warn('Failed to load translations from DB, using static fallback:', err)
+    })
     return () => { cancelled = true }
   }, [applyData])
 

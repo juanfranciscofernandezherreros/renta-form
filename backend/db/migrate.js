@@ -43,8 +43,12 @@ async function migrate() {
   }
 
   // Seed translations from static data (idempotent)
-  const seedTraducciones = require('./seedTraducciones')
-  await seedTraducciones()
+  try {
+    const seedTraducciones = require('./seedTraducciones')
+    await seedTraducciones()
+  } catch (err) {
+    console.error('[migrate] Failed to seed translations:', err)
+  }
 }
 
 module.exports = migrate

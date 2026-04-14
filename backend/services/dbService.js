@@ -510,7 +510,7 @@ async function createIdiomaAdmin({ code, label, activo }) {
   try {
     const { rows } = await pool.query(
       `INSERT INTO idiomas (code, label, activo) VALUES ($1, $2, $3) RETURNING *`,
-      [code.trim().toLowerCase(), label.trim(), activo !== false]
+      [code.trim().toLowerCase(), label.trim(), activo ?? true]
     )
     return { data: rowToIdioma(rows[0]), error: null, status: 201 }
   } catch (err) {
