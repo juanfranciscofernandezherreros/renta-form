@@ -54,13 +54,11 @@ Given('el usuario abre la pagina principal', async function () {
 })
 
 Given('el usuario navega a la pantalla de login', async function () {
-  await this.grantIntranetAccess()
   await this.page.goto(`${this.baseUrl}/#/login`, { waitUntil: 'networkidle' })
   await this.page.waitForSelector('form', { timeout: 10000 })
 })
 
 Given('el usuario navega a la pantalla de consulta', async function () {
-  await this.grantIntranetAccess()
   await this.page.goto(`${this.baseUrl}/#/consulta`, { waitUntil: 'networkidle' })
   await this.page.waitForSelector('.card', { timeout: 10000 })
 })
@@ -116,10 +114,4 @@ Then('se toma un screenshot {string}', async function (name) {
   await this.page.waitForTimeout(400)
   const path = await this.screenshot(name)
   console.log(`  Screenshot guardado: ${path}`)
-})
-
-Given('el usuario abre la pantalla de intranet', async function () {
-  await this.page.goto(this.baseUrl, { waitUntil: 'networkidle' })
-  // The intranet gate shows when sessionStorage has no access granted
-  await this.page.waitForSelector('.card form', { timeout: 10000 })
 })

@@ -30,12 +30,8 @@ export class World {
     return path
   }
 
-  /** Grant intranet access via sessionStorage (avoids filling the gate form each time). */
+  /** Navigate to the main page and wait for it to be ready. */
   async grantIntranetAccess() {
-    await this.page.goto(this.baseUrl)
-    await this.page.evaluate(() => {
-      sessionStorage.setItem('renta_form_intranet', 'true')
-    })
-    await this.page.reload({ waitUntil: 'networkidle' })
+    await this.page.goto(this.baseUrl, { waitUntil: 'networkidle' })
   }
 }

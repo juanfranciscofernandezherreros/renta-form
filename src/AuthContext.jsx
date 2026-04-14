@@ -2,7 +2,6 @@
 import { createContext, useContext, useState } from 'react'
 
 const STORAGE_KEY = 'renta_form_user'
-const INTRANET_KEY = 'renta_form_intranet'
 
 const AuthContext = createContext(null)
 
@@ -16,14 +15,6 @@ export function AuthProvider({ children }) {
     }
   })
 
-  const [intranetAccess, setIntranetAccess] = useState(() => {
-    try {
-      return sessionStorage.getItem(INTRANET_KEY) === 'true'
-    } catch {
-      return false
-    }
-  })
-
   const login = (userData) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(userData))
     setUser(userData)
@@ -34,17 +25,8 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
-  const grantIntranetAccess = () => {
-    try {
-      sessionStorage.setItem(INTRANET_KEY, 'true')
-    } catch {
-      // sessionStorage not available
-    }
-    setIntranetAccess(true)
-  }
-
   return (
-    <AuthContext.Provider value={{ user, login, logout, intranetAccess, grantIntranetAccess }}>
+    <AuthContext.Provider value={{ user, login, logout }}>
       {children}
     </AuthContext.Provider>
   )

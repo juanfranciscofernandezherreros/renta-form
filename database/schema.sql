@@ -315,29 +315,6 @@ WHERE
     OR ingresos_inversiones = 'si';
 
 -- =============================================================
---  TABLA: codigos_acceso
---  Códigos de acceso a la intranet. El usuario debe introducir
---  uno de estos códigos activos para poder entrar a la aplicación.
--- =============================================================
-CREATE TABLE IF NOT EXISTS codigos_acceso (
-    id              UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
-    codigo          VARCHAR(100)    NOT NULL UNIQUE,
-    descripcion     VARCHAR(255),
-    activo          BOOLEAN         NOT NULL DEFAULT TRUE,
-    creado_en       TIMESTAMPTZ     NOT NULL DEFAULT NOW()
-);
-
-CREATE INDEX IF NOT EXISTS idx_codigos_acceso_codigo
-    ON codigos_acceso (codigo);
-
-CREATE INDEX IF NOT EXISTS idx_codigos_acceso_activo
-    ON codigos_acceso (activo);
-
--- Código de acceso inicial (cambiar en producción)
-INSERT INTO codigos_acceso (codigo, descripcion) VALUES
-    ('intranet2025', 'Código de acceso campaña Renta 2025');
-
--- =============================================================
 --  DATOS DE EJEMPLO (comentar en producción)
 -- =============================================================
 /*

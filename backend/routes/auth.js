@@ -33,14 +33,6 @@ module.exports = function authRoutes(svc) {
     send(res, result)
   })
 
-  // POST /v1/auth/verificar-codigo
-  router.post('/verificar-codigo', async (req, res) => {
-    const { codigo } = req.body ?? {}
-    if (!codigo) return res.status(400).json({ error: 'codigo es obligatorio' })
-    const result = await svc.verificarCodigoAcceso({ codigo })
-    send(res, result)
-  })
-
   // POST /v1/auth/change-password
   router.post('/change-password', async (req, res) => {
     const { dniNie, oldPassword, newPassword } = req.body ?? {}

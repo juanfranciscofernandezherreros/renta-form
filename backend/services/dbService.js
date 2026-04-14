@@ -139,15 +139,6 @@ async function loginUser({ dniNie, password }) {
   return { data: { dniNie, role: user.role }, error: null }
 }
 
-async function verificarCodigoAcceso({ codigo }) {
-  const { rows } = await pool.query(
-    'SELECT id FROM codigos_acceso WHERE codigo = $1 AND activo = true',
-    [codigo.trim()]
-  )
-  if (!rows.length) return { data: null, error: { message: 'Código de acceso incorrecto' } }
-  return { data: { valido: true }, error: null }
-}
-
 async function changePassword({ dniNie, oldPassword, newPassword }) {
   const { rows } = await pool.query(
     'SELECT password_hash FROM usuarios WHERE dni_nie = $1',
@@ -899,7 +890,6 @@ async function deleteDocumento(docId) {
 
 module.exports = {
   loginUser,
-  verificarCodigoAcceso,
   changePassword,
   getPreguntas,
   listDeclaraciones,
