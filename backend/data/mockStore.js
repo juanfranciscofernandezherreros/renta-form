@@ -438,17 +438,6 @@ const idiomasIniciales = [
   actualizadoEn: '2025-01-01T00:00:00.000Z',
 }))
 
-// ── Códigos de acceso ─────────────────────────────────────────────────────
-const codigosAccesoIniciales = [
-  {
-    id: 'ca000001-0001-0001-0001-000000000001',
-    codigo: 'intranet2025',
-    descripcion: 'Código de acceso campaña Renta 2025',
-    activo: true,
-    creadoEn: '2025-01-01T00:00:00.000Z',
-  },
-]
-
 // ── ID counters ───────────────────────────────────────────────────────────
 let nextIdCounter = 5
 let nextPreguntaIdCounter = 5
@@ -495,7 +484,6 @@ const store = {
     en: { ...staticTranslations.en },
     fr: { ...staticTranslations.fr },
   },
-  codigosAcceso: [...codigosAccesoIniciales],
 
   // Passwords for seed users are stored in plain text here for demo purposes ONLY.
   // DO NOT use plain-text passwords in production.

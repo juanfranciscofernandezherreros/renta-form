@@ -43,16 +43,6 @@ async function loginUser({ dniNie, password }) {
   return { data: { dniNie, role }, error: null }
 }
 
-async function verificarCodigoAcceso({ codigo }) {
-  const encontrado = store.codigosAcceso.find(
-    (c) => c.activo && c.codigo === codigo.trim()
-  )
-  if (!encontrado) {
-    return { data: null, error: { message: 'Código de acceso incorrecto' } }
-  }
-  return { data: { valido: true }, error: null }
-}
-
 async function changePassword({ dniNie, oldPassword, newPassword }) {
   const storedPassword = store.passwords.get(dniNie)
   if (storedPassword === undefined) {
@@ -525,7 +515,6 @@ async function updateIdiomaContent(id, body) {
 
 module.exports = {
   loginUser,
-  verificarCodigoAcceso,
   changePassword,
   getPreguntas,
   listDeclaraciones,
