@@ -234,7 +234,7 @@ async function createPreguntaFormulario({ texto }) {
   await pool.query(
     `UPDATE preguntas_formulario SET campo = id::text WHERE id = $1 AND (campo IS NULL OR campo = '')`,
     [rows[0].id]
-  )
+  ).catch(err => console.error('Warning: could not auto-set campo for new question:', err.message))
 
   const { rows: full } = await pool.query(
     `SELECT id, texto, actualizada_en FROM preguntas_formulario WHERE id = $1`,
