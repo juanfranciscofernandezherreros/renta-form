@@ -61,6 +61,55 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /irpf/idiomas:
+    get:
+      operationId: getIdiomas
+      tags: [Preguntas]
+      summary: Obtiene los idiomas activos
+      description: |
+        Devuelve la lista de idiomas activos disponibles para la interfaz.
+      responses:
+        '200':
+          description: Lista de idiomas activos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    code:
+                      type: string
+                      example: es
+                    label:
+                      type: string
+                      example: Español
+
+  /irpf/traducciones:
+    get:
+      operationId: getTraducciones
+      tags: [Preguntas]
+      summary: Obtiene todas las traducciones activas
+      description: |
+        Devuelve un mapa con las traducciones de cada idioma activo,
+        agrupadas por código de idioma.
+      responses:
+        '200':
+          description: Traducciones obtenidas correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: object
+                  additionalProperties:
+                    type: string
+              example:
+                es:
+                  headerTitle: 'Cuestionario para Expediente Fiscal'
+                en:
+                  headerTitle: 'Tax Filing Questionnaire'
+
   /irpf/declaraciones:
     post:
       operationId: createDeclaracion

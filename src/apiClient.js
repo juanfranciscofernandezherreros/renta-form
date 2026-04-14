@@ -51,6 +51,16 @@ export async function getPreguntas() {
   return request('GET', '/irpf/preguntas')
 }
 
+// ── Public idiomas & traducciones ──────────────────────────────────────────
+
+export async function getIdiomas() {
+  return request('GET', '/irpf/idiomas')
+}
+
+export async function getTraducciones() {
+  return request('GET', '/irpf/traducciones')
+}
+
 // ── Declaraciones ──────────────────────────────────────────────────────────
 
 export async function listDeclaraciones(options) {

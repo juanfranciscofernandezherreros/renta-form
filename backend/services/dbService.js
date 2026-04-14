@@ -806,6 +806,41 @@ async function setUserSecciones(dniNie, seccionIds) {
   return { data: { success: true }, error: null }
 }
 
+// ── Public: Idiomas & Traducciones (load from DB) ──────────────────────────
+
+async function listPublicIdiomas() {
+  try {
+    const { rows } = await pool.query(
+      'SELECT code, label FROM idiomas WHERE activo = true ORDER BY creado_en ASC'
+    )
+    return { data: rows.map(r => ({ code: r.code, label: r.label })), error: null }
+  } catch (err) {
+    console.error('listPublicIdiomas error:', err.message)
+    return { data: [], error: null }
+  }
+}
+
+async function getPublicTraducciones() {
+  try {
+    const { rows } = await pool.query(
+      `SELECT i.code, t.clave, t.valor
+       FROM traducciones t
+       JOIN idiomas i ON i.code = t.code
+       WHERE i.activo = true
+       ORDER BY i.code, t.clave`
+    )
+    const result = {}
+    for (const r of rows) {
+      if (!result[r.code]) result[r.code] = {}
+      result[r.code][r.clave] = r.valor
+    }
+    return { data: result, error: null }
+  } catch (err) {
+    console.error('getPublicTraducciones error:', err.message)
+    return { data: {}, error: null }
+  }
+}
+
 // ── Admin: Idiomas ─────────────────────────────────────────────────────────
 
 async function listIdiomasAdmin({ activo, page = 1, limit = 10 }) {
@@ -914,6 +949,8 @@ module.exports = {
   loginUser,
   changePassword,
   getPreguntas,
+  listPublicIdiomas,
+  getPublicTraducciones,
   listDeclaraciones,
   listDeclaracionesAll,
   createDeclaracion,
