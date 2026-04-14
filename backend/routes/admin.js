@@ -80,5 +80,43 @@ module.exports = function adminRoutes(svc) {
     send(res, result)
   })
 
+  // ── Idiomas & Traducciones ───────────────────────────────────────────────
+
+  router.get('/idiomas', async (req, res) => {
+    const { activo, page, limit } = req.query
+    const result = await svc.listIdiomasAdmin({
+      activo: activo !== undefined ? activo === 'true' : undefined,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 20,
+    })
+    send(res, result)
+  })
+
+  router.post('/idiomas', async (req, res) => {
+    const result = await svc.createIdiomaAdmin(req.body ?? {})
+    send(res, result)
+  })
+
+  router.put('/idiomas/:idiomaId', async (req, res) => {
+    const result = await svc.updateIdiomaAdmin(req.params.idiomaId, req.body ?? {})
+    send(res, result)
+  })
+
+  router.delete('/idiomas/:idiomaId', async (req, res) => {
+    const result = await svc.deleteIdiomaAdmin(req.params.idiomaId)
+    if (result.status === 204) return res.status(204).end()
+    send(res, result)
+  })
+
+  router.get('/idiomas/:idiomaId/content', async (req, res) => {
+    const result = await svc.getIdiomaContent(req.params.idiomaId)
+    send(res, result)
+  })
+
+  router.put('/idiomas/:idiomaId/content', async (req, res) => {
+    const result = await svc.updateIdiomaContent(req.params.idiomaId, req.body ?? {})
+    send(res, result)
+  })
+
   return router
 }

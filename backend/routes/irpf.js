@@ -19,6 +19,18 @@ module.exports = function irpfRoutes(svc) {
     send(res, result)
   })
 
+  // GET /v1/irpf/idiomas
+  router.get('/idiomas', async (_req, res) => {
+    const result = await svc.getIdiomas()
+    send(res, result)
+  })
+
+  // GET /v1/irpf/traducciones
+  router.get('/traducciones', async (_req, res) => {
+    const result = await svc.getTraducciones()
+    send(res, result)
+  })
+
   // GET /v1/irpf/declaraciones/all  (admin – must come BEFORE /:id)
   router.get('/declaraciones/all', async (req, res) => {
     const { dniNie, estado, page, limit } = req.query

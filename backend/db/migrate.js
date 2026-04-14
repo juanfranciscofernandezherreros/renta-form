@@ -5,6 +5,7 @@ const path = require('path')
 const pool = require('./pool')
 
 const INIT_SQL = path.join(__dirname, '../../database/init.sql')
+const IDIOMAS_SQL = path.join(__dirname, '../../database/002_idiomas_traducciones.sql')
 
 async function tableExists(client, tableName) {
   const { rows } = await client.query(
@@ -28,9 +29,22 @@ async function migrate() {
     } else {
       console.log('[migrate] init.sql already applied, skipping.')
     }
+
+    // Run idiomas/traducciones migration if not yet created
+    if (!(await tableExists(client, 'idiomas'))) {
+      console.log('[migrate] Running 002_idiomas_traducciones.sql ...')
+      await client.query(fs.readFileSync(IDIOMAS_SQL, 'utf8'))
+      console.log('[migrate] 002_idiomas_traducciones.sql applied.')
+    } else {
+      console.log('[migrate] idiomas table already exists, skipping.')
+    }
   } finally {
     client.release()
   }
+
+  // Seed translations from static data (idempotent)
+  const seedTraducciones = require('./seedTraducciones')
+  await seedTraducciones()
 }
 
 module.exports = migrate
