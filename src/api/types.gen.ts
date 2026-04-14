@@ -13,20 +13,6 @@ export type EstadoExpediente = 'recibido' | 'en_revision' | 'documentacion_pendi
 
 export type TipoDocumento = 'dni_anverso' | 'dni_reverso' | 'adicional';
 
-/**
- * La pregunta sólo se muestra si el campo indicado tiene el valor especificado
- */
-export type CondicionVisibilidad = {
-    /**
-     * Nombre del campo del formulario que actúa como condición
-     */
-    campo: string;
-    /**
-     * Valor que debe tener el campo para mostrar esta pregunta
-     */
-    valor: string;
-};
-
 export type Pregunta = {
     /**
      * Identificador único (coincide con el nombre del campo en el formulario)
@@ -36,11 +22,6 @@ export type Pregunta = {
      * Texto de la pregunta que se muestra al usuario
      */
     texto: string;
-    /**
-     * Si es true, la pregunta se muestra con sangría (es subpregunta de otra)
-     */
-    indentada: boolean;
-    condicion?: CondicionVisibilidad;
 };
 
 export type Seccion = {

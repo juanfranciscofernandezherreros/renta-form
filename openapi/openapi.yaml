@@ -36,8 +36,7 @@ paths:
       tags: [Preguntas]
       summary: Obtiene el catálogo de preguntas
       description: |
-        Devuelve todas las secciones del cuestionario con sus preguntas
-        ordenadas, incluyendo condiciones de visibilidad condicional.
+        Devuelve todas las secciones del cuestionario con sus preguntas.
       responses:
         '200':
           description: Catálogo de preguntas obtenido correctamente
@@ -53,13 +52,8 @@ paths:
                     preguntas:
                       - id: viviendaAlquiler
                         texto: '¿Vive de alquiler?'
-                        indentada: false
                       - id: alquilerMenos35
-                        texto: '¿El alquiler es inferior a 35 años?'
-                        indentada: true
-                        condicion:
-                          campo: viviendaAlquiler
-                          valor: si
+                        texto: '¿El alquiler es inferior al 35 % de los ingresos?'
         '503':
           description: Servicio no disponible
           content:
@@ -543,23 +537,9 @@ paths:
     # ------------------------------------------------------------------
     # Catálogo de Preguntas
     # ------------------------------------------------------------------
-    CondicionVisibilidad:
-      type: object
-      required: [campo, valor]
-      description: La pregunta sólo se muestra si el campo indicado tiene el valor especificado
-      properties:
-        campo:
-          type: string
-          description: Nombre del campo del formulario que actúa como condición
-          example: viviendaAlquiler
-        valor:
-          type: string
-          description: Valor que debe tener el campo para mostrar esta pregunta
-          example: si
-
     Pregunta:
       type: object
-      required: [id, texto, indentada]
+      required: [id, texto]
       properties:
         id:
           type: string
@@ -569,12 +549,6 @@ paths:
           type: string
           description: Texto de la pregunta que se muestra al usuario
           example: '¿El importe del alquiler es inferior al 35 % de los ingresos?'
-        indentada:
-          type: boolean
-          description: Si es true, la pregunta se muestra con sangría (es subpregunta de otra)
-          default: false
-        condicion:
-          $ref: '#/components/schemas/CondicionVisibilidad'
 
     Seccion:
       type: object

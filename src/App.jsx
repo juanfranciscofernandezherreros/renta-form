@@ -249,16 +249,12 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
     const steps = [{ type: 'id', key: 'id' }]
     for (const seccion of secciones) {
       for (const pregunta of seccion.preguntas) {
-        const isVisible = !pregunta.condicion ||
-          form[pregunta.condicion.campo] === pregunta.condicion.valor
-        if (isVisible) {
-          steps.push({ type: 'question', key: `q:${pregunta.id}`, seccion, pregunta })
-        }
+        steps.push({ type: 'question', key: `q:${pregunta.id}`, seccion, pregunta })
       }
     }
     steps.push({ type: 'comments', key: 'comments' })
     return steps
-  }, [loadingPreguntas, secciones, form])
+  }, [loadingPreguntas, secciones])
   const totalSteps = visibleSteps.length
   const safeStep = Math.min(currentStep, Math.max(0, visibleSteps.length - 1))
   const currentStepInfo = visibleSteps[safeStep]
@@ -319,12 +315,10 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       return
     }
 
-    // Validate all visible questions are answered
+    // Validate all questions are answered
     const unanswered = secciones.some(seccion =>
       seccion.preguntas.some(pregunta => {
-        const visible = !pregunta.condicion ||
-          form[pregunta.condicion.campo] === pregunta.condicion.valor
-        return visible && (form[pregunta.id] == null || form[pregunta.id] === '')
+        return form[pregunta.id] == null || form[pregunta.id] === ''
       })
     )
     if (unanswered) {

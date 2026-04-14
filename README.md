@@ -153,44 +153,32 @@ No requiere cuerpo ni parámetros. La respuesta contiene las secciones y pregunt
         {
           "id": "viviendaAlquiler",
           "texto": "¿Vives actualmente de alquiler?",
-          "tipo": "si_no",
-          "indentada": false,
-          "condicion": null
+          "tipo": "si_no"
         },
         {
           "id": "alquilerMenos35",
           "texto": "En caso de vivir de alquiler, ¿tienes menos de 35 años?",
-          "tipo": "si_no",
-          "indentada": true,
-          "condicion": { "campo": "viviendaAlquiler", "valor": "si" }
+          "tipo": "si_no"
         },
         {
           "id": "viviendaPropiedad",
           "texto": "¿Tu vivienda habitual es de propiedad?",
-          "tipo": "si_no",
-          "indentada": false,
-          "condicion": null
+          "tipo": "si_no"
         },
         {
           "id": "propiedadAntes2013",
           "texto": "En caso de ser de propiedad, ¿la compraste antes del 1 de enero de 2013?",
-          "tipo": "si_no",
-          "indentada": true,
-          "condicion": { "campo": "viviendaPropiedad", "valor": "si" }
+          "tipo": "si_no"
         },
         {
           "id": "pisosAlquiladosTerceros",
           "texto": "¿Tienes otros pisos de tu propiedad que estén alquilados a terceros?",
-          "tipo": "si_no",
-          "indentada": false,
-          "condicion": null
+          "tipo": "si_no"
         },
         {
           "id": "segundaResidencia",
           "texto": "¿Tienes una segunda residencia para tu propio uso y disfrute?",
-          "tipo": "si_no",
-          "indentada": false,
-          "condicion": null
+          "tipo": "si_no"
         }
       ]
     },
@@ -202,37 +190,27 @@ No requiere cuerpo ni parámetros. La respuesta contiene las secciones y pregunt
         {
           "id": "familiaNumerosa",
           "texto": "¿Tienes el título de familia numerosa?",
-          "tipo": "si_no",
-          "indentada": false,
-          "condicion": null
+          "tipo": "si_no"
         },
         {
           "id": "ayudasGobierno",
           "texto": "¿Has recibido alguna ayuda o subvención del gobierno durante el año 2025?",
-          "tipo": "si_no",
-          "indentada": false,
-          "condicion": null
+          "tipo": "si_no"
         },
         {
           "id": "mayores65ACargo",
           "texto": "¿Tienes personas mayores de 65 años a tu cargo?",
-          "tipo": "si_no",
-          "indentada": false,
-          "condicion": null
+          "tipo": "si_no"
         },
         {
           "id": "mayoresConviven",
           "texto": "En caso de tener mayores a cargo, ¿viven contigo en el mismo domicilio?",
-          "tipo": "si_no",
-          "indentada": true,
-          "condicion": { "campo": "mayores65ACargo", "valor": "si" }
+          "tipo": "si_no"
         },
         {
           "id": "hijosMenores26",
           "texto": "¿Tienes hijos menores de 26 años a tu cargo?",
-          "tipo": "si_no",
-          "indentada": false,
-          "condicion": null
+          "tipo": "si_no"
         }
       ]
     },
@@ -244,16 +222,12 @@ No requiere cuerpo ni parámetros. La respuesta contiene las secciones y pregunt
         {
           "id": "ingresosJuego",
           "texto": "¿Has recibido ingresos procedentes del juego o apuestas (online o presenciales) durante el año 2025?",
-          "tipo": "si_no",
-          "indentada": false,
-          "condicion": null
+          "tipo": "si_no"
         },
         {
           "id": "ingresosInversiones",
           "texto": "¿Has recibido ingresos procedentes de depósitos bancarios, fondos de inversión, venta de acciones en bolsa o similares?",
-          "tipo": "si_no",
-          "indentada": false,
-          "condicion": null
+          "tipo": "si_no"
         }
       ]
     }
@@ -273,8 +247,6 @@ No requiere cuerpo ni parámetros. La respuesta contiene las secciones y pregunt
 | `preguntas[].id` | `string` | Identificador único del campo (se usa como clave en el payload de envío) |
 | `preguntas[].texto` | `string` | Texto de la pregunta que se muestra al usuario |
 | `preguntas[].tipo` | `string` | Tipo de pregunta. Por ahora solo `"si_no"` |
-| `preguntas[].indentada` | `boolean` | Si es `true`, la pregunta aparece con sangría (pregunta dependiente) |
-| `preguntas[].condicion` | `object\|null` | Si no es `null`, la pregunta solo se muestra cuando `form[campo] === valor` |
 
 ### Respuestas de error
 
