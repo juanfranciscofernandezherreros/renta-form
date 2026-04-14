@@ -41,13 +41,42 @@ async function migrate() {
       console.log('[migrate] schema_backend.sql already applied, skipping.')
     }
 
-    // Run schema_formulario.sql only if 'preguntas_formulario' table is not yet created
+    // Run schema_formulario.sql – drop old secciones_formulario + campo-based table if present,
+    // then create the simplified preguntas_formulario (UUID id, no seccion_id/campo)
     if (!(await tableExists(client, 'preguntas_formulario'))) {
       console.log('[migrate] Running schema_formulario.sql ...')
       await client.query(fs.readFileSync(FORMULARIO_SQL, 'utf8'))
       console.log('[migrate] schema_formulario.sql applied.')
     } else {
-      console.log('[migrate] schema_formulario.sql already applied, skipping.')
+      // Migrate existing table: drop old seccion_id/campo columns if they still exist
+      const { rows: cols } = await client.query(
+        `SELECT column_name FROM information_schema.columns
+         WHERE table_schema = 'public' AND table_name = 'preguntas_formulario'`
+      )
+      const colNames = cols.map(c => c.column_name)
+      if (colNames.includes('campo')) {
+        console.log('[migrate] Migrating preguntas_formulario to simplified schema ...')
+        // Drop FK index and constraints referencing secciones_formulario
+        await client.query(`
+          ALTER TABLE preguntas_formulario DROP CONSTRAINT IF EXISTS preguntas_formulario_seccion_id_fkey;
+          DROP INDEX IF EXISTS idx_preguntas_formulario_seccion;
+        `)
+        // Add UUID id column as new primary key
+        await client.query(`
+          ALTER TABLE preguntas_formulario ADD COLUMN IF NOT EXISTS id UUID DEFAULT gen_random_uuid();
+          UPDATE preguntas_formulario SET id = gen_random_uuid() WHERE id IS NULL;
+          ALTER TABLE preguntas_formulario DROP CONSTRAINT IF EXISTS preguntas_formulario_pkey;
+          ALTER TABLE preguntas_formulario ALTER COLUMN id SET NOT NULL;
+          ALTER TABLE preguntas_formulario ADD PRIMARY KEY (id);
+          ALTER TABLE preguntas_formulario DROP COLUMN IF EXISTS campo;
+          ALTER TABLE preguntas_formulario DROP COLUMN IF EXISTS seccion_id;
+        `)
+        // Drop secciones_formulario table if it exists
+        await client.query('DROP TABLE IF EXISTS secciones_formulario CASCADE')
+        console.log('[migrate] preguntas_formulario migrated to simplified schema.')
+      } else {
+        console.log('[migrate] schema_formulario.sql already applied, skipping.')
+      }
     }
 
     // Ensure documentos table exists (may be missing if DB was created before this table was added)

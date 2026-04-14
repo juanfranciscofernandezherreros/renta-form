@@ -151,24 +151,20 @@ export async function listPreguntasFormulario() {
   return request('GET', '/admin/preguntas-formulario')
 }
 
-export async function listSeccionesFormulario() {
-  return request('GET', '/admin/secciones-formulario')
-}
-
 export async function createPreguntaFormulario(options) {
   const body = options?.body ?? {}
   return request('POST', '/admin/preguntas-formulario', { body })
 }
 
 export async function updatePreguntaFormulario(options) {
-  const campo = options?.path?.campo
+  const id = options?.path?.id
   const body = options?.body ?? {}
-  return request('PUT', `/admin/preguntas-formulario/${encodeURIComponent(campo)}`, { body })
+  return request('PUT', `/admin/preguntas-formulario/${encodeURIComponent(id)}`, { body })
 }
 
 export async function deletePreguntaFormulario(options) {
-  const campo = options?.path?.campo
-  return request('DELETE', `/admin/preguntas-formulario/${encodeURIComponent(campo)}`)
+  const id = options?.path?.id
+  return request('DELETE', `/admin/preguntas-formulario/${encodeURIComponent(id)}`)
 }
 
 // ── Admin: Secciones ───────────────────────────────────────────────────────

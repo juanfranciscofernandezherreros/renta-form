@@ -24,13 +24,13 @@ module.exports = function adminRoutes(svc) {
     send(res, result)
   })
 
-  router.put('/preguntas-formulario/:campo', async (req, res) => {
-    const result = await svc.updatePreguntaFormulario(req.params.campo, req.body ?? {})
+  router.put('/preguntas-formulario/:id', async (req, res) => {
+    const result = await svc.updatePreguntaFormulario(req.params.id, req.body ?? {})
     send(res, result)
   })
 
-  router.delete('/preguntas-formulario/:campo', async (req, res) => {
-    const result = await svc.deletePreguntaFormulario(req.params.campo)
+  router.delete('/preguntas-formulario/:id', async (req, res) => {
+    const result = await svc.deletePreguntaFormulario(req.params.id)
     send(res, result)
   })
 
@@ -58,13 +58,6 @@ module.exports = function adminRoutes(svc) {
 
   router.delete('/preguntas/:id', async (req, res) => {
     const result = await svc.deletePreguntaAdmin(req.params.id)
-    send(res, result)
-  })
-
-  // ── Secciones del formulario ─────────────────────────────────────────────
-
-  router.get('/secciones-formulario', async (_req, res) => {
-    const result = await svc.listSeccionesFormulario()
     send(res, result)
   })
 

@@ -140,70 +140,18 @@ async function changePassword({ dniNie, oldPassword, newPassword }) {
   return { data: { success: true }, error: null }
 }
 
-// ── IRPF preguntas (loaded from DB, falls back to static catalogue) ──────
-
-// Build a lookup of static titulos/textos for multilingual fallback
-function buildStaticLookups() {
-  const titulos = {}
-  const textos = {}
-  CATALOGO_PREGUNTAS.secciones.forEach(s => {
-    titulos[s.id] = s.titulos
-    s.preguntas.forEach(p => { textos[p.id] = p.textos })
-  })
-  return { titulos, textos }
-}
+// ── IRPF preguntas (static catalogue) ─────────────────────────────────────
 
 async function getPreguntas() {
-  try {
-    const { rows: secRows } = await pool.query(
-      'SELECT id, titulo, numero, orden FROM secciones_formulario ORDER BY orden'
-    )
-    const { rows: preRows } = await pool.query(
-      `SELECT campo, seccion_id, texto, orden, indentada, condicion_campo, condicion_valor
-       FROM preguntas_formulario ORDER BY seccion_id, orden`
-    )
-
-    if (secRows.length === 0 || preRows.length === 0) {
-      // Tables exist but have no data – return static catalogue
-      return { data: CATALOGO_PREGUNTAS, error: null }
-    }
-
-    const { titulos: staticTitulos, textos: staticTextos } = buildStaticLookups()
-
-    const secciones = secRows.map(s => ({
-      id: s.id,
-      numero: s.numero,
-      titulo: s.titulo,
-      titulos: staticTitulos[s.id] ?? { es: s.titulo },
-      preguntas: preRows
-        .filter(p => p.seccion_id === s.id)
-        .map(p => ({
-          id: p.campo,
-          texto: p.texto,
-          textos: staticTextos[p.campo] ?? { es: p.texto },
-          indentada: p.indentada,
-          ...(p.condicion_campo
-            ? { condicion: { campo: p.condicion_campo, valor: p.condicion_valor } }
-            : {}),
-        })),
-    }))
-
-    return { data: { secciones }, error: null }
-  } catch (err) {
-    // If tables don't exist yet (pre-migration), fall back to static data
-    console.warn('[getPreguntas] Falling back to static catalogue:', err.message)
-    return { data: CATALOGO_PREGUNTAS, error: null }
-  }
+  return { data: CATALOGO_PREGUNTAS, error: null }
 }
 
 // ── Admin: preguntas_formulario ───────────────────────────────────────────
 
 function rowToPreguntaFormulario(r) {
   return {
-    campo: r.campo,
+    id: r.id,
     texto: r.texto,
-    seccionId: r.seccion_id,
-    seccionTitulo: r.seccion_titulo ?? null,
     orden: r.orden,
     indentada: r.indentada,
     condicionCampo: r.condicion_campo ?? null,
@@ -214,17 +162,14 @@ function rowToPreguntaFormulario(r) {
 
 async function listPreguntasFormulario() {
   const { rows } = await pool.query(
-    `SELECT pf.campo, pf.texto, pf.seccion_id, sf.titulo AS seccion_titulo,
-            pf.orden, pf.indentada, pf.condicion_campo, pf.condicion_valor, pf.actualizada_en
-     FROM preguntas_formulario pf
-     JOIN secciones_formulario sf ON sf.id = pf.seccion_id
-     ORDER BY sf.orden, pf.orden`
+    `SELECT id, texto, orden, indentada, condicion_campo, condicion_valor, actualizada_en
+     FROM preguntas_formulario ORDER BY orden`
   )
   return { data: rows.map(rowToPreguntaFormulario), error: null }
 }
 
-async function updatePreguntaFormulario(campo, { texto, orden, indentada }) {
-  if (!campo) return { data: null, error: { message: 'El campo es obligatorio' } }
+async function updatePreguntaFormulario(id, { texto, orden, indentada }) {
+  if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
 
   const sets = []
   const params = []
@@ -245,65 +190,46 @@ async function updatePreguntaFormulario(campo, { texto, orden, indentada }) {
 
   if (sets.length === 0) return { data: null, error: { message: 'No hay cambios que guardar' } }
 
-  params.push(campo)
+  params.push(id)
   const { rowCount } = await pool.query(
     `UPDATE preguntas_formulario SET ${sets.join(', ')}, actualizada_en = NOW()
-     WHERE campo = $${params.length}`,
+     WHERE id = $${params.length}`,
     params
   )
   if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
 
-  // Fetch the updated row with its section title via JOIN
   const { rows } = await pool.query(
-    `SELECT pf.campo, pf.texto, pf.seccion_id, sf.titulo AS seccion_titulo,
-            pf.orden, pf.indentada, pf.condicion_campo, pf.condicion_valor, pf.actualizada_en
-     FROM preguntas_formulario pf
-     JOIN secciones_formulario sf ON sf.id = pf.seccion_id
-     WHERE pf.campo = $1`,
-    [campo]
+    `SELECT id, texto, orden, indentada, condicion_campo, condicion_valor, actualizada_en
+     FROM preguntas_formulario WHERE id = $1`,
+    [id]
   )
   return { data: rowToPreguntaFormulario(rows[0]), error: null }
 }
 
-async function listSeccionesFormulario() {
-  const { rows } = await pool.query(
-    'SELECT id, titulo, numero, orden FROM secciones_formulario ORDER BY orden'
-  )
-  return { data: rows.map(r => ({ id: r.id, titulo: r.titulo, numero: r.numero, orden: r.orden })), error: null }
-}
-
-async function createPreguntaFormulario({ campo, texto, seccionId, orden = 0, indentada = false, condicionCampo, condicionValor }) {
-  if (!campo || !String(campo).trim()) return { data: null, error: { message: 'El campo es obligatorio' } }
+async function createPreguntaFormulario({ texto, orden = 0, indentada = false, condicionCampo, condicionValor }) {
   if (!texto || !String(texto).trim()) return { data: null, error: { message: 'El texto es obligatorio' } }
-  if (!seccionId || !String(seccionId).trim()) return { data: null, error: { message: 'La sección es obligatoria' } }
 
   const { rows } = await pool.query(
-    `INSERT INTO preguntas_formulario (campo, seccion_id, texto, orden, indentada, condicion_campo, condicion_valor)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
-     RETURNING campo`,
-    [
-      campo.trim(), seccionId.trim(), texto.trim(), Number(orden), Boolean(indentada),
-      condicionCampo ?? null, condicionValor ?? null,
-    ]
+    `INSERT INTO preguntas_formulario (texto, orden, indentada, condicion_campo, condicion_valor)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id`,
+    [texto.trim(), Number(orden), Boolean(indentada), condicionCampo ?? null, condicionValor ?? null]
   )
   if (!rows.length) return { data: null, error: { message: 'No se pudo crear la pregunta' } }
 
   const { rows: full } = await pool.query(
-    `SELECT pf.campo, pf.texto, pf.seccion_id, sf.titulo AS seccion_titulo,
-            pf.orden, pf.indentada, pf.condicion_campo, pf.condicion_valor, pf.actualizada_en
-     FROM preguntas_formulario pf
-     JOIN secciones_formulario sf ON sf.id = pf.seccion_id
-     WHERE pf.campo = $1`,
-    [rows[0].campo]
+    `SELECT id, texto, orden, indentada, condicion_campo, condicion_valor, actualizada_en
+     FROM preguntas_formulario WHERE id = $1`,
+    [rows[0].id]
   )
   return { data: rowToPreguntaFormulario(full[0]), error: null, status: 201 }
 }
 
-async function deletePreguntaFormulario(campo) {
-  if (!campo) return { data: null, error: { message: 'El campo es obligatorio' } }
+async function deletePreguntaFormulario(id) {
+  if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
   const { rowCount } = await pool.query(
-    'DELETE FROM preguntas_formulario WHERE campo = $1',
-    [campo]
+    'DELETE FROM preguntas_formulario WHERE id = $1',
+    [id]
   )
   if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
   return { data: { deleted: true }, error: null }
@@ -923,7 +849,6 @@ module.exports = {
   deleteDeclaracion,
   sendEmailDeclaracion,
   listPreguntasFormulario,
-  listSeccionesFormulario,
   createPreguntaFormulario,
   updatePreguntaFormulario,
   deletePreguntaFormulario,
