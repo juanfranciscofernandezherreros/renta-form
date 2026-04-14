@@ -9,8 +9,6 @@ import {
   assignUserAccount,
   getUserByDniNie,
   uploadRentaPdf,
-  getDocumentoUrl,
-  deleteDocumento,
 } from './apiClient.js'
 import { downloadRentaPdf } from './pdfUtils.js'
 import PreguntasFormularioAdminTab from './PreguntasFormularioAdminTab.jsx'
@@ -86,20 +84,10 @@ function escHtml(str) {
 function downloadDeclaracionPdf(dec) {
   const allSections = [
     ...SECCIONES_DATOS,
-    { titulo: '5. Documentación Adjunta', campos: [] },
     SECCION_INFO_ADICIONAL,
   ]
 
   const rows = allSections.flatMap(sec => {
-    if (sec.campos.length === 0) {
-      if (!dec.documentos?.length) return []
-      return [
-        `<tr><td colspan="2" class="sec-header">${escHtml(sec.titulo)}</td></tr>`,
-        ...dec.documentos.map(
-          doc => `<tr><td class="lbl">📄 ${escHtml(doc.nombreOriginal)}</td><td class="val">${escHtml(doc.mimeType)} · ${Math.round(doc.tamanyo / 1024)} KB</td></tr>`
-        ),
-      ]
-    }
     const camposVisibles = sec.campos
       .map(c => [c, dec[c]])
       .filter(([, v]) => v !== undefined && v !== null && v !== '')
@@ -356,20 +344,6 @@ export default function AdminPage({ onNavigate }) {
     }
   }
 
-  const handleDeleteDocumento = async (decId, docId) => {
-    if (!window.confirm('¿Eliminar este documento?')) return
-    const { error: apiErr } = await deleteDocumento({ path: { docId } })
-    if (apiErr) { showToast(`Error al eliminar documento: ${apiErr.message}`, 'error'); return }
-    setDeclaraciones(prev =>
-      prev.map(d =>
-        d.id === decId
-          ? { ...d, documentos: (d.documentos ?? []).filter(doc => doc.id !== docId) }
-          : d
-      )
-    )
-    showToast('Documento eliminado')
-  }
-
   return (
     <>
       <header>
@@ -559,37 +533,6 @@ export default function AdminPage({ onNavigate }) {
                         </div>
                       )
                     })}
-
-                    {/* Section 5: Documents */}
-                    {dec.documentos?.length > 0 && (
-                      <div>
-                        <div className="section-title">5. Documentación Adjunta</div>
-                        <ul className="documentos-list">
-                          {dec.documentos.map(doc => (
-                            <li key={doc.id}>
-                              <a
-                                href={getDocumentoUrl(doc.id)}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="doc-download-link"
-                              >
-                                📄 {doc.nombreOriginal}
-                              </a>
-                              <span className="doc-meta">{doc.mimeType} · {Math.round(doc.tamanyo / 1024)} KB</span>
-                              <button
-                                type="button"
-                                className="btn btn-danger btn-sm btn-xs"
-                                onClick={() => handleDeleteDocumento(dec.id, doc.id)}
-                                style={{ marginLeft: '8px' }}
-                                title="Eliminar documento"
-                              >
-                                🗑️
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
 
                     {/* Section 6: Additional info */}
                     {(() => {
