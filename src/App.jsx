@@ -92,7 +92,9 @@ const YesNoField = ({ label, name, value, onChange, indent, t, questionNumber, o
   )
 }
 
-const SHAKE_DURATION_MS = 620
+const SHAKE_DURATION_MS = 600  // matches .shake CSS animation duration (0.6s)
+const CONFETTI_COUNT = 75
+const CONFETTI_CLEANUP_MS = 5500
 
 export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const { user, logout } = useAuth()
@@ -213,7 +215,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
 
   const spawnConfetti = () => {
     const colors = ['#6c11c8', '#c333e0', '#00b09b', '#ffd700', '#ff6b00', '#fff', '#9b23e8', '#ff69b4', '#00cfff']
-    setConfettiPieces(Array.from({ length: 75 }, (_, i) => ({
+    setConfettiPieces(Array.from({ length: CONFETTI_COUNT }, (_, i) => ({
       id: i,
       x: Math.random() * 100,
       y: Math.random() * 55,
@@ -225,7 +227,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       rotation: Math.random() * 360,
       shape: i % 3,
     })))
-    setTimeout(() => setConfettiPieces([]), 5500)
+    setTimeout(() => setConfettiPieces([]), CONFETTI_CLEANUP_MS)
   }
 
   // Wizard step helpers
