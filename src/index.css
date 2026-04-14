@@ -1733,29 +1733,6 @@ footer {
   animation: heartbeat 1.1s ease infinite;
 }
 
-/* ── Score display ── */
-@keyframes scoreBumpAnim {
-  0%   { transform: scale(1); }
-  30%  { transform: scale(1.45); }
-  60%  { transform: scale(0.9); }
-  100% { transform: scale(1); }
-}
-.score-display {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  background: linear-gradient(135deg, #1a0533, #2d0b69);
-  color: #ffd700;
-  padding: 5px 13px;
-  border-radius: 20px;
-  font-size: .9rem;
-  font-weight: 900;
-  border: 2px solid rgba(255,215,0,.3);
-  box-shadow: 0 4px 14px rgba(0,0,0,.35);
-  white-space: nowrap;
-  animation: scoreBumpAnim .38s ease both;
-}
-
 /* ── Heartbeat (streak icon) ── */
 @keyframes heartbeat {
   0%, 100% { transform: scale(1); }
