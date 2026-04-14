@@ -546,6 +546,22 @@ footer {
   color: #e02020;
   font-weight: 700;
   margin-top: 2px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.field-error::before {
+  content: '⚠';
+  font-size: .85rem;
+}
+
+/* ── Invalid field highlight */
+.field input.is-invalid,
+.field select.is-invalid,
+.field textarea.is-invalid {
+  border-color: #e02020;
+  box-shadow: 0 0 0 3px rgba(224,32,32,.12);
+  background: #fff8f8;
 }
 
 /* ── Optional field indicator */
