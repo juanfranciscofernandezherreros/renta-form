@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from './AuthContext.jsx'
-import { listDeclaraciones, changePassword, getDocumentoUrl, deleteDocumento } from './apiClient.js'
+import { listDeclaraciones, changePassword } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
 import Footer from './Footer.jsx'
 import { generateDeclaracionPDF, downloadRentaPdf } from './pdfUtils.js'
@@ -47,7 +47,7 @@ const CAMPOS_LABELS = {
   comentarios: 'Comentarios',
 }
 
-const SECCIONES_ANTES_DOCS = [
+const SECCIONES = [
   { titulo: '1. Datos de Identificación', campos: ['nombre', 'apellidos', 'dniNie', 'email', 'telefono'] },
   { titulo: '2. Situación de Vivienda', campos: ['viviendaAlquiler', 'alquilerMenos35', 'viviendaPropiedad', 'propiedadAntes2013', 'pisosAlquiladosTerceros', 'segundaResidencia'] },
   { titulo: '3. Cargas Familiares y Ayudas Públicas', campos: ['familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'mayoresConviven', 'hijosMenores26'] },
@@ -73,7 +73,6 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
   const [pwSuccess, setPwSuccess] = useState(false)
   const [pwLoading, setPwLoading] = useState(false)
 
-  const [deletingDocId, setDeletingDocId] = useState(null)
   const [toast, setToast] = useState(null)
 
   const showToast = (msg, type = 'success') => {
@@ -100,24 +99,6 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
   const handleEdit = (declaracion) => {
     onEditDeclaracion(declaracion)
     onNavigate('#/')
-  }
-
-  const handleDeleteDocumento = async (decId, docId) => {
-    if (!window.confirm(t('confirmDeleteDoc'))) return
-    setDeletingDocId(docId)
-    const { error: apiError } = await deleteDocumento({ path: { docId } })
-    setDeletingDocId(null)
-    if (apiError) {
-      showToast(`Error al eliminar: ${apiError.message}`, 'error')
-      return
-    }
-    setDeclaraciones(prev =>
-      prev.map(d =>
-        d.id === decId
-          ? { ...d, documentos: (d.documentos ?? []).filter(doc => doc.id !== docId) }
-          : d
-      )
-    )
   }
 
   const handlePwChange = e => {
@@ -236,7 +217,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
 
                 {expanded === dec.id && (
                   <div className="declaracion-body">
-                    {SECCIONES_ANTES_DOCS.map(seccion => (
+                    {SECCIONES.map(seccion => (
                       <div key={seccion.titulo}>
                         <div className="section-title">{seccion.titulo}</div>
                         <table className="respuestas-table">
@@ -257,39 +238,6 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
                         </table>
                       </div>
                     ))}
-
-                    {dec.documentos?.length > 0 && (
-                      <div>
-                        <div className="section-title">{t('section5')}</div>
-                        <ul className="documentos-list">
-                          {dec.documentos.map(doc => (
-                            <li key={doc.id}>
-                              <a
-                                href={getDocumentoUrl(doc.id)}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="doc-download-link"
-                              >
-                                📄 {doc.nombreOriginal}
-                              </a>
-                              <span className="doc-meta">{doc.mimeType} · {Math.round(doc.tamanyo / 1024)} KB</span>
-                              {dec.estado !== 'completado' && (
-                                <button
-                                  type="button"
-                                  className="btn btn-danger btn-sm btn-xs"
-                                  onClick={() => handleDeleteDocumento(dec.id, doc.id)}
-                                  disabled={deletingDocId === doc.id}
-                                  style={{ marginLeft: '8px' }}
-                                  title="Eliminar documento"
-                                >
-                                  {deletingDocId === doc.id ? '⏳' : '🗑️'}
-                                </button>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
 
                     <div key={SECCION_INFO_ADICIONAL.titulo}>
                       <div className="section-title">{SECCION_INFO_ADICIONAL.titulo}</div>

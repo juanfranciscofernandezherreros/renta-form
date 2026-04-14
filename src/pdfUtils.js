@@ -158,29 +158,6 @@ export function generateDeclaracionPDF(dec) {
     y += 3
   }
 
-  // Documents section
-  if (dec.documentos?.length > 0) {
-    y = addPageIfNeeded(doc, y)
-
-    doc.setFillColor(240, 244, 252)
-    doc.rect(MARGIN, y - 4, CONTENT_W, LINE_H, 'F')
-    doc.setTextColor(30, 64, 120)
-    doc.setFontSize(9)
-    doc.setFont('helvetica', 'bold')
-    doc.text('5. Documentación Adjunta', MARGIN + 2, y)
-    y += LINE_H - 1
-
-    doc.setTextColor(50, 50, 50)
-    doc.setFont('helvetica', 'normal')
-    for (const doc_ of dec.documentos) {
-      y = addPageIfNeeded(doc, y)
-      const sizeKb = Math.round((doc_.tamanyo ?? 0) / 1024)
-      doc.text(`- ${doc_.nombreOriginal}  (${doc_.mimeType ?? ''} · ${sizeKb} KB)`, MARGIN + 4, y)
-      y += LINE_H
-    }
-    y += 3
-  }
-
   // Footer
   const pageCount = doc.getNumberOfPages()
   for (let i = 1; i <= pageCount; i++) {

@@ -170,7 +170,6 @@ async function createDeclaracion(body, _files = {}) {
     ingresosJuego: body.ingresosJuego,
     ingresosInversiones: body.ingresosInversiones,
     comentarios: body.comentarios ?? '',
-    documentos: [],
   }
   store.declaraciones.push(nueva)
   return { data: { id, estado: 'recibido', creadoEn: ahora }, error: null, status: 201 }
@@ -629,8 +628,6 @@ module.exports = {
   updateDeclaracion,
   deleteDeclaracion,
   sendEmailDeclaracion,
-  getDocumento: async () => ({ data: null, error: { message: 'No disponible en modo mock' } }),
-  deleteDocumento: async () => ({ data: null, error: { message: 'No disponible en modo mock' } }),
   listPreguntasFormulario,
   updatePreguntaFormulario,
   listPreguntasAdmin,

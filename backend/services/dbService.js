@@ -48,7 +48,6 @@ function rowToDeclaracion(row) {
     ingresosJuego: row.ingresos_juego,
     ingresosInversiones: row.ingresos_inversiones,
     comentarios: row.comentarios ?? '',
-    documentos: [],
   }
 }
 
@@ -93,18 +92,6 @@ function rowToUser(row) {
     preguntasAsignadas: row.preguntas_asignadas ?? [],
     seccionesAsignadas: row.secciones_asignadas ?? [],
     creadoEn: row.creado_en,
-  }
-}
-
-function rowToDocumento(row) {
-  if (!row) return null
-  return {
-    id: row.id,
-    tipo: row.tipo,
-    nombreOriginal: row.nombre_original,
-    mimeType: row.mime_type,
-    tamanyo: row.tamanyo_bytes,
-    subidoEn: row.subido_en,
   }
 }
 
@@ -339,17 +326,6 @@ async function listDeclaraciones({ dniNie, estado, page = 1, limit = 10 }) {
     params
   )
   const declaraciones = rows.map(rowToDeclaracion)
-  if (declaraciones.length) {
-    const ids = declaraciones.map(d => d.id)
-    const { rows: docRows } = await pool.query(
-      `SELECT id, declaracion_id, tipo, nombre_original, mime_type, tamanyo_bytes, subido_en
-       FROM documentos WHERE declaracion_id = ANY($1) ORDER BY subido_en`,
-      [ids]
-    )
-    for (const dec of declaraciones) {
-      dec.documentos = docRows.filter(r => r.declaracion_id === dec.id).map(rowToDocumento)
-    }
-  }
   return { data: { data: declaraciones, total, page, limit }, error: null }
 }
 
@@ -371,21 +347,10 @@ async function listDeclaracionesAll({ dniNie, estado, page = 1, limit = 20 }) {
     params
   )
   const declaraciones = rows.map(rowToDeclaracion)
-  if (declaraciones.length) {
-    const ids = declaraciones.map(d => d.id)
-    const { rows: docRows } = await pool.query(
-      `SELECT id, declaracion_id, tipo, nombre_original, mime_type, tamanyo_bytes, subido_en
-       FROM documentos WHERE declaracion_id = ANY($1) ORDER BY subido_en`,
-      [ids]
-    )
-    for (const dec of declaraciones) {
-      dec.documentos = docRows.filter(r => r.declaracion_id === dec.id).map(rowToDocumento)
-    }
-  }
   return { data: { data: declaraciones, total, page, limit }, error: null }
 }
 
-async function createDeclaracion(body, files = {}) {
+async function createDeclaracion(body) {
   const {
     nombre, apellidos, dniNie, email, telefono,
     viviendaAlquiler, alquilerMenos35, viviendaPropiedad, propiedadAntes2013,
@@ -415,24 +380,6 @@ async function createDeclaracion(body, files = {}) {
   const row = rows[0]
   const declaracionId = row.id
 
-  // Save uploaded files to documentos table
-  const FILE_TIPO_MAP = {
-    docDniAnverso: 'dni_anverso',
-    docDniReverso: 'dni_reverso',
-    docAdicional: 'adicional',
-  }
-  for (const [fieldName, tipo] of Object.entries(FILE_TIPO_MAP)) {
-    const fieldFiles = files[fieldName]
-    if (!fieldFiles || !fieldFiles.length) continue
-    for (const f of fieldFiles) {
-      await pool.query(
-        `INSERT INTO documentos (declaracion_id, tipo, nombre_original, mime_type, tamanyo_bytes, contenido)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [declaracionId, tipo, f.originalname, f.mimetype, f.size, f.buffer]
-      )
-    }
-  }
-
   return { data: { id: declaracionId, estado: row.estado, creadoEn: row.creado_en }, error: null, status: 201 }
 }
 
@@ -440,11 +387,6 @@ async function getDeclaracion(id) {
   const { rows } = await pool.query('SELECT * FROM declaraciones WHERE id = $1', [id])
   if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
   const dec = rowToDeclaracion(rows[0])
-  const { rows: docRows } = await pool.query(
-    'SELECT id, tipo, nombre_original, mime_type, tamanyo_bytes, subido_en FROM documentos WHERE declaracion_id = $1 ORDER BY subido_en',
-    [id]
-  )
-  dec.documentos = docRows.map(rowToDocumento)
   return { data: dec, error: null }
 }
 
@@ -453,11 +395,6 @@ async function getDeclaracionByToken(token) {
   const { rows } = await pool.query('SELECT * FROM declaraciones WHERE id = $1', [token.trim()])
   if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
   const dec = rowToDeclaracion(rows[0])
-  const { rows: docRows } = await pool.query(
-    'SELECT id, tipo, nombre_original, mime_type, tamanyo_bytes, subido_en FROM documentos WHERE declaracion_id = $1 ORDER BY subido_en',
-    [dec.id]
-  )
-  dec.documentos = docRows.map(rowToDocumento)
   return { data: dec, error: null }
 }
 
@@ -470,7 +407,7 @@ async function updateEstadoDeclaracion(id, estado) {
   return { data: rowToDeclaracion(rows[0]), error: null }
 }
 
-async function updateDeclaracion(id, body, files = {}) {
+async function updateDeclaracion(id, body) {
   // Build a dynamic SET clause for only provided fields
   const FIELD_MAP = {
     nombre: 'nombre',
@@ -501,61 +438,18 @@ async function updateDeclaracion(id, body, files = {}) {
     }
   }
 
-  const FILE_TIPO_MAP = {
-    docDniAnverso: 'dni_anverso',
-    docDniReverso: 'dni_reverso',
-    docAdicional: 'adicional',
-  }
-  const filesToInsert = []
-  for (const [fieldName, tipo] of Object.entries(FILE_TIPO_MAP)) {
-    const fieldFiles = files[fieldName]
-    if (!fieldFiles || !fieldFiles.length) continue
-    for (const f of fieldFiles) {
-      filesToInsert.push({ tipo, originalname: f.originalname, mimetype: f.mimetype, size: f.size, buffer: f.buffer })
-    }
-  }
-
-  const client = await pool.connect()
-  try {
-    await client.query('BEGIN')
-
-    let declaracionRow
-    if (setClauses.length) {
-      params.push(id)
-      const { rows } = await client.query(
-        `UPDATE declaraciones SET ${setClauses.join(', ')} WHERE id = $${params.length} RETURNING *`,
-        params
-      )
-      if (!rows.length) {
-        await client.query('ROLLBACK')
-        return { data: null, error: { message: 'Declaración no encontrada' } }
-      }
-      declaracionRow = rows[0]
-    } else {
-      const { rows } = await client.query('SELECT * FROM declaraciones WHERE id = $1', [id])
-      if (!rows.length) {
-        await client.query('ROLLBACK')
-        return { data: null, error: { message: 'Declaración no encontrada' } }
-      }
-      declaracionRow = rows[0]
-    }
-
-    for (const f of filesToInsert) {
-      await client.query(
-        `INSERT INTO documentos (declaracion_id, tipo, nombre_original, mime_type, tamanyo_bytes, contenido)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [declaracionRow.id, f.tipo, f.originalname, f.mimetype, f.size, f.buffer]
-      )
-    }
-
-    await client.query('COMMIT')
-    return { data: rowToDeclaracion(declaracionRow), error: null }
-  } catch (err) {
-    await client.query('ROLLBACK')
-    console.error('[DB] updateDeclaracion transaction error:', err)
-    return { data: null, error: { message: 'Error al actualizar la declaración' } }
-  } finally {
-    client.release()
+  if (setClauses.length) {
+    params.push(id)
+    const { rows } = await pool.query(
+      `UPDATE declaraciones SET ${setClauses.join(', ')} WHERE id = $${params.length} RETURNING *`,
+      params
+    )
+    if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
+    return { data: rowToDeclaracion(rows[0]), error: null }
+  } else {
+    const { rows } = await pool.query('SELECT * FROM declaraciones WHERE id = $1', [id])
+    if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
+    return { data: rowToDeclaracion(rows[0]), error: null }
   }
 }
 
@@ -1013,30 +907,6 @@ async function updateIdiomaContent(id, body) {
   return { data: { code, content }, error: null }
 }
 
-async function getDocumento(docId) {
-  const { rows } = await pool.query(
-    'SELECT id, nombre_original, mime_type, tamanyo_bytes, contenido FROM documentos WHERE id = $1',
-    [docId]
-  )
-  if (!rows.length) return { data: null, error: { message: 'Documento no encontrado' } }
-  const row = rows[0]
-  return {
-    data: {
-      nombreOriginal: row.nombre_original,
-      mimeType: row.mime_type,
-      tamanyo: row.tamanyo_bytes,
-      contenido: row.contenido,
-    },
-    error: null,
-  }
-}
-
-async function deleteDocumento(docId) {
-  const { rowCount } = await pool.query('DELETE FROM documentos WHERE id = $1', [docId])
-  if (!rowCount) return { data: null, error: { message: 'Documento no encontrado' } }
-  return { data: { success: true }, error: null }
-}
-
 // ── Exports ────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -1052,8 +922,6 @@ module.exports = {
   updateDeclaracion,
   deleteDeclaracion,
   sendEmailDeclaracion,
-  getDocumento,
-  deleteDocumento,
   listPreguntasFormulario,
   listSeccionesFormulario,
   createPreguntaFormulario,

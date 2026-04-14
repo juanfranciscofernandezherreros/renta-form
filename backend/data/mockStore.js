@@ -221,7 +221,6 @@ const declaracionesIniciales = [
     ingresosJuego: 'no',
     ingresosInversiones: 'si',
     comentarios: 'Tengo fondos de inversión en una entidad bancaria extranjera.',
-    documentos: [],
   },
   {
     id: 'b2c3d4e5-0002-0002-0002-000000000002',
@@ -246,7 +245,6 @@ const declaracionesIniciales = [
     ingresosJuego: 'no',
     ingresosInversiones: 'no',
     comentarios: 'La segunda residencia está en la costa; la utilizo sólo en verano.',
-    documentos: [],
   },
   {
     id: 'c3d4e5f6-0003-0003-0003-000000000003',
@@ -270,7 +268,6 @@ const declaracionesIniciales = [
     ingresosJuego: 'no',
     ingresosInversiones: 'no',
     comentarios: 'Recibí una ayuda al alquiler del ayuntamiento en marzo de 2025.',
-    documentos: [],
   },
   {
     id: 'd4e5f6a7-0004-0004-0004-000000000004',
@@ -294,7 +291,6 @@ const declaracionesIniciales = [
     ingresosJuego: 'si',
     ingresosInversiones: 'si',
     comentarios: 'Tengo dos pisos en alquiler y participé en un torneo de póker online.',
-    documentos: [],
   },
 ]
 
