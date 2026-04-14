@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { CreateDeclaracionData, CreateDeclaracionErrors, CreateDeclaracionResponses, GetDeclaracionData, GetDeclaracionErrors, GetDeclaracionResponses, GetPreguntasData, GetPreguntasErrors, GetPreguntasResponses, ListDeclaracionesData, ListDeclaracionesErrors, ListDeclaracionesResponses, UpdateEstadoDeclaracionData, UpdateEstadoDeclaracionErrors, UpdateEstadoDeclaracionResponses } from './types.gen';
+import type { CreateDeclaracionData, CreateDeclaracionErrors, CreateDeclaracionResponses, CreateIdiomaAdminData, CreateIdiomaAdminErrors, CreateIdiomaAdminResponses, CreatePreguntaAdminData, CreatePreguntaAdminErrors, CreatePreguntaAdminResponses, CreateSeccionAdminData, CreateSeccionAdminErrors, CreateSeccionAdminResponses, DeleteIdiomaAdminData, DeleteIdiomaAdminErrors, DeleteIdiomaAdminResponses, DeletePreguntaAdminData, DeletePreguntaAdminErrors, DeletePreguntaAdminResponses, DeleteSeccionAdminData, DeleteSeccionAdminErrors, DeleteSeccionAdminResponses, GetDeclaracionData, GetDeclaracionErrors, GetDeclaracionPreguntasData, GetDeclaracionPreguntasErrors, GetDeclaracionPreguntasResponses, GetDeclaracionResponses, GetIdiomaContentData, GetIdiomaContentErrors, GetIdiomaContentResponses, GetIdiomasData, GetIdiomasResponses, GetPreguntaAdminData, GetPreguntaAdminErrors, GetPreguntaAdminResponses, GetPreguntasData, GetPreguntasErrors, GetPreguntasResponses, GetTraduccionesData, GetTraduccionesResponses, ListDeclaracionesData, ListDeclaracionesErrors, ListDeclaracionesResponses, ListIdiomasAdminData, ListIdiomasAdminErrors, ListIdiomasAdminResponses, ListPreguntasAdminData, ListPreguntasAdminErrors, ListPreguntasAdminResponses, ListSeccionesAdminData, ListSeccionesAdminErrors, ListSeccionesAdminResponses, RemoveDeclaracionPreguntaData, RemoveDeclaracionPreguntaErrors, RemoveDeclaracionPreguntaResponses, UpdateEstadoDeclaracionData, UpdateEstadoDeclaracionErrors, UpdateEstadoDeclaracionResponses, UpdateIdiomaAdminData, UpdateIdiomaAdminErrors, UpdateIdiomaAdminResponses, UpdateIdiomaContentData, UpdateIdiomaContentErrors, UpdateIdiomaContentResponses, UpdatePreguntaAdminData, UpdatePreguntaAdminErrors, UpdatePreguntaAdminResponses, UpdateSeccionAdminData, UpdateSeccionAdminErrors, UpdateSeccionAdminResponses, UpsertDeclaracionPreguntasData, UpsertDeclaracionPreguntasErrors, UpsertDeclaracionPreguntasResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -21,11 +21,27 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 /**
  * Obtiene el catálogo de preguntas
  *
- * Devuelve todas las secciones del cuestionario con sus preguntas
  * Devuelve todas las secciones del cuestionario con sus preguntas.
  *
  */
 export const getPreguntas = <ThrowOnError extends boolean = false>(options?: Options<GetPreguntasData, ThrowOnError>) => (options?.client ?? client).get<GetPreguntasResponses, GetPreguntasErrors, ThrowOnError>({ url: '/irpf/preguntas', ...options });
+
+/**
+ * Obtiene los idiomas activos
+ *
+ * Devuelve la lista de idiomas activos disponibles para la interfaz.
+ *
+ */
+export const getIdiomas = <ThrowOnError extends boolean = false>(options?: Options<GetIdiomasData, ThrowOnError>) => (options?.client ?? client).get<GetIdiomasResponses, unknown, ThrowOnError>({ url: '/irpf/idiomas', ...options });
+
+/**
+ * Obtiene todas las traducciones activas
+ *
+ * Devuelve un mapa con las traducciones de cada idioma activo,
+ * agrupadas por código de idioma.
+ *
+ */
+export const getTraducciones = <ThrowOnError extends boolean = false>(options?: Options<GetTraduccionesData, ThrowOnError>) => (options?.client ?? client).get<GetTraduccionesResponses, unknown, ThrowOnError>({ url: '/irpf/traducciones', ...options });
 
 /**
  * Lista las declaraciones registradas
@@ -62,6 +78,156 @@ export const getDeclaracion = <ThrowOnError extends boolean = false>(options: Op
  */
 export const updateEstadoDeclaracion = <ThrowOnError extends boolean = false>(options: Options<UpdateEstadoDeclaracionData, ThrowOnError>) => (options.client ?? client).patch<UpdateEstadoDeclaracionResponses, UpdateEstadoDeclaracionErrors, ThrowOnError>({
     url: '/irpf/declaraciones/{id}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Lista todas las preguntas adicionales
+ */
+export const listPreguntasAdmin = <ThrowOnError extends boolean = false>(options?: Options<ListPreguntasAdminData, ThrowOnError>) => (options?.client ?? client).get<ListPreguntasAdminResponses, ListPreguntasAdminErrors, ThrowOnError>({ url: '/admin/preguntas', ...options });
+
+/**
+ * Crea una nueva pregunta adicional
+ */
+export const createPreguntaAdmin = <ThrowOnError extends boolean = false>(options: Options<CreatePreguntaAdminData, ThrowOnError>) => (options.client ?? client).post<CreatePreguntaAdminResponses, CreatePreguntaAdminErrors, ThrowOnError>({
+    url: '/admin/preguntas',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Elimina una pregunta adicional
+ */
+export const deletePreguntaAdmin = <ThrowOnError extends boolean = false>(options: Options<DeletePreguntaAdminData, ThrowOnError>) => (options.client ?? client).delete<DeletePreguntaAdminResponses, DeletePreguntaAdminErrors, ThrowOnError>({ url: '/admin/preguntas/{preguntaId}', ...options });
+
+/**
+ * Obtiene una pregunta adicional por ID
+ */
+export const getPreguntaAdmin = <ThrowOnError extends boolean = false>(options: Options<GetPreguntaAdminData, ThrowOnError>) => (options.client ?? client).get<GetPreguntaAdminResponses, GetPreguntaAdminErrors, ThrowOnError>({ url: '/admin/preguntas/{preguntaId}', ...options });
+
+/**
+ * Actualiza una pregunta adicional
+ */
+export const updatePreguntaAdmin = <ThrowOnError extends boolean = false>(options: Options<UpdatePreguntaAdminData, ThrowOnError>) => (options.client ?? client).put<UpdatePreguntaAdminResponses, UpdatePreguntaAdminErrors, ThrowOnError>({
+    url: '/admin/preguntas/{preguntaId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Obtiene las preguntas asignadas a una declaración con sus respuestas
+ */
+export const getDeclaracionPreguntas = <ThrowOnError extends boolean = false>(options: Options<GetDeclaracionPreguntasData, ThrowOnError>) => (options.client ?? client).get<GetDeclaracionPreguntasResponses, GetDeclaracionPreguntasErrors, ThrowOnError>({ url: '/irpf/declaraciones/{id}/preguntas', ...options });
+
+/**
+ * Asigna o actualiza preguntas y respuestas en una declaración
+ */
+export const upsertDeclaracionPreguntas = <ThrowOnError extends boolean = false>(options: Options<UpsertDeclaracionPreguntasData, ThrowOnError>) => (options.client ?? client).put<UpsertDeclaracionPreguntasResponses, UpsertDeclaracionPreguntasErrors, ThrowOnError>({
+    url: '/irpf/declaraciones/{id}/preguntas',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Desasigna una pregunta de una declaración
+ */
+export const removeDeclaracionPregunta = <ThrowOnError extends boolean = false>(options: Options<RemoveDeclaracionPreguntaData, ThrowOnError>) => (options.client ?? client).delete<RemoveDeclaracionPreguntaResponses, RemoveDeclaracionPreguntaErrors, ThrowOnError>({ url: '/irpf/declaraciones/{id}/preguntas/{preguntaId}', ...options });
+
+/**
+ * Lista todas las secciones
+ */
+export const listSeccionesAdmin = <ThrowOnError extends boolean = false>(options?: Options<ListSeccionesAdminData, ThrowOnError>) => (options?.client ?? client).get<ListSeccionesAdminResponses, ListSeccionesAdminErrors, ThrowOnError>({ url: '/admin/secciones', ...options });
+
+/**
+ * Crea una nueva sección
+ */
+export const createSeccionAdmin = <ThrowOnError extends boolean = false>(options: Options<CreateSeccionAdminData, ThrowOnError>) => (options.client ?? client).post<CreateSeccionAdminResponses, CreateSeccionAdminErrors, ThrowOnError>({
+    url: '/admin/secciones',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Elimina una sección
+ */
+export const deleteSeccionAdmin = <ThrowOnError extends boolean = false>(options: Options<DeleteSeccionAdminData, ThrowOnError>) => (options.client ?? client).delete<DeleteSeccionAdminResponses, DeleteSeccionAdminErrors, ThrowOnError>({ url: '/admin/secciones/{seccionId}', ...options });
+
+/**
+ * Actualiza una sección
+ */
+export const updateSeccionAdmin = <ThrowOnError extends boolean = false>(options: Options<UpdateSeccionAdminData, ThrowOnError>) => (options.client ?? client).put<UpdateSeccionAdminResponses, UpdateSeccionAdminErrors, ThrowOnError>({
+    url: '/admin/secciones/{seccionId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Lista los idiomas disponibles
+ */
+export const listIdiomasAdmin = <ThrowOnError extends boolean = false>(options?: Options<ListIdiomasAdminData, ThrowOnError>) => (options?.client ?? client).get<ListIdiomasAdminResponses, ListIdiomasAdminErrors, ThrowOnError>({ url: '/admin/idiomas', ...options });
+
+/**
+ * Crea un nuevo idioma
+ */
+export const createIdiomaAdmin = <ThrowOnError extends boolean = false>(options: Options<CreateIdiomaAdminData, ThrowOnError>) => (options.client ?? client).post<CreateIdiomaAdminResponses, CreateIdiomaAdminErrors, ThrowOnError>({
+    url: '/admin/idiomas',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Elimina un idioma
+ */
+export const deleteIdiomaAdmin = <ThrowOnError extends boolean = false>(options: Options<DeleteIdiomaAdminData, ThrowOnError>) => (options.client ?? client).delete<DeleteIdiomaAdminResponses, DeleteIdiomaAdminErrors, ThrowOnError>({ url: '/admin/idiomas/{idiomaId}', ...options });
+
+/**
+ * Actualiza un idioma
+ */
+export const updateIdiomaAdmin = <ThrowOnError extends boolean = false>(options: Options<UpdateIdiomaAdminData, ThrowOnError>) => (options.client ?? client).put<UpdateIdiomaAdminResponses, UpdateIdiomaAdminErrors, ThrowOnError>({
+    url: '/admin/idiomas/{idiomaId}',
+    ...options,
+    headers: {
+        'Content-Type': 'application/json',
+        ...options.headers
+    }
+});
+
+/**
+ * Obtiene las traducciones de un idioma
+ */
+export const getIdiomaContent = <ThrowOnError extends boolean = false>(options: Options<GetIdiomaContentData, ThrowOnError>) => (options.client ?? client).get<GetIdiomaContentResponses, GetIdiomaContentErrors, ThrowOnError>({ url: '/admin/idiomas/{idiomaId}/content', ...options });
+
+/**
+ * Actualiza las traducciones de un idioma
+ *
+ * Reemplaza o añade claves de traducción para el idioma indicado.
+ * Las claves existentes no presentes en el cuerpo no se eliminan.
+ *
+ */
+export const updateIdiomaContent = <ThrowOnError extends boolean = false>(options: Options<UpdateIdiomaContentData, ThrowOnError>) => (options.client ?? client).put<UpdateIdiomaContentResponses, UpdateIdiomaContentErrors, ThrowOnError>({
+    url: '/admin/idiomas/{idiomaId}/content',
     ...options,
     headers: {
         'Content-Type': 'application/json',

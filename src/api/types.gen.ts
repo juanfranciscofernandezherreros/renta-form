@@ -133,9 +133,149 @@ export type ErrorValidacion = Error & {
 };
 
 /**
+ * Tipo de respuesta esperada para la pregunta
+ */
+export type TipoRespuesta = 'yn' | 'texto' | 'numero';
+
+export type PreguntaAdicionalInput = {
+    /**
+     * Texto de la pregunta
+     */
+    texto: string;
+    /**
+     * Sección a la que pertenece la pregunta
+     */
+    seccion: string;
+    tipoRespuesta: TipoRespuesta;
+    orden?: number;
+    activa?: boolean;
+    obligatoria?: boolean;
+};
+
+export type PreguntaAdicional = PreguntaAdicionalInput & {
+    id: string;
+    creadaEn: string;
+    actualizadaEn: string;
+};
+
+export type ListaPreguntasAdicionales = {
+    data: Array<PreguntaAdicional>;
+    total: number;
+};
+
+export type DeclaracionPregunta = {
+    id: string;
+    declaracionId: string;
+    preguntaId: string;
+    pregunta?: PreguntaAdicional;
+    respuesta?: string | null;
+    asignadaEn: string;
+    respondidaEn?: string | null;
+};
+
+export type ListaDeclaracionPreguntas = {
+    data: Array<DeclaracionPregunta>;
+    total: number;
+};
+
+export type UpsertDeclaracionPreguntasInput = {
+    asignaciones: Array<{
+        preguntaId: string;
+        respuesta?: string | null;
+    }>;
+};
+
+export type SeccionInput = {
+    /**
+     * Nombre de la sección
+     */
+    nombre: string;
+    orden?: number;
+    activa?: boolean;
+};
+
+export type SeccionAdmin = SeccionInput & {
+    id: string;
+    creadaEn: string;
+    actualizadaEn: string;
+};
+
+export type ListaSecciones = {
+    data: Array<SeccionAdmin>;
+    total: number;
+};
+
+export type IdiomaInput = {
+    /**
+     * Código ISO del idioma
+     */
+    code: string;
+    /**
+     * Etiqueta legible del idioma
+     */
+    label: string;
+    activo?: boolean;
+};
+
+export type IdiomaUpdateInput = {
+    /**
+     * Etiqueta legible del idioma
+     */
+    label?: string;
+    activo?: boolean;
+};
+
+export type Idioma = IdiomaInput & {
+    id: string;
+    creadoEn: string;
+    actualizadoEn?: string;
+};
+
+export type ListaIdiomas = {
+    data: Array<Idioma>;
+    total: number;
+    page: number;
+    limit: number;
+};
+
+export type IdiomaContent = {
+    code: string;
+    /**
+     * Mapa clave → valor de las traducciones del idioma
+     */
+    content: {
+        [key: string]: string;
+    };
+};
+
+export type IdiomaContentInput = {
+    /**
+     * Mapa clave → valor con las traducciones a guardar
+     */
+    content: {
+        [key: string]: string;
+    };
+};
+
+/**
  * UUID de la declaración
  */
 export type IdParam = string;
+
+/**
+ * UUID de la pregunta adicional
+ */
+export type PreguntaIdParam = string;
+
+/**
+ * UUID de la sección
+ */
+export type SeccionIdParam = string;
+
+/**
+ * UUID del idioma
+ */
+export type IdiomaIdParam = string;
 
 export type PageParam = number;
 
@@ -165,6 +305,45 @@ export type GetPreguntasResponses = {
 };
 
 export type GetPreguntasResponse = GetPreguntasResponses[keyof GetPreguntasResponses];
+
+export type GetIdiomasData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/irpf/idiomas';
+};
+
+export type GetIdiomasResponses = {
+    /**
+     * Lista de idiomas activos
+     */
+    200: Array<{
+        code?: string;
+        label?: string;
+    }>;
+};
+
+export type GetIdiomasResponse = GetIdiomasResponses[keyof GetIdiomasResponses];
+
+export type GetTraduccionesData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/irpf/traducciones';
+};
+
+export type GetTraduccionesResponses = {
+    /**
+     * Traducciones obtenidas correctamente
+     */
+    200: {
+        [key: string]: {
+            [key: string]: string;
+        };
+    };
+};
+
+export type GetTraduccionesResponse = GetTraduccionesResponses[keyof GetTraduccionesResponses];
 
 export type ListDeclaracionesData = {
     body?: never;
@@ -296,3 +475,548 @@ export type UpdateEstadoDeclaracionResponses = {
 };
 
 export type UpdateEstadoDeclaracionResponse = UpdateEstadoDeclaracionResponses[keyof UpdateEstadoDeclaracionResponses];
+
+export type ListPreguntasAdminData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Filtra por estado activa/inactiva
+         */
+        activa?: boolean;
+    };
+    url: '/admin/preguntas';
+};
+
+export type ListPreguntasAdminErrors = {
+    /**
+     * No autorizado
+     */
+    401: Error;
+};
+
+export type ListPreguntasAdminError = ListPreguntasAdminErrors[keyof ListPreguntasAdminErrors];
+
+export type ListPreguntasAdminResponses = {
+    /**
+     * Lista de preguntas adicionales
+     */
+    200: ListaPreguntasAdicionales;
+};
+
+export type ListPreguntasAdminResponse = ListPreguntasAdminResponses[keyof ListPreguntasAdminResponses];
+
+export type CreatePreguntaAdminData = {
+    body: PreguntaAdicionalInput;
+    path?: never;
+    query?: never;
+    url: '/admin/preguntas';
+};
+
+export type CreatePreguntaAdminErrors = {
+    /**
+     * Datos inválidos
+     */
+    400: Error;
+};
+
+export type CreatePreguntaAdminError = CreatePreguntaAdminErrors[keyof CreatePreguntaAdminErrors];
+
+export type CreatePreguntaAdminResponses = {
+    /**
+     * Pregunta creada correctamente
+     */
+    201: PreguntaAdicional;
+};
+
+export type CreatePreguntaAdminResponse = CreatePreguntaAdminResponses[keyof CreatePreguntaAdminResponses];
+
+export type DeletePreguntaAdminData = {
+    body?: never;
+    path: {
+        /**
+         * UUID de la pregunta adicional
+         */
+        preguntaId: string;
+    };
+    query?: never;
+    url: '/admin/preguntas/{preguntaId}';
+};
+
+export type DeletePreguntaAdminErrors = {
+    /**
+     * Pregunta no encontrada
+     */
+    404: Error;
+};
+
+export type DeletePreguntaAdminError = DeletePreguntaAdminErrors[keyof DeletePreguntaAdminErrors];
+
+export type DeletePreguntaAdminResponses = {
+    /**
+     * Pregunta eliminada correctamente
+     */
+    204: void;
+};
+
+export type DeletePreguntaAdminResponse = DeletePreguntaAdminResponses[keyof DeletePreguntaAdminResponses];
+
+export type GetPreguntaAdminData = {
+    body?: never;
+    path: {
+        /**
+         * UUID de la pregunta adicional
+         */
+        preguntaId: string;
+    };
+    query?: never;
+    url: '/admin/preguntas/{preguntaId}';
+};
+
+export type GetPreguntaAdminErrors = {
+    /**
+     * Pregunta no encontrada
+     */
+    404: Error;
+};
+
+export type GetPreguntaAdminError = GetPreguntaAdminErrors[keyof GetPreguntaAdminErrors];
+
+export type GetPreguntaAdminResponses = {
+    /**
+     * Detalle de la pregunta
+     */
+    200: PreguntaAdicional;
+};
+
+export type GetPreguntaAdminResponse = GetPreguntaAdminResponses[keyof GetPreguntaAdminResponses];
+
+export type UpdatePreguntaAdminData = {
+    body: PreguntaAdicionalInput;
+    path: {
+        /**
+         * UUID de la pregunta adicional
+         */
+        preguntaId: string;
+    };
+    query?: never;
+    url: '/admin/preguntas/{preguntaId}';
+};
+
+export type UpdatePreguntaAdminErrors = {
+    /**
+     * Pregunta no encontrada
+     */
+    404: Error;
+};
+
+export type UpdatePreguntaAdminError = UpdatePreguntaAdminErrors[keyof UpdatePreguntaAdminErrors];
+
+export type UpdatePreguntaAdminResponses = {
+    /**
+     * Pregunta actualizada
+     */
+    200: PreguntaAdicional;
+};
+
+export type UpdatePreguntaAdminResponse = UpdatePreguntaAdminResponses[keyof UpdatePreguntaAdminResponses];
+
+export type GetDeclaracionPreguntasData = {
+    body?: never;
+    path: {
+        /**
+         * UUID de la declaración
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/irpf/declaraciones/{id}/preguntas';
+};
+
+export type GetDeclaracionPreguntasErrors = {
+    /**
+     * Declaración no encontrada
+     */
+    404: Error;
+};
+
+export type GetDeclaracionPreguntasError = GetDeclaracionPreguntasErrors[keyof GetDeclaracionPreguntasErrors];
+
+export type GetDeclaracionPreguntasResponses = {
+    /**
+     * Preguntas y respuestas de la declaración
+     */
+    200: ListaDeclaracionPreguntas;
+};
+
+export type GetDeclaracionPreguntasResponse = GetDeclaracionPreguntasResponses[keyof GetDeclaracionPreguntasResponses];
+
+export type UpsertDeclaracionPreguntasData = {
+    body: UpsertDeclaracionPreguntasInput;
+    path: {
+        /**
+         * UUID de la declaración
+         */
+        id: string;
+    };
+    query?: never;
+    url: '/irpf/declaraciones/{id}/preguntas';
+};
+
+export type UpsertDeclaracionPreguntasErrors = {
+    /**
+     * Declaración o pregunta no encontrada
+     */
+    404: Error;
+};
+
+export type UpsertDeclaracionPreguntasError = UpsertDeclaracionPreguntasErrors[keyof UpsertDeclaracionPreguntasErrors];
+
+export type UpsertDeclaracionPreguntasResponses = {
+    /**
+     * Preguntas y respuestas actualizadas
+     */
+    200: ListaDeclaracionPreguntas;
+};
+
+export type UpsertDeclaracionPreguntasResponse = UpsertDeclaracionPreguntasResponses[keyof UpsertDeclaracionPreguntasResponses];
+
+export type RemoveDeclaracionPreguntaData = {
+    body?: never;
+    path: {
+        /**
+         * UUID de la declaración
+         */
+        id: string;
+        /**
+         * UUID de la pregunta adicional
+         */
+        preguntaId: string;
+    };
+    query?: never;
+    url: '/irpf/declaraciones/{id}/preguntas/{preguntaId}';
+};
+
+export type RemoveDeclaracionPreguntaErrors = {
+    /**
+     * Asignación no encontrada
+     */
+    404: Error;
+};
+
+export type RemoveDeclaracionPreguntaError = RemoveDeclaracionPreguntaErrors[keyof RemoveDeclaracionPreguntaErrors];
+
+export type RemoveDeclaracionPreguntaResponses = {
+    /**
+     * Pregunta desasignada correctamente
+     */
+    204: void;
+};
+
+export type RemoveDeclaracionPreguntaResponse = RemoveDeclaracionPreguntaResponses[keyof RemoveDeclaracionPreguntaResponses];
+
+export type ListSeccionesAdminData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Filtra por estado activa/inactiva
+         */
+        activa?: boolean;
+    };
+    url: '/admin/secciones';
+};
+
+export type ListSeccionesAdminErrors = {
+    /**
+     * No autorizado
+     */
+    401: Error;
+};
+
+export type ListSeccionesAdminError = ListSeccionesAdminErrors[keyof ListSeccionesAdminErrors];
+
+export type ListSeccionesAdminResponses = {
+    /**
+     * Lista de secciones
+     */
+    200: ListaSecciones;
+};
+
+export type ListSeccionesAdminResponse = ListSeccionesAdminResponses[keyof ListSeccionesAdminResponses];
+
+export type CreateSeccionAdminData = {
+    body: SeccionInput;
+    path?: never;
+    query?: never;
+    url: '/admin/secciones';
+};
+
+export type CreateSeccionAdminErrors = {
+    /**
+     * Datos inválidos
+     */
+    400: Error;
+    /**
+     * Ya existe una sección con ese nombre
+     */
+    409: Error;
+};
+
+export type CreateSeccionAdminError = CreateSeccionAdminErrors[keyof CreateSeccionAdminErrors];
+
+export type CreateSeccionAdminResponses = {
+    /**
+     * Sección creada correctamente
+     */
+    201: SeccionAdmin;
+};
+
+export type CreateSeccionAdminResponse = CreateSeccionAdminResponses[keyof CreateSeccionAdminResponses];
+
+export type DeleteSeccionAdminData = {
+    body?: never;
+    path: {
+        /**
+         * UUID de la sección
+         */
+        seccionId: string;
+    };
+    query?: never;
+    url: '/admin/secciones/{seccionId}';
+};
+
+export type DeleteSeccionAdminErrors = {
+    /**
+     * Sección no encontrada
+     */
+    404: Error;
+    /**
+     * La sección tiene preguntas asignadas y no puede eliminarse
+     */
+    409: Error;
+};
+
+export type DeleteSeccionAdminError = DeleteSeccionAdminErrors[keyof DeleteSeccionAdminErrors];
+
+export type DeleteSeccionAdminResponses = {
+    /**
+     * Sección eliminada correctamente
+     */
+    204: void;
+};
+
+export type DeleteSeccionAdminResponse = DeleteSeccionAdminResponses[keyof DeleteSeccionAdminResponses];
+
+export type UpdateSeccionAdminData = {
+    body: SeccionInput;
+    path: {
+        /**
+         * UUID de la sección
+         */
+        seccionId: string;
+    };
+    query?: never;
+    url: '/admin/secciones/{seccionId}';
+};
+
+export type UpdateSeccionAdminErrors = {
+    /**
+     * Sección no encontrada
+     */
+    404: Error;
+};
+
+export type UpdateSeccionAdminError = UpdateSeccionAdminErrors[keyof UpdateSeccionAdminErrors];
+
+export type UpdateSeccionAdminResponses = {
+    /**
+     * Sección actualizada
+     */
+    200: SeccionAdmin;
+};
+
+export type UpdateSeccionAdminResponse = UpdateSeccionAdminResponses[keyof UpdateSeccionAdminResponses];
+
+export type ListIdiomasAdminData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Filtra por estado activo/inactivo
+         */
+        activo?: boolean;
+        page?: number;
+        limit?: number;
+    };
+    url: '/admin/idiomas';
+};
+
+export type ListIdiomasAdminErrors = {
+    /**
+     * No autorizado
+     */
+    401: Error;
+};
+
+export type ListIdiomasAdminError = ListIdiomasAdminErrors[keyof ListIdiomasAdminErrors];
+
+export type ListIdiomasAdminResponses = {
+    /**
+     * Lista paginada de idiomas
+     */
+    200: ListaIdiomas;
+};
+
+export type ListIdiomasAdminResponse = ListIdiomasAdminResponses[keyof ListIdiomasAdminResponses];
+
+export type CreateIdiomaAdminData = {
+    body: IdiomaInput;
+    path?: never;
+    query?: never;
+    url: '/admin/idiomas';
+};
+
+export type CreateIdiomaAdminErrors = {
+    /**
+     * Datos inválidos
+     */
+    400: Error;
+    /**
+     * Ya existe un idioma con ese código
+     */
+    409: Error;
+};
+
+export type CreateIdiomaAdminError = CreateIdiomaAdminErrors[keyof CreateIdiomaAdminErrors];
+
+export type CreateIdiomaAdminResponses = {
+    /**
+     * Idioma creado correctamente
+     */
+    201: Idioma;
+};
+
+export type CreateIdiomaAdminResponse = CreateIdiomaAdminResponses[keyof CreateIdiomaAdminResponses];
+
+export type DeleteIdiomaAdminData = {
+    body?: never;
+    path: {
+        /**
+         * UUID del idioma
+         */
+        idiomaId: string;
+    };
+    query?: never;
+    url: '/admin/idiomas/{idiomaId}';
+};
+
+export type DeleteIdiomaAdminErrors = {
+    /**
+     * No se puede eliminar el idioma por defecto
+     */
+    400: Error;
+    /**
+     * Idioma no encontrado
+     */
+    404: Error;
+};
+
+export type DeleteIdiomaAdminError = DeleteIdiomaAdminErrors[keyof DeleteIdiomaAdminErrors];
+
+export type DeleteIdiomaAdminResponses = {
+    /**
+     * Idioma eliminado correctamente
+     */
+    200: unknown;
+};
+
+export type UpdateIdiomaAdminData = {
+    body: IdiomaUpdateInput;
+    path: {
+        /**
+         * UUID del idioma
+         */
+        idiomaId: string;
+    };
+    query?: never;
+    url: '/admin/idiomas/{idiomaId}';
+};
+
+export type UpdateIdiomaAdminErrors = {
+    /**
+     * Idioma no encontrado
+     */
+    404: Error;
+};
+
+export type UpdateIdiomaAdminError = UpdateIdiomaAdminErrors[keyof UpdateIdiomaAdminErrors];
+
+export type UpdateIdiomaAdminResponses = {
+    /**
+     * Idioma actualizado
+     */
+    200: Idioma;
+};
+
+export type UpdateIdiomaAdminResponse = UpdateIdiomaAdminResponses[keyof UpdateIdiomaAdminResponses];
+
+export type GetIdiomaContentData = {
+    body?: never;
+    path: {
+        /**
+         * UUID del idioma
+         */
+        idiomaId: string;
+    };
+    query?: never;
+    url: '/admin/idiomas/{idiomaId}/content';
+};
+
+export type GetIdiomaContentErrors = {
+    /**
+     * Idioma no encontrado
+     */
+    404: Error;
+};
+
+export type GetIdiomaContentError = GetIdiomaContentErrors[keyof GetIdiomaContentErrors];
+
+export type GetIdiomaContentResponses = {
+    /**
+     * Contenido de traducciones del idioma
+     */
+    200: IdiomaContent;
+};
+
+export type GetIdiomaContentResponse = GetIdiomaContentResponses[keyof GetIdiomaContentResponses];
+
+export type UpdateIdiomaContentData = {
+    body: IdiomaContentInput;
+    path: {
+        /**
+         * UUID del idioma
+         */
+        idiomaId: string;
+    };
+    query?: never;
+    url: '/admin/idiomas/{idiomaId}/content';
+};
+
+export type UpdateIdiomaContentErrors = {
+    /**
+     * Idioma no encontrado
+     */
+    404: Error;
+};
+
+export type UpdateIdiomaContentError = UpdateIdiomaContentErrors[keyof UpdateIdiomaContentErrors];
+
+export type UpdateIdiomaContentResponses = {
+    /**
+     * Traducciones guardadas correctamente
+     */
+    200: IdiomaContent;
+};
+
+export type UpdateIdiomaContentResponse = UpdateIdiomaContentResponses[keyof UpdateIdiomaContentResponses];
