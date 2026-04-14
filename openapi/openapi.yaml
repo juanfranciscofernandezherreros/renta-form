@@ -26,6 +26,8 @@ tags:
     description: Gestión CRUD de preguntas adicionales (admin)
   - name: SeccionesAdmin
     description: Gestión CRUD de secciones (admin)
+  - name: IdiomasAdmin
+    description: Gestión CRUD de idiomas y traducciones i18n (admin)
   - name: Declaraciones
     description: Gestión de cuestionarios enviados
 
@@ -453,7 +455,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Seccion'
+                $ref: '#/components/schemas/SeccionAdmin'
         '400':
           description: Datos inválidos
           content:
@@ -486,7 +488,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Seccion'
+                $ref: '#/components/schemas/SeccionAdmin'
         '404':
           description: Sección no encontrada
           content:
@@ -516,7 +518,166 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  # ── Admin: Idiomas & Traducciones ──────────────────────────────────────────
 
+  /admin/idiomas:
+    get:
+      operationId: listIdiomasAdmin
+      tags: [IdiomasAdmin]
+      summary: Lista los idiomas disponibles
+      parameters:
+        - name: activo
+          in: query
+          schema:
+            type: boolean
+          description: Filtra por estado activo/inactivo
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: Lista paginada de idiomas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaIdiomas'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      operationId: createIdiomaAdmin
+      tags: [IdiomasAdmin]
+      summary: Crea un nuevo idioma
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdiomaInput'
+      responses:
+        '201':
+          description: Idioma creado correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Idioma'
+        '400':
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: Ya existe un idioma con ese código
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/idiomas/{idiomaId}:
+    put:
+      operationId: updateIdiomaAdmin
+      tags: [IdiomasAdmin]
+      summary: Actualiza un idioma
+      parameters:
+        - $ref: '#/components/parameters/IdiomaIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdiomaUpdateInput'
+      responses:
+        '200':
+          description: Idioma actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Idioma'
+        '404':
+          description: Idioma no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      operationId: deleteIdiomaAdmin
+      tags: [IdiomasAdmin]
+      summary: Elimina un idioma
+      parameters:
+        - $ref: '#/components/parameters/IdiomaIdParam'
+      responses:
+        '204':
+          description: Idioma eliminado correctamente
+        '400':
+          description: No se puede eliminar el idioma por defecto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Idioma no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /admin/idiomas/{idiomaId}/content:
+    get:
+      operationId: getIdiomaContent
+      tags: [IdiomasAdmin]
+      summary: Obtiene las traducciones de un idioma
+      parameters:
+        - $ref: '#/components/parameters/IdiomaIdParam'
+      responses:
+        '200':
+          description: Contenido de traducciones del idioma
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdiomaContent'
+        '404':
+          description: Idioma no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      operationId: updateIdiomaContent
+      tags: [IdiomasAdmin]
+      summary: Actualiza las traducciones de un idioma
+      description: |
+        Reemplaza o añade claves de traducción para el idioma indicado.
+        Las claves existentes no presentes en el cuerpo no se eliminan.
+      parameters:
+        - $ref: '#/components/parameters/IdiomaIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IdiomaContentInput'
+      responses:
+        '200':
+          description: Traducciones guardadas correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdiomaContent'
+        '404':
+          description: Idioma no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  parameters:
     IdParam:
       name: id
       in: path
@@ -538,6 +699,14 @@ paths:
       in: path
       required: true
       description: UUID de la sección
+      schema:
+        type: string
+        format: uuid
+    IdiomaIdParam:
+      name: idiomaId
+      in: path
+      required: true
+      description: UUID del idioma
       schema:
         type: string
         format: uuid
@@ -1009,7 +1178,7 @@ paths:
           type: boolean
           default: true
 
-    Seccion:
+    SeccionAdmin:
       allOf:
         - $ref: '#/components/schemas/SeccionInput'
         - type: object
@@ -1032,6 +1201,93 @@ paths:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Seccion'
+            $ref: '#/components/schemas/SeccionAdmin'
         total:
           type: integer
+
+    # ------------------------------------------------------------------
+    # Idiomas & Traducciones (CRUD admin)
+    # ------------------------------------------------------------------
+    IdiomaInput:
+      type: object
+      required: [code, label]
+      properties:
+        code:
+          type: string
+          maxLength: 10
+          description: Código ISO del idioma
+          example: ca
+        label:
+          type: string
+          description: Etiqueta legible del idioma
+          example: Català
+        activo:
+          type: boolean
+          default: true
+
+    IdiomaUpdateInput:
+      type: object
+      properties:
+        label:
+          type: string
+          description: Etiqueta legible del idioma
+          example: Català
+        activo:
+          type: boolean
+
+    Idioma:
+      allOf:
+        - $ref: '#/components/schemas/IdiomaInput'
+        - type: object
+          required: [id, creadoEn]
+          properties:
+            id:
+              type: string
+              format: uuid
+            creadoEn:
+              type: string
+              format: date-time
+            actualizadoEn:
+              type: string
+              format: date-time
+
+    ListaIdiomas:
+      type: object
+      required: [data, total, page, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Idioma'
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    IdiomaContent:
+      type: object
+      required: [code, content]
+      properties:
+        code:
+          type: string
+          example: es
+        content:
+          type: object
+          additionalProperties:
+            type: string
+          description: Mapa clave → valor de las traducciones del idioma
+          example:
+            headerTitle: Cuestionario para Expediente Fiscal
+            btnSubmit: Enviar cuestionario
+
+    IdiomaContentInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: object
+          additionalProperties:
+            type: string
+          description: Mapa clave → valor con las traducciones a guardar
