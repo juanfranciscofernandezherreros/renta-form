@@ -105,6 +105,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const [form, setForm] = useState(INITIAL_STATE)
   const [editId, setEditId] = useState(null)
   const [toast, setToast] = useState(null)
+  const [formError, setFormError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [submissionToken, setSubmissionToken] = useState(null)
@@ -271,12 +272,13 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
     } else if (info?.type === 'question') {
       const { pregunta } = info
       if (form[pregunta.id] == null || form[pregunta.id] === '') {
-        showToast(t('errValidationQuestions'), 'error')
+        setFormError(t('errValidationQuestions'))
         setQuestionShake(true)
         setTimeout(() => setQuestionShake(false), SHAKE_DURATION_MS)
         return
       }
     }
+    setFormError(null)
     setStepDirection('forward')
     setCurrentStep(prev => prev + 1)
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -286,16 +288,18 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
     setStepDirection('backward')
     setStreak(0)
     setFieldErrors({})
+    setFormError(null)
     setCurrentStep(prev => Math.max(0, prev - 1))
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   const handleSubmit = async e => {
     e.preventDefault()
+    setFormError(null)
 
     // Validate required identification fields
     if (!form.nombre.trim() || !form.apellidos.trim() || !form.dniNie.trim() || !form.telefono.trim()) {
-      showToast(t('errValidationRequired'), 'error')
+      setFormError(t('errValidationRequired'))
       return
     }
 
@@ -306,7 +310,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       })
     )
     if (unanswered) {
-      showToast(t('errValidationQuestions'), 'error')
+      setFormError(t('errValidationQuestions'))
       return
     }
 
@@ -368,7 +372,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
           showToast(t('toastSuccess'), 'success')
           setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
         } else {
-          showToast(`${t('toastErrorHttp')} ${response?.status ?? '?'}${t('toastErrorHttpSuffix')} ${error?.message ?? ''}`, 'error')
+          setFormError(`${t('toastErrorHttp')} ${response?.status ?? '?'}${t('toastErrorHttpSuffix')} ${error?.message ?? ''}`)
         }
       } else {
         const { data, error, response } = await createDeclaracion({ body })
@@ -388,11 +392,11 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
           showToast(t('toastSuccess'), 'success')
           setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
         } else {
-          showToast(`${t('toastErrorHttp')} ${response?.status ?? '?'}${t('toastErrorHttpSuffix')} ${error?.message ?? ''}`, 'error')
+          setFormError(`${t('toastErrorHttp')} ${response?.status ?? '?'}${t('toastErrorHttpSuffix')} ${error?.message ?? ''}`)
         }
       }
     } catch {
-      showToast(t('toastErrorNetwork'), 'error')
+      setFormError(t('toastErrorNetwork'))
     } finally {
       setSubmitting(false)
     }
@@ -611,6 +615,14 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                   })()}
 
                 </div>{/* end wizard-step */}
+
+                {/* Inline error message */}
+                {formError && (
+                  <div className="form-error-banner" role="alert">
+                    <span>{formError}</span>
+                    <button type="button" className="form-error-dismiss" onClick={() => setFormError(null)} aria-label="Cerrar">×</button>
+                  </div>
+                )}
 
                 {/* Wizard navigation */}
                 <div className="wizard-nav">
