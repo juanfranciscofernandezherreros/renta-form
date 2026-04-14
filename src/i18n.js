@@ -58,6 +58,7 @@ const translations = {
     toastErrorHttpSuffix: '). Inténtelo de nuevo.',
     toastErrorNetwork:
       '❌ No se pudo conectar con el servidor. Compruebe su conexión e inténtelo de nuevo.',
+    btnDismissError: 'Cerrar',
     // Success panel
     successTitle: '¡Cuestionario enviado correctamente!',
     successText:
@@ -228,6 +229,7 @@ const translations = {
     toastErrorHttpSuffix: '). Veuillez réessayer.',
     toastErrorNetwork:
       '❌ Impossible de se connecter au serveur. Vérifiez votre connexion et réessayez.',
+    btnDismissError: 'Fermer',
     successTitle: 'Questionnaire envoyé avec succès !',
     successText:
       'Nous avons reçu vos informations. Notre équipe examinera votre dossier fiscal et vous contactera prochainement.',
@@ -387,6 +389,7 @@ const translations = {
     toastErrorHttpSuffix: '). Please try again.',
     toastErrorNetwork:
       '❌ Could not connect to the server. Please check your connection and try again.',
+    btnDismissError: 'Close',
     successTitle: 'Questionnaire submitted successfully!',
     successText:
       'We have received your information. Our team will review your tax file and contact you shortly.',
@@ -546,6 +549,7 @@ const translations = {
     toastErrorHttpSuffix: '). Torneu-ho a intentar.',
     toastErrorNetwork:
       '❌ No s\'ha pogut connectar amb el servidor. Comproveu la connexió i torneu-ho a intentar.',
+    btnDismissError: 'Tancar',
     successTitle: 'Qüestionari enviat correctament!',
     successText:
       'Hem rebut la vostra informació. El nostre equip revisarà el vostre expedient fiscal i es posarà en contacte amb vosaltres aviat.',

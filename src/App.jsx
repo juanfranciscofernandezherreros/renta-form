@@ -620,7 +620,7 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                 {formError && (
                   <div className="form-error-banner" role="alert">
                     <span>{formError}</span>
-                    <button type="button" className="form-error-dismiss" onClick={() => setFormError(null)} aria-label="Cerrar">×</button>
+                    <button type="button" className="form-error-dismiss" onClick={() => setFormError(null)} aria-label={t('btnDismissError')}>×</button>
                   </div>
                 )}
 
