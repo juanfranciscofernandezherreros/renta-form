@@ -79,24 +79,12 @@ cd backend
 npm run start:db
 ```
 
-Al arrancar, el servidor aplica las migraciones automáticamente (`database/schema.sql` y `database/schema_backend.sql`) si las tablas todavía no existen.
-
-Para cargar 200 usuarios de prueba (prueba de carga), ejecuta:
-
-```bash
-psql $DATABASE_URL -f database/test_data_200_usuarios.sql
-# o con variables individuales:
-# psql -U postgres -d renta_form -f database/test_data_200_usuarios.sql
-```
-
-Todos los usuarios tienen la contraseña `Test1234!`.
+Al arrancar, el servidor aplica las migraciones automáticamente (`database/init.sql`) si las tablas todavía no existen.
 
 ```
 [server] Starting with profile: db
-[migrate] Running schema.sql ...
-[migrate] schema.sql applied.
-[migrate] Running schema_backend.sql ...
-[migrate] schema_backend.sql applied.
+[migrate] Running init.sql ...
+[migrate] init.sql applied.
 [server] Listening on http://localhost:3001  (profile: db)
 ```
 
