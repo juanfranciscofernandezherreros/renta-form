@@ -240,7 +240,7 @@ export default function PreguntasAdminTab({ showToast }) {
 
             <div className="form-grid" style={{ marginBottom: 16 }}>
               <div className="field full">
-                <label>Texto de la pregunta *</label>
+                <label>Texto de la pregunta</label>
                 <textarea
                   name="texto"
                   value={form.texto}
@@ -250,7 +250,7 @@ export default function PreguntasAdminTab({ showToast }) {
                 />
               </div>
               <div className="field">
-                <label>Sección *</label>
+                <label>Sección</label>
                 <select
                   name="seccion"
                   value={form.seccion}

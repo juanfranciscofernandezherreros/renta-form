@@ -240,7 +240,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
               {modal === 'create' && (
                 <>
                   <div className="field">
-                    <label>Identificador de campo *</label>
+                    <label>Identificador de campo</label>
                     <input
                       type="text"
                       name="campo"
@@ -250,7 +250,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
                     />
                   </div>
                   <div className="field">
-                    <label>Sección *</label>
+                    <label>Sección</label>
                     <select name="seccionId" value={form.seccionId} onChange={handleFormChange}>
                       <option value="">— Selecciona una sección —</option>
                       {secciones.map(s => (
@@ -269,7 +269,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
                 </div>
               )}
               <div className="field full">
-                <label>Texto de la pregunta *</label>
+                <label>Texto de la pregunta</label>
                 <textarea
                   name="texto"
                   value={form.texto}

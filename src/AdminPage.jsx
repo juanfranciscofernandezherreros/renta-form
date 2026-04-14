@@ -14,6 +14,8 @@ import {
 } from './apiClient.js'
 import { downloadRentaPdf } from './pdfUtils.js'
 import PreguntasFormularioAdminTab from './PreguntasFormularioAdminTab.jsx'
+import PreguntasAdminTab from './PreguntasAdminTab.jsx'
+import DeclaracionPreguntasPanel from './DeclaracionPreguntasPanel.jsx'
 import SeccionesAdminTab from './SeccionesAdminTab.jsx'
 import UsuariosAdminTab from './UsuariosAdminTab.jsx'
 import IdiomasAdminTab from './IdiomasAdminTab.jsx'
@@ -407,6 +409,13 @@ export default function AdminPage({ onNavigate }) {
           </button>
           <button
             type="button"
+            className={`admin-tab${activeTab === 'preguntas-adicionales' ? ' active' : ''}`}
+            onClick={() => setActiveTab('preguntas-adicionales')}
+          >
+            ➕ Preguntas adicionales
+          </button>
+          <button
+            type="button"
             className={`admin-tab${activeTab === 'secciones' ? ' active' : ''}`}
             onClick={() => setActiveTab('secciones')}
           >
@@ -437,6 +446,18 @@ export default function AdminPage({ onNavigate }) {
               Gestiona las preguntas que aparecen en el formulario de declaración de la renta.
             </p>
             <PreguntasFormularioAdminTab showToast={showToast} />
+          </>
+        )}
+
+        {activeTab === 'preguntas-adicionales' && (
+          <>
+            <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: '0 0 4px', color: '#333' }}>
+              ➕ Preguntas adicionales
+            </h2>
+            <p style={{ fontSize: '.82rem', color: '#666', margin: '0 0 16px' }}>
+              Crea preguntas adicionales y asígnalas a declaraciones específicas.
+            </p>
+            <PreguntasAdminTab showToast={showToast} />
           </>
         )}
 
@@ -611,6 +632,12 @@ export default function AdminPage({ onNavigate }) {
                         </div>
                       )
                     })()}
+
+                    {/* Preguntas adicionales asignadas a esta declaración */}
+                    <div>
+                      <div className="section-title">Preguntas adicionales</div>
+                      <DeclaracionPreguntasPanel declaracionId={dec.id} showToast={showToast} />
+                    </div>
 
                     {/* Section 7: PDF de la Renta (admin) */}
                     <div>

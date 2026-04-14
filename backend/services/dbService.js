@@ -886,6 +886,155 @@ async function deleteDocumento(docId) {
   return { data: { success: true }, error: null }
 }
 
+// ── Admin: Preguntas adicionales ───────────────────────────────────────────
+
+function rowToPreguntaAdicional(r) {
+  return {
+    id: r.id,
+    texto: r.texto,
+    seccion: r.seccion,
+    tipoRespuesta: r.tipo_respuesta,
+    orden: r.orden,
+    activa: r.activa,
+    obligatoria: r.obligatoria,
+    creadaEn: r.creada_en,
+    actualizadaEn: r.actualizada_en,
+  }
+}
+
+async function listPreguntasAdmin({ activa, page = 1, limit = 10 } = {}) {
+  const conditions = []
+  const params = []
+  if (activa !== undefined) {
+    conditions.push(`activa = $${params.length + 1}`)
+    params.push(activa)
+  }
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
+  const countRes = await pool.query(`SELECT COUNT(*) FROM preguntas_adicionales ${where}`, params)
+  const total = parseInt(countRes.rows[0].count, 10)
+  const offset = (page - 1) * limit
+  params.push(limit, offset)
+  const { rows } = await pool.query(
+    `SELECT * FROM preguntas_adicionales ${where} ORDER BY orden ASC, creada_en ASC LIMIT $${params.length - 1} OFFSET $${params.length}`,
+    params
+  )
+  return { data: { data: rows.map(rowToPreguntaAdicional), total, page, limit }, error: null }
+}
+
+async function createPreguntaAdmin({ texto, seccion, tipoRespuesta, orden = 0, activa = true, obligatoria = false } = {}) {
+  if (!texto || !String(texto).trim()) return { data: null, error: { message: 'El texto es obligatorio' } }
+  if (!seccion || !String(seccion).trim()) return { data: null, error: { message: 'La sección es obligatoria' } }
+  const TIPOS_VALIDOS = ['yn', 'texto', 'numero', 'fecha', 'importe', 'porcentaje', 'multilinea']
+  if (!TIPOS_VALIDOS.includes(tipoRespuesta)) return { data: null, error: { message: 'Tipo de respuesta no válido' } }
+  const { rows } = await pool.query(
+    `INSERT INTO preguntas_adicionales (texto, seccion, tipo_respuesta, orden, activa, obligatoria)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+    [texto.trim(), seccion.trim(), tipoRespuesta, Number(orden), Boolean(activa), Boolean(obligatoria)]
+  )
+  return { data: rowToPreguntaAdicional(rows[0]), error: null, status: 201 }
+}
+
+async function updatePreguntaAdmin(id, body) {
+  if (!id) return { data: null, error: { message: 'ID obligatorio' } }
+  const { rows: existing } = await pool.query('SELECT id FROM preguntas_adicionales WHERE id = $1', [id])
+  if (!existing.length) return { data: null, error: { message: 'Pregunta no encontrada' } }
+  const allowed = { texto: 'texto', seccion: 'seccion', tipoRespuesta: 'tipo_respuesta', orden: 'orden', activa: 'activa', obligatoria: 'obligatoria' }
+  const sets = []
+  const params = []
+  for (const [jsKey, dbCol] of Object.entries(allowed)) {
+    if (body[jsKey] !== undefined) {
+      params.push(body[jsKey])
+      sets.push(`${dbCol} = $${params.length}`)
+    }
+  }
+  if (!sets.length) {
+    const { rows } = await pool.query('SELECT * FROM preguntas_adicionales WHERE id = $1', [id])
+    return { data: rowToPreguntaAdicional(rows[0]), error: null }
+  }
+  sets.push(`actualizada_en = NOW()`)
+  params.push(id)
+  const { rows } = await pool.query(
+    `UPDATE preguntas_adicionales SET ${sets.join(', ')} WHERE id = $${params.length} RETURNING *`,
+    params
+  )
+  return { data: rowToPreguntaAdicional(rows[0]), error: null }
+}
+
+async function deletePreguntaAdmin(id) {
+  if (!id) return { data: null, error: { message: 'ID obligatorio' } }
+  const { rowCount } = await pool.query('DELETE FROM preguntas_adicionales WHERE id = $1', [id])
+  if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
+  return { data: { success: true }, error: null }
+}
+
+// ── Declaración ↔ Preguntas adicionales ───────────────────────────────────
+
+function rowToDeclaracionPregunta(r) {
+  return {
+    id: r.id,
+    declaracionId: r.declaracion_id,
+    preguntaId: r.pregunta_id,
+    respuesta: r.respuesta,
+    asignadaEn: r.asignada_en,
+    respondidaEn: r.respondida_en,
+  }
+}
+
+async function getDeclaracionPreguntas(declaracionId) {
+  const { rows: decRows } = await pool.query('SELECT id FROM declaraciones WHERE id = $1', [declaracionId])
+  if (!decRows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
+  const { rows } = await pool.query(
+    `SELECT dp.*, row_to_json(pa) AS pregunta_json
+     FROM declaracion_pregunta dp
+     JOIN preguntas_adicionales pa ON pa.id = dp.pregunta_id
+     WHERE dp.declaracion_id = $1
+     ORDER BY pa.orden ASC, dp.asignada_en ASC`,
+    [declaracionId]
+  )
+  const asignaciones = rows.map(r => ({
+    ...rowToDeclaracionPregunta(r),
+    pregunta: r.pregunta_json ? {
+      id: r.pregunta_json.id,
+      texto: r.pregunta_json.texto,
+      seccion: r.pregunta_json.seccion,
+      tipoRespuesta: r.pregunta_json.tipo_respuesta,
+      orden: r.pregunta_json.orden,
+      activa: r.pregunta_json.activa,
+      obligatoria: r.pregunta_json.obligatoria,
+    } : null,
+  }))
+  return { data: { data: asignaciones, total: asignaciones.length }, error: null }
+}
+
+async function upsertDeclaracionPreguntas(declaracionId, asignaciones = []) {
+  const { rows: decRows } = await pool.query('SELECT id FROM declaraciones WHERE id = $1', [declaracionId])
+  if (!decRows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
+  for (const a of asignaciones) {
+    const { rows: pRows } = await pool.query('SELECT id FROM preguntas_adicionales WHERE id = $1', [a.preguntaId])
+    if (!pRows.length) return { data: null, error: { message: `Pregunta ${a.preguntaId} no encontrada` } }
+    const ahora = new Date()
+    const hasRespuesta = a.respuesta !== null && a.respuesta !== undefined
+    await pool.query(
+      `INSERT INTO declaracion_pregunta (declaracion_id, pregunta_id, respuesta, respondida_en)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (declaracion_id, pregunta_id) DO UPDATE
+         SET respuesta = EXCLUDED.respuesta,
+             respondida_en = CASE WHEN EXCLUDED.respuesta IS NOT NULL THEN EXCLUDED.respondida_en ELSE declaracion_pregunta.respondida_en END`,
+      [declaracionId, a.preguntaId, a.respuesta ?? null, hasRespuesta ? ahora : null]
+    )
+  }
+  return getDeclaracionPreguntas(declaracionId)
+}
+
+async function removeDeclaracionPregunta(declaracionId, preguntaId) {
+  const { rowCount } = await pool.query(
+    'DELETE FROM declaracion_pregunta WHERE declaracion_id = $1 AND pregunta_id = $2',
+    [declaracionId, preguntaId]
+  )
+  if (!rowCount) return { data: null, error: { message: 'Asignación no encontrada' } }
+  return { data: { success: true }, error: null }
+}
+
 // ── Exports ────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -928,4 +1077,11 @@ module.exports = {
   deleteIdiomaAdmin,
   getIdiomaContent,
   updateIdiomaContent,
+  listPreguntasAdmin,
+  createPreguntaAdmin,
+  updatePreguntaAdmin,
+  deletePreguntaAdmin,
+  getDeclaracionPreguntas,
+  upsertDeclaracionPreguntas,
+  removeDeclaracionPregunta,
 }

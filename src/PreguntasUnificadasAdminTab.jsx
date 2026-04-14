@@ -180,7 +180,7 @@ export default function PreguntasUnificadasAdminTab({ showToast }) {
 
             <div className="form-grid" style={{ marginBottom: 16 }}>
               <div className="field full">
-                <label>Texto de la pregunta *</label>
+                <label>Texto de la pregunta</label>
                 <textarea
                   name="texto"
                   value={form.texto}

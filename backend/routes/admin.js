@@ -41,6 +41,33 @@ module.exports = function adminRoutes(svc) {
     send(res, result)
   })
 
+  // ── Preguntas adicionales ─────────────────────────────────────────────────
+
+  router.get('/preguntas', async (req, res) => {
+    const { activa, page, limit } = req.query
+    const result = await svc.listPreguntasAdmin({
+      activa: activa !== undefined ? activa === 'true' : undefined,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 10,
+    })
+    send(res, result)
+  })
+
+  router.post('/preguntas', async (req, res) => {
+    const result = await svc.createPreguntaAdmin(req.body ?? {})
+    send(res, result)
+  })
+
+  router.put('/preguntas/:id', async (req, res) => {
+    const result = await svc.updatePreguntaAdmin(req.params.id, req.body ?? {})
+    send(res, result)
+  })
+
+  router.delete('/preguntas/:id', async (req, res) => {
+    const result = await svc.deletePreguntaAdmin(req.params.id)
+    send(res, result)
+  })
+
   // ── Secciones ────────────────────────────────────────────────────────────
 
   router.get('/secciones', async (req, res) => {

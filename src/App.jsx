@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import './App.css'
-import { getPreguntas, createDeclaracion, updateDeclaracion, deleteDocumento, getDocumentoUrl } from './apiClient.js'
+import { getPreguntas, createDeclaracion, updateDeclaracion } from './apiClient.js'
 import { useAuth } from './AuthContext.jsx'
 import { useLanguage } from './LanguageContext.jsx'
 import Footer from './Footer.jsx'
@@ -30,11 +30,7 @@ const INITIAL_STATE = {
   // 4. Ingresos extraordinarios e inversiones
   ingresosJuego: '',
   ingresosInversiones: '',
-  // 5. Documentación adjunta
-  docDniAnverso: null,
-  docDniReverso: null,
-  docAdicional: null,
-  // 6. Información adicional
+  // 5. Información adicional
   comentarios: '',
 }
 
@@ -110,8 +106,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const [loadingPreguntas, setLoadingPreguntas] = useState(true)
   const [errorPreguntas, setErrorPreguntas] = useState(null)
   const [buscarCodigo, setBuscarCodigo] = useState('')
-  const [editDocumentos, setEditDocumentos] = useState([])
-  const [deletingDocId, setDeletingDocId] = useState(null)
   const [currentStep, setCurrentStep] = useState(0)
   const [stepDirection, setStepDirection] = useState('forward')
   const [fieldErrors, setFieldErrors] = useState({})
@@ -129,7 +123,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   useEffect(() => {
     if (!editData) return
     setEditId(editData.id)
-    setEditDocumentos(editData.documentos ?? [])
     setForm({
       ...INITIAL_STATE,
       nombre: editData.nombre ?? '',
@@ -171,16 +164,8 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   }, [])
 
   const handleChange = e => {
-    const { name, value, type } = e.target
-    if (type === 'file') {
-      if (e.target.multiple) {
-        setForm(prev => ({ ...prev, [name]: e.target.files.length > 0 ? e.target.files : null }))
-      } else {
-        setForm(prev => ({ ...prev, [name]: e.target.files[0] ?? null }))
-      }
-    } else {
-      setForm(prev => ({ ...prev, [name]: value }))
-    }
+    const { name, value } = e.target
+    setForm(prev => ({ ...prev, [name]: value }))
     if (fieldErrors[name]) {
       setFieldErrors(prev => { const { [name]: _, ...rest } = prev; return rest })
     }
@@ -190,7 +175,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
     if (window.confirm(t('confirmClear'))) {
       setForm(INITIAL_STATE)
       setEditId(null)
-      setEditDocumentos([])
       setSubmitted(false)
       setSubmissionToken(null)
       setTokenCopied(false)
@@ -320,18 +304,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
     topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
-  const handleDeleteDocumento = async (docId) => {
-    if (!window.confirm(t('confirmDeleteDoc'))) return
-    setDeletingDocId(docId)
-    const { error } = await deleteDocumento({ path: { docId } })
-    setDeletingDocId(null)
-    if (error) {
-      showToast(error.message, 'error')
-    } else {
-      setEditDocumentos(prev => prev.filter(d => d.id !== docId))
-    }
-  }
-
   const handleSubmit = async e => {
     e.preventDefault()
 
@@ -378,10 +350,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
       // Extraordinary income
       ingresosJuego: form.ingresosJuego,
       ingresosInversiones: form.ingresosInversiones,
-      // Documents
-      ...(form.docDniAnverso && { docDniAnverso: form.docDniAnverso }),
-      ...(form.docDniReverso && { docDniReverso: form.docDniReverso }),
-      ...(form.docAdicional && { docAdicional: Array.from(form.docAdicional) }),
       // Comments
       comentarios: form.comentarios,
     }
@@ -410,15 +378,10 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
           ingresosJuego: form.ingresosJuego,
           ingresosInversiones: form.ingresosInversiones,
           comentarios: form.comentarios,
-          // New documents to attach (if any were selected)
-          ...(form.docDniAnverso && { docDniAnverso: form.docDniAnverso }),
-          ...(form.docDniReverso && { docDniReverso: form.docDniReverso }),
-          ...(form.docAdicional && { docAdicional: Array.from(form.docAdicional) }),
         }
         const { data, error, response } = await updateDeclaracion({ path: { id: editId }, body: updateBody })
         if (data) {
           setEditId(null)
-          setEditDocumentos([])
           setSubmitted(true)
           spawnConfetti()
           showToast(t('toastSuccess'), 'success')
@@ -717,63 +680,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                         <div>
                           <div className="wizard-step-title">{t('section5')}</div>
                           <div className="wizard-step-subtitle">{t('docsInfoTitle')}</div>
-                        </div>
-                      </div>
-
-                      <div className="info-box">
-                        <strong>{t('docsInfoTitle')}</strong>
-                        {t('docsInfoText')}
-                      </div>
-
-                      {/* Already-attached documents when editing */}
-                      {editId && editDocumentos.length > 0 && (
-                        <div style={{ marginBottom: '12px' }}>
-                          <div style={{ fontSize: '0.9em', fontWeight: 600, marginBottom: '6px' }}>
-                            {t('docsAlreadyAttached')}
-                          </div>
-                          <ul className="documentos-list">
-                            {editDocumentos.map(doc => (
-                              <li key={doc.id}>
-                                <a
-                                  href={getDocumentoUrl(doc.id)}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="doc-download-link"
-                                >
-                                  📄 {doc.nombreOriginal}
-                                </a>
-                                <span className="doc-meta">{doc.mimeType} · {Math.round(doc.tamanyo / 1024)} KB</span>
-                                <button
-                                  type="button"
-                                  className="btn btn-danger btn-sm btn-xs"
-                                  onClick={() => handleDeleteDocumento(doc.id)}
-                                  disabled={deletingDocId === doc.id}
-                                  style={{ marginLeft: '8px' }}
-                                  title="Eliminar documento"
-                                >
-                                  {deletingDocId === doc.id ? '⏳' : '🗑️'}
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-
-                      <div className="form-grid">
-                        <div className="field">
-                          <label>{t('docDniAnverso')}</label>
-                          <input type="file" name="docDniAnverso" accept=".jpg,.jpeg,.png" onChange={handleChange} />
-                          {form.docDniAnverso && <span className="file-name">📄 {form.docDniAnverso.name}</span>}
-                        </div>
-                        <div className="field">
-                          <label>{t('docDniReverso')}</label>
-                          <input type="file" name="docDniReverso" accept=".jpg,.jpeg,.png" onChange={handleChange} />
-                          {form.docDniReverso && <span className="file-name">📄 {form.docDniReverso.name}</span>}
-                        </div>
-                        <div className="field full">
-                          <label>{t('docAdicional')}</label>
-                          <input type="file" name="docAdicional" accept=".jpg,.jpeg,.png,.zip" multiple onChange={handleChange} />
-                          {form.docAdicional && <span className="file-name">📄 {Array.from(form.docAdicional).map(f => f.name).join(', ')}</span>}
                         </div>
                       </div>
 

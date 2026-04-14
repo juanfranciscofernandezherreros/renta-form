@@ -511,6 +511,111 @@ async function updateIdiomaContent(id, body) {
   return { data: { code: idioma.code, content: store.translations[idioma.code] }, error: null }
 }
 
+// ── Admin: Preguntas adicionales ───────────────────────────────────────────
+
+async function listPreguntasAdmin({ activa, page = 1, limit = 10 } = {}) {
+  let resultado = [...store.preguntasAdicionales]
+  if (activa !== undefined) {
+    resultado = resultado.filter((p) => p.activa === activa)
+  }
+  resultado.sort((a, b) => a.orden - b.orden)
+  const total = resultado.length
+  const start = (page - 1) * limit
+  const data = resultado.slice(start, start + limit)
+  return { data: { data, total, page, limit }, error: null }
+}
+
+async function createPreguntaAdmin({ texto, seccion, tipoRespuesta, orden = 0, activa = true, obligatoria = false } = {}) {
+  if (!texto || !String(texto).trim()) return { data: null, error: { message: 'El texto es obligatorio' } }
+  if (!seccion || !String(seccion).trim()) return { data: null, error: { message: 'La sección es obligatoria' } }
+  const ahora = new Date().toISOString()
+  const nueva = {
+    id: store.generarPreguntaId(),
+    texto: texto.trim(),
+    seccion: seccion.trim(),
+    tipoRespuesta: tipoRespuesta ?? 'yn',
+    orden: Number(orden),
+    activa: Boolean(activa),
+    obligatoria: Boolean(obligatoria),
+    creadaEn: ahora,
+    actualizadaEn: ahora,
+  }
+  store.preguntasAdicionales.push(nueva)
+  return { data: nueva, error: null, status: 201 }
+}
+
+async function updatePreguntaAdmin(id, body) {
+  const idx = store.preguntasAdicionales.findIndex((p) => p.id === id)
+  if (idx === -1) return { data: null, error: { message: 'Pregunta no encontrada' } }
+  store.preguntasAdicionales[idx] = {
+    ...store.preguntasAdicionales[idx],
+    ...body,
+    id,
+    actualizadaEn: new Date().toISOString(),
+  }
+  return { data: store.preguntasAdicionales[idx], error: null }
+}
+
+async function deletePreguntaAdmin(id) {
+  const idx = store.preguntasAdicionales.findIndex((p) => p.id === id)
+  if (idx === -1) return { data: null, error: { message: 'Pregunta no encontrada' } }
+  store.preguntasAdicionales.splice(idx, 1)
+  for (let j = store.declaracionPreguntas.length - 1; j >= 0; j--) {
+    if (store.declaracionPreguntas[j].preguntaId === id) store.declaracionPreguntas.splice(j, 1)
+  }
+  return { data: { success: true }, error: null }
+}
+
+// ── Declaración ↔ Preguntas adicionales ───────────────────────────────────
+
+async function getDeclaracionPreguntas(declaracionId) {
+  const dec = store.declaraciones.find((d) => d.id === declaracionId)
+  if (!dec) return { data: null, error: { message: 'Declaración no encontrada' } }
+  const asignaciones = store.declaracionPreguntas
+    .filter((dp) => dp.declaracionId === declaracionId)
+    .map((dp) => ({
+      ...dp,
+      pregunta: store.preguntasAdicionales.find((p) => p.id === dp.preguntaId) ?? null,
+    }))
+  return { data: { data: asignaciones, total: asignaciones.length }, error: null }
+}
+
+async function upsertDeclaracionPreguntas(declaracionId, asignaciones = []) {
+  const dec = store.declaraciones.find((d) => d.id === declaracionId)
+  if (!dec) return { data: null, error: { message: 'Declaración no encontrada' } }
+  for (const a of asignaciones) {
+    const preguntaExiste = store.preguntasAdicionales.some((p) => p.id === a.preguntaId)
+    if (!preguntaExiste) return { data: null, error: { message: `Pregunta ${a.preguntaId} no encontrada` } }
+    const existente = store.declaracionPreguntas.find(
+      (dp) => dp.declaracionId === declaracionId && dp.preguntaId === a.preguntaId
+    )
+    const ahora = new Date().toISOString()
+    if (existente) {
+      existente.respuesta = a.respuesta ?? existente.respuesta
+      if (a.respuesta !== undefined && a.respuesta !== null) existente.respondidaEn = ahora
+    } else {
+      store.declaracionPreguntas.push({
+        id: store.generarDpId(),
+        declaracionId,
+        preguntaId: a.preguntaId,
+        respuesta: a.respuesta ?? null,
+        asignadaEn: ahora,
+        respondidaEn: (a.respuesta !== null && a.respuesta !== undefined) ? ahora : null,
+      })
+    }
+  }
+  return getDeclaracionPreguntas(declaracionId)
+}
+
+async function removeDeclaracionPregunta(declaracionId, preguntaId) {
+  const idx = store.declaracionPreguntas.findIndex(
+    (dp) => dp.declaracionId === declaracionId && dp.preguntaId === preguntaId
+  )
+  if (idx === -1) return { data: null, error: { message: 'Asignación no encontrada' } }
+  store.declaracionPreguntas.splice(idx, 1)
+  return { data: { success: true }, error: null }
+}
+
 // ── Exports ────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -550,4 +655,11 @@ module.exports = {
   deleteIdiomaAdmin,
   getIdiomaContent,
   updateIdiomaContent,
+  listPreguntasAdmin,
+  createPreguntaAdmin,
+  updatePreguntaAdmin,
+  deletePreguntaAdmin,
+  getDeclaracionPreguntas,
+  upsertDeclaracionPreguntas,
+  removeDeclaracionPregunta,
 }
