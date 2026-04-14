@@ -3,6 +3,7 @@ import { useAuth } from './AuthContext.jsx'
 import { loginUser } from './apiClient.js'
 import { ERROR_USER_BLOCKED } from './constants.js'
 import { useLanguage } from './LanguageContext.jsx'
+import Footer from './Footer.jsx'
 
 const DNI_NIE_REGEX = /^[0-9XYZ][0-9]{7}[A-Z]$/
 const LANG_FLAGS = { es: '🇪🇸', fr: '🇫🇷', en: '🇬🇧', de: '🇩🇪', pt: '🇵🇹', it: '🇮🇹' }
@@ -132,10 +133,7 @@ export default function LoginPage({ onNavigate }) {
         </form>
       </div>
 
-      <footer>
-        <p>{t('footerDisclaimer')}</p>
-        <p>Agencia Tributaria · <a href="https://www.agenciatributaria.es" target="_blank" rel="noreferrer">www.agenciatributaria.es</a> · {t('campaignName')}</p>
-      </footer>
+      <Footer />
     </>
   )
 }

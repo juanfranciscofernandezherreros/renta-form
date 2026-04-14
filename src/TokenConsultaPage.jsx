@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getDeclaracionByToken } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
 import { generateDeclaracionPDF, downloadRentaPdf } from './pdfUtils.js'
+import Footer from './Footer.jsx'
 
 const TOKENS_STORAGE_KEY = 'renta_form_tokens'
 
@@ -263,10 +264,7 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion, initi
         </div>
       )}
 
-      <footer>
-        <p>{t('footerDisclaimer')}</p>
-        <p>Agencia Tributaria · <a href="https://www.agenciatributaria.es" target="_blank" rel="noreferrer">www.agenciatributaria.es</a> · {t('campaignName')}</p>
-      </footer>
+      <Footer />
     </>
   )
 }

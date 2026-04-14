@@ -14,6 +14,7 @@ import { downloadRentaPdf } from './pdfUtils.js'
 import PreguntasFormularioAdminTab from './PreguntasFormularioAdminTab.jsx'
 import UsuariosAdminTab from './UsuariosAdminTab.jsx'
 import IdiomasAdminTab from './IdiomasAdminTab.jsx'
+import Footer from './Footer.jsx'
 
 const ESTADOS = ['recibido', 'en_revision', 'documentacion_pendiente', 'completado', 'archivado']
 
@@ -805,9 +806,7 @@ export default function AdminPage({ onNavigate }) {
         </div>
       )}
 
-      <footer>
-        <p>Panel de administración interno · Agencia Tributaria · Campaña Renta 2025</p>
-      </footer>
+      <Footer />
 
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
     </>
