@@ -126,7 +126,7 @@ main.jsx
 ### Flujo del Cuestionario Principal (App.jsx)
 
 1. Al montar, se llama a `getPreguntas()` para cargar el catálogo de secciones y preguntas dinámicas.
-2. El formulario muestra 6 secciones; las secciones 2–4 se renderizan con las preguntas cargadas dinámicamente, respetando condiciones de visibilidad (`condicion.campo === valor`).
+2. El formulario muestra 6 secciones; las secciones 2–4 se renderizan con las preguntas cargadas dinámicamente.
 3. Al pulsar **Enviar**, se llama a `createDeclaracion()` enviando todos los campos como `multipart/form-data`.
 4. Si el usuario está autenticado, la declaración se vincula automáticamente a su cuenta.
 5. Se muestra un panel de éxito con el **token de consulta** generado.
@@ -357,9 +357,7 @@ Devuelve el catálogo de secciones y preguntas dinámicas del cuestionario.
       "preguntas": [
         {
           "id": "viviendaAlquiler",
-          "texto": "¿Vive actualmente en régimen de alquiler?",
-          "indentada": false,
-          "condicion": null
+          "texto": "¿Vive actualmente en régimen de alquiler?"
         }
       ]
     }

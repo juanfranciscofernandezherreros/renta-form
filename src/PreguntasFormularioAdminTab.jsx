@@ -6,7 +6,7 @@ import {
   deletePreguntaFormulario,
 } from './apiClient.js'
 
-const EMPTY_FORM = { texto: '', orden: 0, indentada: false, condicionCampo: '', condicionValor: '' }
+const EMPTY_FORM = { texto: '' }
 
 function formatFecha(iso) {
   if (!iso) return '—'
@@ -50,10 +50,6 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
   const openEdit = (pregunta) => {
     setForm({
       texto: pregunta.texto,
-      orden: pregunta.orden,
-      indentada: pregunta.indentada,
-      condicionCampo: pregunta.condicionCampo ?? '',
-      condicionValor: pregunta.condicionValor ?? '',
     })
     setEditando(pregunta)
     setModal('edit')
@@ -76,10 +72,6 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
       if (modal === 'create') {
         const body = {
           texto: form.texto.trim(),
-          orden: Number(form.orden),
-          indentada: form.indentada,
-          condicionCampo: form.condicionCampo.trim() || undefined,
-          condicionValor: form.condicionValor.trim() || undefined,
         }
         const { error: apiErr } = await createPreguntaFormulario({ body })
         if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
@@ -89,8 +81,6 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
           path: { id: editando.id },
           body: {
             texto: form.texto.trim(),
-            orden: Number(form.orden),
-            indentada: form.indentada,
           },
         })
         if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
@@ -140,9 +130,6 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
             <thead>
               <tr>
                 <th>Pregunta (Sí/No)</th>
-                <th>Orden</th>
-                <th>Indentada</th>
-                <th>Condición</th>
                 <th>Última modificación</th>
                 <th style={{ textAlign: 'right' }}>Acciones</th>
               </tr>
@@ -152,17 +139,6 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
                 <tr key={p.id}>
                   <td>
                     <div className="pregunta-texto">{p.texto}</div>
-                  </td>
-                  <td>{p.orden}</td>
-                  <td>
-                    <span className={`estado-badge ${p.indentada ? 'badge-activa' : 'badge-inactiva'}`}>
-                      {p.indentada ? 'Sí' : 'No'}
-                    </span>
-                  </td>
-                  <td style={{ fontSize: '.8rem', color: '#666' }}>
-                    {p.condicionCampo
-                      ? <><code style={{ fontSize: '.78rem', background: '#f0f0f0', padding: '1px 4px', borderRadius: 3 }}>{p.condicionCampo}</code> = {p.condicionValor}</>
-                      : '—'}
                   </td>
                   <td style={{ whiteSpace: 'nowrap' }}>{formatFecha(p.actualizadaEn)}</td>
                   <td>
@@ -210,52 +186,6 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
                   rows={3}
                 />
               </div>
-              <div className="field">
-                <label>Orden</label>
-                <input
-                  type="number"
-                  name="orden"
-                  value={form.orden}
-                  onChange={handleFormChange}
-                  min={0}
-                />
-              </div>
-              <div className="field" style={{ justifyContent: 'flex-end' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', textTransform: 'none', fontSize: '.9rem' }}>
-                  <input
-                    type="checkbox"
-                    name="indentada"
-                    checked={form.indentada}
-                    onChange={handleFormChange}
-                    style={{ width: 16, height: 16 }}
-                  />
-                  Indentada (pregunta subordinada)
-                </label>
-              </div>
-              {modal === 'create' && (
-                <>
-                  <div className="field">
-                    <label>Campo condición (opcional)</label>
-                    <input
-                      type="text"
-                      name="condicionCampo"
-                      value={form.condicionCampo}
-                      onChange={handleFormChange}
-                      placeholder="ej: viviendaAlquiler"
-                    />
-                  </div>
-                  <div className="field">
-                    <label>Valor condición (opcional)</label>
-                    <input
-                      type="text"
-                      name="condicionValor"
-                      value={form.condicionValor}
-                      onChange={handleFormChange}
-                      placeholder="ej: si"
-                    />
-                  </div>
-                </>
-              )}
             </div>
 
             <div className="btn-row">

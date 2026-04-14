@@ -26,7 +26,6 @@ const CATALOGO_PREGUNTAS = {
             en: 'Do you currently live in rented accommodation?',
             ca: 'Viu actualment en règim de lloguer?',
           },
-          indentada: false,
         },
         {
           id: 'alquilerMenos35',
@@ -37,8 +36,6 @@ const CATALOGO_PREGUNTAS = {
             en: 'Is the rent amount less than 35% of your annual gross income?',
             ca: "L'import del lloguer és inferior al 35 % dels seus ingressos bruts anuals?",
           },
-          indentada: true,
-          condicion: { campo: 'viviendaAlquiler', valor: 'si' },
         },
         {
           id: 'viviendaPropiedad',
@@ -49,7 +46,6 @@ const CATALOGO_PREGUNTAS = {
             en: 'Do you own your primary residence?',
             ca: 'És propietari/ària del seu habitatge habitual?',
           },
-          indentada: false,
         },
         {
           id: 'propiedadAntes2013',
@@ -60,8 +56,6 @@ const CATALOGO_PREGUNTAS = {
             en: 'Did you acquire it before 1 January 2013?',
             ca: 'La va adquirir abans del 1 de gener de 2013?',
           },
-          indentada: true,
-          condicion: { campo: 'viviendaPropiedad', valor: 'si' },
         },
         {
           id: 'pisosAlquiladosTerceros',
@@ -72,7 +66,6 @@ const CATALOGO_PREGUNTAS = {
             en: 'Do you have properties rented out to third parties?',
             ca: 'Té immobles arrendats a tercers?',
           },
-          indentada: false,
         },
         {
           id: 'segundaResidencia',
@@ -83,7 +76,6 @@ const CATALOGO_PREGUNTAS = {
             en: 'Do you have a second residence?',
             ca: "Disposa d'una segona residència?",
           },
-          indentada: false,
         },
       ],
     },
@@ -107,7 +99,6 @@ const CATALOGO_PREGUNTAS = {
             en: 'Do you belong to a large family?',
             ca: 'Pertany a una família nombrosa?',
           },
-          indentada: false,
         },
         {
           id: 'ayudasGobierno',
@@ -118,7 +109,6 @@ const CATALOGO_PREGUNTAS = {
             en: 'Have you received public grants or subsidies in 2025?',
             ca: 'Ha rebut ajudes o subvencions públiques el 2025?',
           },
-          indentada: false,
         },
         {
           id: 'mayores65ACargo',
@@ -129,7 +119,6 @@ const CATALOGO_PREGUNTAS = {
             en: 'Do you have financial dependants over 65 years old?',
             ca: 'Té ascendents majors de 65 anys econòmicament a càrrec seu?',
           },
-          indentada: false,
         },
         {
           id: 'mayoresConviven',
@@ -140,8 +129,6 @@ const CATALOGO_PREGUNTAS = {
             en: 'Do they live with you at the same address?',
             ca: 'Conviuen amb vostè en el mateix domicili?',
           },
-          indentada: true,
-          condicion: { campo: 'mayores65ACargo', valor: 'si' },
         },
         {
           id: 'hijosMenores26',
@@ -152,7 +139,6 @@ const CATALOGO_PREGUNTAS = {
             en: 'Do you have children or dependants under 26 years old?',
             ca: 'Té fills o descendents menors de 26 anys a càrrec seu?',
           },
-          indentada: false,
         },
       ],
     },
@@ -176,7 +162,6 @@ const CATALOGO_PREGUNTAS = {
             en: 'Have you obtained winnings from gambling, lotteries or betting in 2025?',
             ca: 'Ha obtingut guanys per joc, loteries o apostes el 2025?',
           },
-          indentada: false,
         },
         {
           id: 'ingresosInversiones',
@@ -187,7 +172,6 @@ const CATALOGO_PREGUNTAS = {
             en: 'Have you obtained income from movable capital (shares, investment funds, etc.) in 2025?',
             ca: "Ha obtingut rendiments de capital mobiliari (accions, fons d'inversió, etc.) el 2025?",
           },
-          indentada: false,
         },
       ],
     },

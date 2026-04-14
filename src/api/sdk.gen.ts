@@ -22,7 +22,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  * Obtiene el catálogo de preguntas
  *
  * Devuelve todas las secciones del cuestionario con sus preguntas
- * ordenadas, incluyendo condiciones de visibilidad condicional.
+ * Devuelve todas las secciones del cuestionario con sus preguntas.
  *
  */
 export const getPreguntas = <ThrowOnError extends boolean = false>(options?: Options<GetPreguntasData, ThrowOnError>) => (options?.client ?? client).get<GetPreguntasResponses, GetPreguntasErrors, ThrowOnError>({ url: '/irpf/preguntas', ...options });

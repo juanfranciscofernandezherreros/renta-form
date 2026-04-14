@@ -152,23 +152,19 @@ function rowToPreguntaFormulario(r) {
   return {
     id: r.id,
     texto: r.texto,
-    orden: r.orden,
-    indentada: r.indentada,
-    condicionCampo: r.condicion_campo ?? null,
-    condicionValor: r.condicion_valor ?? null,
     actualizadaEn: r.actualizada_en,
   }
 }
 
 async function listPreguntasFormulario() {
   const { rows } = await pool.query(
-    `SELECT id, texto, orden, indentada, condicion_campo, condicion_valor, actualizada_en
-     FROM preguntas_formulario ORDER BY orden`
+    `SELECT id, texto, actualizada_en
+     FROM preguntas_formulario ORDER BY id`
   )
   return { data: rows.map(rowToPreguntaFormulario), error: null }
 }
 
-async function updatePreguntaFormulario(id, { texto, orden, indentada }) {
+async function updatePreguntaFormulario(id, { texto }) {
   if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
 
   const sets = []
@@ -178,14 +174,6 @@ async function updatePreguntaFormulario(id, { texto, orden, indentada }) {
     if (!String(texto).trim()) return { data: null, error: { message: 'El texto no puede estar vacío' } }
     params.push(texto)
     sets.push(`texto = $${params.length}`)
-  }
-  if (orden !== undefined) {
-    params.push(Number(orden))
-    sets.push(`orden = $${params.length}`)
-  }
-  if (indentada !== undefined) {
-    params.push(Boolean(indentada))
-    sets.push(`indentada = $${params.length}`)
   }
 
   if (sets.length === 0) return { data: null, error: { message: 'No hay cambios que guardar' } }
@@ -199,26 +187,26 @@ async function updatePreguntaFormulario(id, { texto, orden, indentada }) {
   if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
 
   const { rows } = await pool.query(
-    `SELECT id, texto, orden, indentada, condicion_campo, condicion_valor, actualizada_en
+    `SELECT id, texto, actualizada_en
      FROM preguntas_formulario WHERE id = $1`,
     [id]
   )
   return { data: rowToPreguntaFormulario(rows[0]), error: null }
 }
 
-async function createPreguntaFormulario({ texto, orden = 0, indentada = false, condicionCampo, condicionValor }) {
+async function createPreguntaFormulario({ texto }) {
   if (!texto || !String(texto).trim()) return { data: null, error: { message: 'El texto es obligatorio' } }
 
   const { rows } = await pool.query(
-    `INSERT INTO preguntas_formulario (texto, orden, indentada, condicion_campo, condicion_valor)
-     VALUES ($1, $2, $3, $4, $5)
+    `INSERT INTO preguntas_formulario (texto)
+     VALUES ($1)
      RETURNING id`,
-    [texto.trim(), Number(orden), Boolean(indentada), condicionCampo ?? null, condicionValor ?? null]
+    [texto.trim()]
   )
   if (!rows.length) return { data: null, error: { message: 'No se pudo crear la pregunta' } }
 
   const { rows: full } = await pool.query(
-    `SELECT id, texto, orden, indentada, condicion_campo, condicion_valor, actualizada_en
+    `SELECT id, texto, actualizada_en
      FROM preguntas_formulario WHERE id = $1`,
     [rows[0].id]
   )
