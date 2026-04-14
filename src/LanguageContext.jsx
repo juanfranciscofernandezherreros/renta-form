@@ -1,7 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
 import staticTranslations, { LANGUAGES as STATIC_LANGUAGES } from './i18n.js'
-import { listIdiomasAdmin, getIdiomaContent } from './apiClient.js'
+import { getIdiomas, getTraducciones } from './apiClient.js'
 
 const LanguageContext = createContext(null)
 
@@ -16,23 +16,25 @@ export function LanguageProvider({ children }) {
   const [translations, setTranslations] = useState(defaultTranslations)
   const loadedRef = useRef(false)
 
-  // Load languages & translations from API on mount
+  // Load languages & translations from DB via public endpoints on mount
   useEffect(() => {
     if (loadedRef.current) return
     loadedRef.current = true
     ;(async () => {
       try {
-        const { data } = await listIdiomasAdmin({ query: { limit: 100 } })
-        if (data?.data?.length) {
-          setIdiomas(data.data)
+        const [idiomasRes, traduccionesRes] = await Promise.all([
+          getIdiomas(),
+          getTraducciones(),
+        ])
+        if (idiomasRes.data?.length) {
+          setIdiomas(idiomasRes.data.map(i => ({ ...i, activo: true })))
+        }
+        if (traduccionesRes.data && Object.keys(traduccionesRes.data).length > 0) {
           const newTranslations = { ...defaultTranslations }
-          for (const idioma of data.data.filter(i => i.activo)) {
-            const { data: contentData } = await getIdiomaContent({ path: { id: idioma.id } })
-            if (contentData?.content && Object.keys(contentData.content).length > 0) {
-              newTranslations[contentData.code] = {
-                ...(newTranslations[contentData.code] ?? {}),
-                ...contentData.content,
-              }
+          for (const [code, keys] of Object.entries(traduccionesRes.data)) {
+            newTranslations[code] = {
+              ...(newTranslations[code] ?? {}),
+              ...keys,
             }
           }
           setTranslations(newTranslations)
@@ -45,17 +47,19 @@ export function LanguageProvider({ children }) {
 
   const reloadTranslations = useCallback(async () => {
     try {
-      const { data } = await listIdiomasAdmin({ query: { limit: 100 } })
-      if (data?.data?.length) {
-        setIdiomas(data.data)
+      const [idiomasRes, traduccionesRes] = await Promise.all([
+        getIdiomas(),
+        getTraducciones(),
+      ])
+      if (idiomasRes.data?.length) {
+        setIdiomas(idiomasRes.data.map(i => ({ ...i, activo: true })))
+      }
+      if (traduccionesRes.data && Object.keys(traduccionesRes.data).length > 0) {
         const newTranslations = { ...defaultTranslations }
-        for (const idioma of data.data.filter(i => i.activo)) {
-          const { data: contentData } = await getIdiomaContent({ path: { id: idioma.id } })
-          if (contentData?.content && Object.keys(contentData.content).length > 0) {
-            newTranslations[contentData.code] = {
-              ...(newTranslations[contentData.code] ?? {}),
-              ...contentData.content,
-            }
+        for (const [code, keys] of Object.entries(traduccionesRes.data)) {
+          newTranslations[code] = {
+            ...(newTranslations[code] ?? {}),
+            ...keys,
           }
         }
         setTranslations(newTranslations)
