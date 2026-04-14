@@ -11,12 +11,11 @@
 7. [Componentes y Páginas](#7-componentes-y-páginas)
 8. [Gestión de Estado y Contextos](#8-gestión-de-estado-y-contextos)
 9. [API REST](#9-api-rest)
-10. [Mock API y Datos de Demo](#10-mock-api-y-datos-de-demo)
-11. [Internacionalización (i18n)](#11-internacionalización-i18n)
-12. [Generación de PDFs](#12-generación-de-pdfs)
-13. [Seguridad y Autenticación](#13-seguridad-y-autenticación)
-14. [Usuarios de Prueba](#14-usuarios-de-prueba)
-15. [Scripts de Desarrollo](#15-scripts-de-desarrollo)
+10. [Internacionalización (i18n)](#10-internacionalización-i18n)
+11. [Generación de PDFs](#11-generación-de-pdfs)
+12. [Seguridad y Autenticación](#12-seguridad-y-autenticación)
+13. [Usuarios de Prueba](#13-usuarios-de-prueba)
+14. [Scripts de Desarrollo](#14-scripts-de-desarrollo)
 
 ---
 
@@ -70,10 +69,8 @@ renta-form/
 │   ├── App.jsx             # Formulario principal (cuestionario IRPF)
 │   ├── Router.jsx          # Enrutador hash-based
 │   ├── App.css / index.css # Estilos globales
-│   ├── constants.js        # Constantes (DEMO_MODE, URLs de API)
+│   ├── constants.js        # Constantes (URLs de API)
 │   ├── i18n.js             # Traducciones (es, fr, en, ca)
-│   ├── demoData.js         # Datos en memoria para el modo demo
-│   ├── mockApi.js          # Implementación mock de la API
 │   ├── pdfUtils.js         # Utilidades para generar PDFs con jsPDF
 │   │
 │   ├── AuthContext.jsx     # Contexto de autenticación
@@ -135,18 +132,17 @@ main.jsx
 
 ## 5. Modos de Funcionamiento
 
-El fichero `src/constants.js` controla el modo activo:
+La aplicación conecta siempre con el backend PostgreSQL. El fichero `src/constants.js` define las URLs de la API:
 
 ```js
-export const DEMO_MODE = true  // false → conecta con la API real
+export const DEMO_MODE = false  // siempre conecta con la API real
 ```
 
-| Modo | Comportamiento |
-|---|---|
-| `DEMO_MODE = true` | Todos los datos se sirven desde memoria (mockApi.js + demoData.js). No requiere backend. |
-| `DEMO_MODE = false` | Las llamadas van a `https://api.renta-form.example/v1` usando el cliente generado desde OpenAPI. |
-
-En modo demo, al recargar la página los datos de declaraciones enviadas **se persisten en `localStorage`** para simular persistencia básica.
+| Variable | Valor | Descripción |
+|---|---|---|
+| `API_BASE_URL` | `/v1` (dev) | Base URL del backend |
+| `API_DECLARACIONES_URL` | `/v1/irpf/declaraciones` | Endpoint de declaraciones |
+| `API_PREGUNTAS_URL` | `/v1/irpf/preguntas` | Endpoint del catálogo |
 
 ---
 
@@ -398,45 +394,7 @@ Actualiza el estado de una declaración.
 
 ---
 
-## 10. Mock API y Datos de Demo
-
-### `demoData.js` — Almacenes en Memoria
-
-Contiene los datos iniciales usados en modo demo:
-
-| Store | Descripción |
-|---|---|
-| `CATALOGO_PREGUNTAS` | Catálogo completo con preguntas en 4 idiomas |
-| `declaracionesStore` | Array de declaraciones de los 4 usuarios de prueba |
-| `passwordsStore` | Contraseñas (en texto plano inicialmente, con soporte de hash SHA-256) |
-| `rolesStore` | Rol de cada usuario (`user` o `admin`) |
-| `usersStore` | Datos completos de los usuarios |
-| `preguntasAdicionalesStore` | Preguntas adicionales creadas por el admin |
-| `seccionesStore` | Secciones creadas por el admin |
-| `codigosAccesoStore` | Códigos de acceso a la intranet |
-
-**Persistencia de datos demo:** Las declaraciones enviadas se guardan en `localStorage` para sobrevivir recargas de página durante la demo.
-
-### `mockApi.js` — Funciones Mock
-
-Implementa todas las funciones de la API con retardos simulados (~300 ms) para emular latencia de red. Las funciones siguen exactamente la misma firma que el cliente generado desde OpenAPI.
-
-**Funciones disponibles:**
-- `getPreguntas()`, `createDeclaracion()`, `listDeclaraciones()`, `getDeclaracion()`, `updateDeclaracion()`, `deleteDeclaracion()`
-- `loginUser()`, `changePassword()`
-- `listDeclaracionesAll()`, `updateEstadoDeclaracion()`, `sendEmailDeclaracion()`, `assignUserAccount()`
-- `listPreguntasAdmin()`, `createPreguntaAdmin()`, `updatePreguntaAdmin()`, `deletePreguntaAdmin()`
-- `listSeccionesAdmin()`, `createSeccionAdmin()`, `updateSeccionAdmin()`, `deleteSeccionAdmin()`
-- `listUsersAdmin()`, `blockUser()`, `reportUser()`, `deleteUser()`, `sendEmailToUser()`
-- `getDeclaracionByToken()`, `verificarCodigoAcceso()`
-- `getDeclaracionPreguntas()`, `upsertDeclaracionPreguntas()`, `removeDeclaracionPregunta()`
-- `setUserPreguntas()`, `setUserSecciones()`, `getUserByDniNie()`
-
-**Seguridad de contraseñas en demo:** Las contraseñas se hashean con **SHA-256** usando la Web Crypto API cuando el usuario las cambia. El login soporta tanto comparación directa (contraseñas iniciales) como verificación de hash.
-
----
-
-## 11. Internacionalización (i18n)
+## 10. Internacionalización (i18n)
 
 El fichero `src/i18n.js` contiene todas las cadenas de texto de la interfaz organizadas por idioma:
 
@@ -447,11 +405,11 @@ El fichero `src/i18n.js` contiene todas las cadenas de texto de la interfaz orga
 | `en` | Inglés |
 | `ca` | Catalán |
 
-Las preguntas del cuestionario también tienen traducción completa (campo `textos` en `demoData.js`), lo que permite que el formulario se muestre íntegramente en el idioma seleccionado por el usuario. El idioma se puede cambiar en cualquier momento desde el selector en la cabecera.
+Las preguntas del cuestionario también tienen traducción completa (campo `textos`), lo que permite que el formulario se muestre íntegramente en el idioma seleccionado por el usuario. El idioma se puede cambiar en cualquier momento desde el selector en la cabecera.
 
 ---
 
-## 12. Generación de PDFs
+## 11. Generación de PDFs
 
 El módulo `src/pdfUtils.js` utiliza **jsPDF** para generar un PDF A4 del expediente fiscal de un contribuyente.
 
@@ -465,15 +423,14 @@ El PDF se descarga automáticamente con el nombre `declaracion-{dniNie}-{fecha}.
 
 ---
 
-## 13. Seguridad y Autenticación
+## 12. Seguridad y Autenticación
 
 La aplicación implementa tres capas de acceso:
 
 ### Capa 1: Código de Intranet
 - Requerido antes de acceder a cualquier ruta.
-- Se valida contra el store `codigosAccesoStore`.
+- Se valida contra el backend (endpoint `/v1/auth/verificar-codigo`).
 - Se almacena en `sessionStorage` (expira al cerrar la pestaña).
-- Código demo: `intranet2025`.
 
 ### Capa 2: Autenticación de Usuario
 - DNI/NIE + contraseña para acceder al perfil personal.
@@ -487,32 +444,13 @@ La aplicación implementa tres capas de acceso:
 
 ---
 
-## 14. Usuarios de Prueba
+## 13. Usuarios de Prueba
 
-### Usuarios Contribuyentes (acceso al perfil)
-
-| DNI/NIE | Nombre | Contraseña |
-|---|---|---|
-| `12345678A` | María García López | `renta2025` |
-| `87654321B` | Carlos Martínez Ruiz | `renta2025` |
-| `11223344C` | Ana López Sánchez | `renta2025` |
-| `44332211D` | Pedro Fernández González | `renta2025` |
-
-### Administrador (acceso al panel `/admin`)
-
-| Usuario | Contraseña |
-|---|---|
-| `admin` | `admin` |
-
-### Código de Intranet
-
-| Código |
-|---|
-| `intranet2025` |
+Los usuarios de prueba se cargan con el fichero SQL `database/test_data_200_usuarios.sql` (prueba de carga con 200 usuarios). Contraseña de todos los usuarios: `Test1234!`
 
 ---
 
-## 15. Scripts de Desarrollo
+## 14. Scripts de Desarrollo
 
 ```bash
 # Instalar dependencias

@@ -460,9 +460,6 @@ async function sendEmailDeclaracion({ declaracionId, email, mensaje }) {
 }
 
 // ── Admin: Secciones ───────────────────────────────────────────────────────
-// NOTE: The "secciones" table is not part of the current schema.sql but we keep
-// the mock store concept alive here using preguntas_adicionales.seccion.
-// For the DB profile we store secciones in a simple table that must be created.
 
 async function listSeccionesAdmin({ activa, page = 1, limit = 10 }) {
   const conditions = []
