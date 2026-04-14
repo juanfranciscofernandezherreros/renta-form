@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "test": "cucumber-js",
     "generate": "openapi-ts",
     "dev": "vite",
     "build": "vite build",
@@ -27,6 +28,7 @@
     "swagger-ui-react": "^5.32.2"
   },
   "devDependencies": {
+    "@cucumber/cucumber": "^11.3.0",
     "@eslint/js": "^9.39.4",
     "@hey-api/openapi-ts": "^0.95.0",
     "@types/react": "^19.2.14",
@@ -36,6 +38,7 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+    "playwright": "^1.55.1",
     "vite": "^8.0.4"
   }
 }

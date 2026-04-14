@@ -297,3 +297,49 @@ Content-Type: multipart/form-data
 ```
 
 Envía todos los campos del formulario como `multipart/form-data`. Los campos de las preguntas dinámicas se incluyen usando el `id` de cada pregunta como nombre de campo con valor `"si"` o `"no"`.
+
+---
+
+## Tests E2E con Cucumber + Playwright
+
+Los tests E2E navegan por toda la aplicación y generan **screenshots** de cada pantalla en `screenshots/`.
+
+### Requisitos
+
+Antes de ejecutar los tests, arranca el backend (modo mock) y el servidor de desarrollo:
+
+```bash
+# Terminal 1 – Backend mock
+cd backend && npm install && PROFILE=mock node server.js
+
+# Terminal 2 – Frontend dev (incluye proxy /v1 → localhost:3001)
+npm run dev
+```
+
+### Ejecutar los tests
+
+```bash
+npm test
+```
+
+Los screenshots se guardan en `screenshots/` con nombres descriptivos:
+
+| Screenshot | Descripción |
+|---|---|
+| `00_pantalla_intranet.png` | Pantalla de acceso a la intranet |
+| `01_pagina_inicio.png` | Página principal – paso 1 (Identificación) |
+| `02_validacion_campos_vacios.png` | Validación con campos vacíos |
+| `03_datos_identificacion_rellenos.png` | Formulario de identificación relleno |
+| `04_paso_vivienda.png` | Paso 2 – Situación de vivienda |
+| `05_vivienda_respondida.png` | Preguntas de vivienda respondidas |
+| `06_paso_familia.png` | Paso 3 – Cargas familiares |
+| `07_familia_respondida.png` | Preguntas familiares respondidas |
+| `08_paso_ingresos.png` | Paso 4 – Ingresos extraordinarios |
+| `09_ingresos_respondidos.png` | Ingresos respondidos |
+| `10_paso_documentos.png` | Paso 5 – Documentación adjunta |
+| `11_comentarios_rellenos.png` | Comentarios finales rellenos |
+| `12_formulario_enviado_exito.png` | Confirmación de envío exitoso |
+| `13_pantalla_login.png` | Pantalla de login de usuario |
+| `14_pantalla_consulta.png` | Pantalla de consulta por token |
+
+> **Nota**: se usa `npm run dev` (no `npm run preview`) para que el proxy de Vite reenvíe las peticiones `/v1` al backend en el puerto 3001.
