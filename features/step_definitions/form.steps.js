@@ -119,25 +119,25 @@ When('el usuario intenta enviar el formulario duplicado', async function () {
   const submitBtn = this.page.locator('button:has-text("Enviar cuestionario")')
   await submitBtn.waitFor({ state: 'visible', timeout: 15000 })
   await submitBtn.click()
-  await this.page.waitForTimeout(3000)
+  // Wait for either an error toast or an alert to appear after the API responds
+  await this.page.waitForSelector(
+    '.toast-error, [role="alert"], .Toastify__toast--error, .alert-danger',
+    { timeout: 10000 }
+  ).catch(() => {})
+  await this.page.waitForTimeout(500)
 })
 
 Then('se muestra un error de declaracion duplicada', async function () {
-  // The toast or error message should contain the duplicate error text
-  const toast = this.page.locator('.toast, [role="alert"], .alert, .error-toast, .Toastify__toast')
+  // The backend returns the message "Ya existe una declaración con este DNI/NIE" on 409
   const bodyText = await this.page.evaluate(() => document.body.innerText)
   const hasDuplicateError =
-    bodyText.includes('409') ||
     bodyText.includes('Ya existe') ||
-    bodyText.includes('duplicad') ||
-    bodyText.includes('DNI') ||
-    bodyText.includes('Error')
+    bodyText.includes('409') ||
+    bodyText.includes('duplicad')
   if (!hasDuplicateError) {
-    // Check if any toast is visible with error text
-    const toastCount = await toast.count()
-    if (toastCount === 0) {
-      throw new Error('No se mostró ningún mensaje de error para la declaración duplicada')
-    }
+    throw new Error(
+      `No se mostró el mensaje de error de declaración duplicada. Texto de la página: ${bodyText.slice(0, 300)}`
+    )
   }
 })
 
