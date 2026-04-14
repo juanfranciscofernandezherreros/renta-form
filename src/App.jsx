@@ -616,17 +616,17 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                       <div className="form-grid">
                         <div className="field">
                           <label>{t('docDniAnverso')}</label>
-                          <input type="file" name="docDniAnverso" accept=".pdf,.jpg,.jpeg,.png" onChange={handleChange} />
+                          <input type="file" name="docDniAnverso" accept=".jpg,.jpeg,.png" onChange={handleChange} />
                           {form.docDniAnverso && <span className="file-name">📄 {form.docDniAnverso.name}</span>}
                         </div>
                         <div className="field">
                           <label>{t('docDniReverso')}</label>
-                          <input type="file" name="docDniReverso" accept=".pdf,.jpg,.jpeg,.png" onChange={handleChange} />
+                          <input type="file" name="docDniReverso" accept=".jpg,.jpeg,.png" onChange={handleChange} />
                           {form.docDniReverso && <span className="file-name">📄 {form.docDniReverso.name}</span>}
                         </div>
                         <div className="field full">
                           <label>{t('docAdicional')}</label>
-                          <input type="file" name="docAdicional" accept=".pdf,.jpg,.jpeg,.png,.zip" multiple onChange={handleChange} />
+                          <input type="file" name="docAdicional" accept=".jpg,.jpeg,.png,.zip" multiple onChange={handleChange} />
                           {form.docAdicional && <span className="file-name">📄 {Array.from(form.docAdicional).map(f => f.name).join(', ')}</span>}
                         </div>
                       </div>
