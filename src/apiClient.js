@@ -1,7 +1,5 @@
 // ---------------------------------------------------------------------------
-//  Real API client – all calls go through the backend REST API.
-//  Mirrors the interface of mockApi.js so that components can simply
-//  switch their import without changing any other code.
+//  API client – all calls go through the backend REST API.
 // ---------------------------------------------------------------------------
 
 import { API_BASE_URL } from './constants.js'
@@ -287,9 +285,8 @@ export async function updateIdiomaContent(options) {
 }
 
 // ── PDF upload (stored as part of declaración) ─────────────────────────────
-// The backend does not have a dedicated PDF attachment endpoint matching the
-// mock's uploadRentaPdf.  We simulate it by updating the declaración with
-// the rentaPdf field so the data persists across page reloads via the DB.
+// We update the declaración with the rentaPdf field so the data persists
+// across page reloads via the DB.
 
 export async function uploadRentaPdf({ declaracionId, nombre, dataUrl }) {
   const pdfData = dataUrl ? { nombre, dataUrl } : null

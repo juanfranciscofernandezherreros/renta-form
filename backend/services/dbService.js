@@ -108,7 +108,7 @@ function rowToIdioma(row) {
 }
 
 // ── Static catalogue – used as fallback / reference only ─────────────────
-const CATALOGO_PREGUNTAS = require('../data/mockStore').CATALOGO_PREGUNTAS
+const { CATALOGO_PREGUNTAS } = require('../data/catalogoPreguntas')
 
 // ── Auth ───────────────────────────────────────────────────────────────────
 

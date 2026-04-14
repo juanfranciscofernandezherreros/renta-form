@@ -114,7 +114,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   // Game animation state
   const [xpPopups, setXpPopups] = useState([])
   const [streak, setStreak] = useState(0)
-  const [totalScore, setTotalScore] = useState(0)
   const [questionShake, setQuestionShake] = useState(false)
   const [showLevelUp, setShowLevelUp] = useState(null)
   const [confettiPieces, setConfettiPieces] = useState([])
@@ -207,7 +206,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
   const handleAnswer = () => {
     spawnXpPopup()
     setStreak(s => s + 1)
-    setTotalScore(s => s + 10)
     // Auto-advance after answering a yes/no question
     const nextStep = visibleSteps[safeStep + 1]
     if (nextStep) {
@@ -519,11 +517,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
                     <span className="streak-badge-icon">🔥</span> {streak}
                   </span>
                 )}
-                {totalScore > 0 && (
-                  <div key={`score-${totalScore}`} className="score-display">
-                    ⭐ {totalScore}
-                  </div>
-                )}
                 <div className="quiz-counter">{safeStep + 1} <span>/ {totalSteps}</span></div>
               </div>
             </div>
@@ -540,9 +533,6 @@ export default function App({ onNavigate, editData, onEditDataConsumed }) {
             <div className="quiz-progress-top">
               <span className="quiz-section-badge">🎉 {t('successTitle')}</span>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                {totalScore > 0 && (
-                  <div className="score-display">⭐ {totalScore}</div>
-                )}
                 <div className="quiz-counter">✓</div>
               </div>
             </div>
