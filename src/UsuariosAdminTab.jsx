@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import {
   listUsersAdmin,
   blockUser,
@@ -349,7 +350,7 @@ export default function UsuariosAdminTab({ showToast }) {
       />
 
       {/* Email modal */}
-      {emailModal && (
+      {emailModal && createPortal(
         <div className="admin-modal-overlay" onClick={() => setEmailModal(null)}>
           <div className="admin-modal" onClick={e => e.stopPropagation()}>
             <h2 className="admin-modal-title">📧 Enviar email</h2>
@@ -381,10 +382,10 @@ export default function UsuariosAdminTab({ showToast }) {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
 
       {/* Delete confirmation modal */}
-      {confirmDelete && (
+      {confirmDelete && createPortal(
         <div className="admin-modal-overlay" onClick={() => setConfirmDelete(null)}>
           <div className="admin-modal" onClick={e => e.stopPropagation()}>
             <h2 className="admin-modal-title">⚠️ Confirmar eliminación</h2>
@@ -401,7 +402,7 @@ export default function UsuariosAdminTab({ showToast }) {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
 
       {/* Assign secciones modal */}
     </div>

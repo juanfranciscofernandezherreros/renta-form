@@ -1920,20 +1920,23 @@ footer.footer-main {
   color: #555;
 }
 
-/* Panel absolutely positioned above idioma cards */
+/* Panel fixed overlay for language translations */
 .traduccion-panel {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  z-index: 200;
+  bottom: 0;
+  z-index: 2000;
   background: #fff;
   border: 2px solid #6c11c8;
   border-radius: 14px;
   box-shadow: 0 8px 40px rgba(108,17,200,.22);
   display: flex;
   flex-direction: column;
-  max-height: 82vh;
+  max-height: 100dvh;
+  max-width: 860px;
+  margin: auto;
   padding: 18px 20px 14px;
   animation: panelSlideIn .18s ease;
 }
@@ -1989,16 +1992,10 @@ footer.footer-main {
     white-space: nowrap;
   }
 
-  /* Traducción panel: full-screen fixed overlay so it's usable on small screens */
+  /* Traducción panel: full-screen on mobile */
   .traduccion-panel {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    max-height: 100dvh;
+    max-width: 100%;
     border-radius: 0;
-    z-index: 1000;
     padding: 16px 14px 12px;
   }
 

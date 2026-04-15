@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import {
   listIdiomasAdmin,
   createIdiomaAdmin,
@@ -251,7 +252,7 @@ export default function IdiomasAdminTab({ showToast }) {
       />
 
       {/* Create / Edit modal */}
-      {modal && (
+      {modal && createPortal(
         <div className="admin-modal-overlay" onClick={closeModal}>
           <div className="admin-modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
             <h2 className="admin-modal-title">
@@ -305,10 +306,10 @@ export default function IdiomasAdminTab({ showToast }) {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
 
       {/* Content editor modal */}
-      {contentModal && (
+      {contentModal && createPortal(
         <div className="admin-modal-overlay" onClick={closeContentModal}>
           <div
             className="admin-modal"
@@ -381,10 +382,10 @@ export default function IdiomasAdminTab({ showToast }) {
             )}
           </div>
         </div>
-      )}
+      , document.body)}
 
       {/* Delete confirmation modal */}
-      {confirmDelete && (
+      {confirmDelete && createPortal(
         <div className="admin-modal-overlay" onClick={() => setConfirmDelete(null)}>
           <div className="admin-modal" onClick={e => e.stopPropagation()}>
             <h2 className="admin-modal-title">⚠️ Confirmar eliminación</h2>
@@ -401,7 +402,7 @@ export default function IdiomasAdminTab({ showToast }) {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   )
 }
