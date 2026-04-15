@@ -133,7 +133,7 @@ async function getPreguntas() {
     return { data: { secciones: [...seccionMap.values()] }, error: null }
   } catch (err) {
     console.error('getPreguntas DB error:', err.message)
-    return { data: null, error: { message: err.message } }
+    return { data: null, error: { message: err.message }, status: 503 }
   }
 }
 
