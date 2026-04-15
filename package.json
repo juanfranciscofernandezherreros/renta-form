@@ -14,7 +14,6 @@
     "start": "serve -s dist",
     "start:backend": "cd backend && npm start",
     "start:db": "cd backend && npm run start:db",
-    "check:translations": "node scripts/check-translations.js",
     "heroku-postbuild": "npm install --prefix backend && npm run build"
   },
   "engines": {

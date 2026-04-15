@@ -64,11 +64,6 @@ renta-form/
 ├── public/
 │   └── openapi.yaml        # Copia pública para Swagger UI
 ├── database/               # Scripts SQL de base de datos
-├── translations/           # Traducciones estáticas de respaldo (JSON)
-│   ├── es.json             # Español
-│   ├── ca.json             # Catalán
-│   ├── en.json             # Inglés
-│   └── fr.json             # Francés
 ├── features/               # Tests E2E con Cucumber + Playwright
 │   ├── form.feature        # Escenarios del formulario principal
 │   ├── idiomas.feature     # Escenarios de idiomas y traducciones
@@ -325,11 +320,7 @@ Provee soporte multilingüe con carga dinámica desde la base de datos:
 
 **Cadena de resolución de `t(key)`:**
 1. Traducciones cargadas desde la DB para el idioma activo.
-2. Fallback al JSON estático de `translations/{lang}.json`.
-3. Fallback al JSON estático español (`translations/es.json`).
-4. Si nada coincide, devuelve la propia `key`.
-
-**Archivos de traducción estática (respaldo):** `translations/es.json`, `translations/ca.json`, `translations/en.json`, `translations/fr.json` — cada fichero contiene 100 claves.
+2. Si nada coincide, devuelve la propia `key`.
 
 ---
 
@@ -439,21 +430,18 @@ Devuelve todas las traducciones agrupadas por código de idioma.
 
 ## 10. Internacionalización (i18n)
 
-La aplicación implementa un sistema de traducción **híbrido**: las traducciones se cargan dinámicamente desde la base de datos y se complementan con ficheros JSON estáticos de respaldo.
+Las traducciones se gestionan íntegramente desde la base de datos a través de la API.
 
 ### Arquitectura
 
 ```
 LanguageContext.jsx
-  ├── Carga dinámica: GET /v1/irpf/idiomas + GET /v1/irpf/traducciones
-  └── Fallback estático: translations/{es,ca,en,fr}.json
+  └── Carga dinámica: GET /v1/irpf/idiomas + GET /v1/irpf/traducciones
 ```
 
 Al iniciar la aplicación, `LanguageContext` realiza dos llamadas en paralelo al backend para obtener:
 1. Los **idiomas disponibles** (`/v1/irpf/idiomas`).
 2. Todas las **traducciones** agrupadas por idioma (`/v1/irpf/traducciones`).
-
-Si la API falla o no devuelve datos, se usan automáticamente los ficheros JSON estáticos de `translations/`.
 
 ### Idiomas soportados
 
