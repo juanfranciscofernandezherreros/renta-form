@@ -22,7 +22,7 @@ import { readFileSync, readdirSync } from 'fs'
 import { resolve, join, basename } from 'path'
 import { fileURLToPath } from 'url'
 
-const __dirname = new URL('.', import.meta.url).pathname.replace(/\/$/, '')
+const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const ROOT = resolve(__dirname, '..')
 const TRANSLATIONS_DIR = join(ROOT, 'translations')
 
@@ -49,7 +49,7 @@ function loadTranslations() {
 // ─── Compare ──────────────────────────────────────────────────────────────────
 
 function compare(refKeys, targetKeys) {
-  const missing = refKeys.filter(k => !Object.prototype.hasOwnProperty.call(targetKeys, k))
+  const missing = refKeys.filter(k => !(k in targetKeys))
   const extra   = Object.keys(targetKeys).filter(k => !refKeys.includes(k))
   return { missing, extra }
 }
