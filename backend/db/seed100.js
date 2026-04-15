@@ -1,0 +1,269 @@
+'use strict'
+
+// ---------------------------------------------------------------------------
+// seed100.js – Seeds 60 preguntas, 100 usuarios, and 100 declaraciones.
+// Idempotent: uses ON CONFLICT clauses so it can be run multiple times.
+// ---------------------------------------------------------------------------
+
+const bcrypt = require('bcrypt')
+const pool = require('./pool')
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Returns the DNI-NIE letter cycle (A-Z) for index 0-based */
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+function dniLetter(i) {
+  return LETTERS[i % 26]
+}
+
+/** Builds a valid DNI-NIE string: 0NNNNNNNL (matches ^[0-9XYZ][0-9]{7}[A-Z]$) */
+function makeDni(prefix, n) {
+  const digits = String(n).padStart(7, '0')
+  const letter = dniLetter(n - 1)
+  return `${prefix}${digits}${letter}`
+}
+
+// ---------------------------------------------------------------------------
+// 60 Preguntas
+// ---------------------------------------------------------------------------
+
+const PREGUNTAS_60 = [
+  // ── Section 1: Vivienda ──────────────────────────────────────────────────
+  { campo: 'viviendaAlquiler',          orden: 1,  texto: { es: '¿Tienes vivienda en alquiler?',                                         fr: 'Avez-vous un logement en location?',                                   ca: 'Tens habitatge en lloguer?',                                     en: 'Do you have a rental home?' } },
+  { campo: 'alquilerMenos35',           orden: 2,  texto: { es: '¿El alquiler es inferior a 35 años?',                                   fr: 'Le loyer est-il inférieur à 35 ans?',                                  ca: 'El lloguer és inferior a 35 anys?',                               en: 'Is the rent under 35 years old?' } },
+  { campo: 'viviendaPropiedad',         orden: 3,  texto: { es: '¿Tienes vivienda en propiedad?',                                        fr: 'Avez-vous un logement en propriété?',                                  ca: 'Tens habitatge en propietat?',                                    en: 'Do you own a home?' } },
+  { campo: 'propiedadAntes2013',        orden: 4,  texto: { es: '¿Adquiriste la propiedad antes de 2013?',                               fr: 'Avez-vous acquis la propriété avant 2013?',                            ca: "Has adquirit la propietat abans de 2013?",                        en: 'Did you acquire the property before 2013?' } },
+  { campo: 'pisosAlquiladosTerceros',   orden: 5,  texto: { es: '¿Tienes pisos alquilados a terceros?',                                  fr: 'Avez-vous des appartements loués à des tiers?',                        ca: 'Tens pisos llogats a tercers?',                                   en: 'Do you have apartments rented to third parties?' } },
+  { campo: 'segundaResidencia',         orden: 6,  texto: { es: '¿Tienes una segunda residencia?',                                       fr: 'Avez-vous une résidence secondaire?',                                  ca: 'Tens una segona residència?',                                     en: 'Do you have a second residence?' } },
+  { campo: 'hipotecaActiva',            orden: 7,  texto: { es: '¿Tienes una hipoteca activa?',                                          fr: 'Avez-vous un prêt hypothécaire actif?',                               ca: 'Tens una hipoteca activa?',                                       en: 'Do you have an active mortgage?' } },
+  { campo: 'hipotecaAntes2013',         orden: 8,  texto: { es: '¿La hipoteca fue firmada antes de 2013?',                               fr: 'Le prêt hypothécaire a-t-il été signé avant 2013?',                   ca: "La hipoteca es va signar abans de 2013?",                         en: 'Was the mortgage signed before 2013?' } },
+  { campo: 'alquilerHabitaciones',      orden: 9,  texto: { es: '¿Alquilas habitaciones de tu vivienda habitual?',                       fr: 'Louez-vous des chambres de votre résidence principale?',               ca: 'Llogueu habitacions del vostre habitatge habitual?',               en: 'Do you rent rooms in your main home?' } },
+  { campo: 'gastosComunidad',           orden: 10, texto: { es: '¿Tienes gastos de comunidad de propietarios?',                          fr: 'Avez-vous des frais de copropriété?',                                  ca: 'Tens despeses de comunitat de propietaris?',                      en: 'Do you have homeowners association fees?' } },
+  // ── Section 2: Familia ───────────────────────────────────────────────────
+  { campo: 'familiaNumerosa',           orden: 11, texto: { es: '¿Eres familia numerosa?',                                               fr: 'Êtes-vous une famille nombreuse?',                                     ca: 'Ets família nombrosa?',                                           en: 'Are you a large family?' } },
+  { campo: 'mayores65aCargo',           orden: 12, texto: { es: '¿Tienes mayores de 65 años a tu cargo?',                                fr: 'Avez-vous des personnes de plus de 65 ans à votre charge?',            ca: 'Tens persones majors de 65 anys a càrrec?',                       en: 'Do you have dependents over 65?' } },
+  { campo: 'mayoresConviven',           orden: 13, texto: { es: '¿Los mayores de 65 conviven contigo?',                                  fr: 'Les personnes de plus de 65 ans vivent-elles avec vous?',              ca: 'Les persones majors de 65 conviuen amb tu?',                      en: 'Do people over 65 live with you?' } },
+  { campo: 'hijosMenores26',            orden: 14, texto: { es: '¿Tienes hijos menores de 26 años?',                                     fr: 'Avez-vous des enfants de moins de 26 ans?',                            ca: 'Tens fills menors de 26 anys?',                                   en: 'Do you have children under 26?' } },
+  { campo: 'hijosDiscapacidad',         orden: 15, texto: { es: '¿Algún hijo tiene reconocida una discapacidad?',                        fr: "L'un de vos enfants a-t-il un handicap reconnu?",                     ca: 'Algun fill té reconeguda una discapacitat?',                      en: 'Does any child have a recognized disability?' } },
+  { campo: 'monoparental',              orden: 16, texto: { es: '¿Eres familia monoparental?',                                           fr: 'Êtes-vous une famille monoparentale?',                                 ca: 'Ets família monoparental?',                                       en: 'Are you a single-parent family?' } },
+  { campo: 'matrimonioOPareja',         orden: 17, texto: { es: '¿Estás casado/a o en pareja de hecho?',                                 fr: 'Êtes-vous marié(e) ou en union libre?',                               ca: 'Estàs casat/da o en parella de fet?',                             en: 'Are you married or in a civil partnership?' } },
+  { campo: 'declaracionConjunta',       orden: 18, texto: { es: '¿Presentas declaración conjunta?',                                      fr: 'Présentez-vous une déclaration conjointe?',                            ca: 'Presentes declaració conjunta?',                                  en: 'Are you filing a joint return?' } },
+  { campo: 'adoptado',                  orden: 19, texto: { es: '¿Has adoptado o acogido algún menor este año?',                          fr: 'Avez-vous adopté ou accueilli un mineur cette année?',                 ca: "Has adoptat o acollit algun menor aquest any?",                   en: 'Have you adopted or fostered a minor this year?' } },
+  { campo: 'pensionAlimentos',          orden: 20, texto: { es: '¿Pagas pensión de alimentos por sentencia judicial?',                    fr: 'Payez-vous une pension alimentaire par décision de justice?',          ca: 'Pagues pensió per aliments per sentència judicial?',               en: 'Do you pay court-ordered alimony?' } },
+  // ── Section 3: Trabajo e Ingresos ────────────────────────────────────────
+  { campo: 'trabajoPorCuenta',          orden: 21, texto: { es: '¿Trabajas por cuenta ajena?',                                           fr: 'Travaillez-vous en tant que salarié(e)?',                              ca: 'Treballes per compte aliè?',                                      en: 'Are you an employee?' } },
+  { campo: 'variosEmpleadores',         orden: 22, texto: { es: '¿Has tenido más de un empleador este año?',                              fr: "Avez-vous eu plus d'un employeur cette année?",                        ca: "Has tingut més d'un ocupador aquest any?",                        en: 'Have you had more than one employer this year?' } },
+  { campo: 'autónomo',                  orden: 23, texto: { es: '¿Eres autónomo/a?',                                                     fr: 'Êtes-vous travailleur(se) indépendant(e)?',                            ca: 'Ets autònom/a?',                                                  en: 'Are you self-employed?' } },
+  { campo: 'actividadEconomica',        orden: 24, texto: { es: '¿Realizas alguna actividad económica?',                                  fr: 'Exercez-vous une activité économique?',                                ca: 'Realitzes alguna activitat econòmica?',                            en: 'Do you carry out any economic activity?' } },
+  { campo: 'ingresosJuego',             orden: 25, texto: { es: '¿Has obtenido ingresos por juego o apuestas?',                           fr: 'Avez-vous obtenu des revenus de jeux ou de paris?',                    ca: 'Has obtingut ingressos per joc o apostes?',                       en: 'Have you received gambling or betting income?' } },
+  { campo: 'ingresosInversiones',       orden: 26, texto: { es: '¿Tienes ingresos por inversiones o dividendos?',                         fr: "Avez-vous des revenus d'investissements ou de dividendes?",            ca: "Tens ingressos per inversions o dividends?",                      en: 'Do you have investment or dividend income?' } },
+  { campo: 'pensionPublica',            orden: 27, texto: { es: '¿Percibes una pensión pública (jubilación, viudedad...)?',               fr: 'Percevez-vous une pension publique (retraite, veuvage...)?',           ca: 'Percebs una pensió pública (jubilació, viduïtat...)?',             en: 'Do you receive a public pension (retirement, widowhood...)?' } },
+  { campo: 'pensionPrivada',            orden: 28, texto: { es: '¿Tienes un plan de pensiones privado?',                                  fr: 'Avez-vous un plan de retraite privé?',                                 ca: 'Tens un pla de pensions privat?',                                 en: 'Do you have a private pension plan?' } },
+  { campo: 'desempleo',                 orden: 29, texto: { es: '¿Has percibido prestación por desempleo?',                               fr: 'Avez-vous perçu des allocations chômage?',                             ca: 'Has percebut prestació per desocupació?',                          en: 'Have you received unemployment benefits?' } },
+  { campo: 'bajaLaboral',               orden: 30, texto: { es: '¿Has estado de baja laboral este año?',                                  fr: 'Avez-vous été en arrêt de travail cette année?',                       ca: "Has estat de baixa laboral aquest any?",                          en: 'Have you been on sick leave this year?' } },
+  // ── Section 4: Ayudas y Beneficios ───────────────────────────────────────
+  { campo: 'ayudasGobierno',            orden: 31, texto: { es: '¿Has recibido ayudas del gobierno?',                                     fr: 'Avez-vous reçu des aides du gouvernement?',                            ca: "Has rebut ajudes del govern?",                                    en: 'Have you received government aid?' } },
+  { campo: 'ingresosMinimos',           orden: 32, texto: { es: '¿Percibes el Ingreso Mínimo Vital?',                                     fr: 'Percevez-vous le revenu minimum vital?',                               ca: "Percebs l'Ingrés Mínim Vital?",                                   en: 'Do you receive the Minimum Living Income?' } },
+  { campo: 'subvencionVivienda',        orden: 33, texto: { es: '¿Has recibido alguna subvención para vivienda?',                         fr: 'Avez-vous reçu une subvention pour le logement?',                     ca: "Has rebut alguna subvenció per a habitatge?",                     en: 'Have you received any housing subsidy?' } },
+  { campo: 'becaEstudio',               orden: 34, texto: { es: '¿Has percibido alguna beca de estudio?',                                 fr: "Avez-vous reçu une bourse d'études?",                                  ca: "Has percebut alguna beca d'estudi?",                              en: 'Have you received any study grant?' } },
+  { campo: 'ayudaDiscapacidad',         orden: 35, texto: { es: '¿Percibes alguna ayuda por discapacidad?',                               fr: 'Percevez-vous une aide pour handicap?',                                ca: 'Percebs alguna ajuda per discapacitat?',                          en: 'Do you receive any disability aid?' } },
+  { campo: 'pensionNoContributiva',     orden: 36, texto: { es: '¿Tienes una pensión no contributiva?',                                   fr: 'Avez-vous une pension non contributive?',                              ca: 'Tens una pensió no contributiva?',                                en: 'Do you have a non-contributory pension?' } },
+  { campo: 'rendasArrendamiento',       orden: 37, texto: { es: '¿Declara rentas por arrendamiento de inmuebles?',                        fr: 'Déclarez-vous des revenus de location de biens immobiliers?',          ca: "Declares rendes per arrendament d'immobles?",                     en: 'Do you declare rental income from real estate?' } },
+  { campo: 'ayudaMaternidad',           orden: 38, texto: { es: '¿Has recibido ayuda por maternidad/paternidad?',                         fr: 'Avez-vous reçu une aide pour maternité/paternité?',                   ca: 'Has rebut ajuda per maternitat/paternitat?',                      en: 'Have you received maternity/paternity aid?' } },
+  { campo: 'chequeGuarderia',           orden: 39, texto: { es: '¿Has solicitado el cheque guardería?',                                   fr: 'Avez-vous demandé le chèque crèche?',                                 ca: "Has sol·licitat el xec guarderia?",                               en: 'Have you applied for the childcare voucher?' } },
+  { campo: 'deduccionMadresTrabajadoras', orden: 40, texto: { es: '¿Tienes derecho a la deducción por maternidad?',                       fr: 'Avez-vous droit à la déduction pour maternité?',                      ca: 'Tens dret a la deducció per maternitat?',                         en: 'Are you entitled to the maternity deduction?' } },
+  // ── Section 5: Inversiones y Patrimonio ──────────────────────────────────
+  { campo: 'cuentasBancarias',          orden: 41, texto: { es: '¿Tienes cuentas bancarias en el extranjero?',                            fr: "Avez-vous des comptes bancaires à l'étranger?",                       ca: "Tens comptes bancaris a l'estranger?",                            en: 'Do you have bank accounts abroad?' } },
+  { campo: 'accionesOFondos',           orden: 42, texto: { es: '¿Tienes acciones o fondos de inversión?',                                fr: "Avez-vous des actions ou des fonds d'investissement?",                 ca: "Tens accions o fons d'inversió?",                                 en: 'Do you have stocks or investment funds?' } },
+  { campo: 'criptomonedas',             orden: 43, texto: { es: '¿Has operado con criptomonedas?',                                        fr: 'Avez-vous opéré avec des crypto-monnaies?',                            ca: 'Has operat amb criptomonedes?',                                   en: 'Have you traded cryptocurrencies?' } },
+  { campo: 'segurosVida',               orden: 44, texto: { es: '¿Tienes seguros de vida con rendimiento?',                               fr: 'Avez-vous des assurances vie avec rendement?',                         ca: 'Tens assegurances de vida amb rendiment?',                        en: 'Do you have life insurance with returns?' } },
+  { campo: 'herencia',                  orden: 45, texto: { es: '¿Has recibido alguna herencia este año?',                                fr: "Avez-vous reçu un héritage cette année?",                              ca: "Has rebut alguna herència aquest any?",                           en: 'Have you received an inheritance this year?' } },
+  { campo: 'donaciones',                orden: 46, texto: { es: '¿Has realizado donaciones a ONG o similares?',                           fr: 'Avez-vous fait des dons à des ONG ou similaires?',                     ca: 'Has fet donacions a ONG o similars?',                             en: 'Have you made donations to NGOs or similar?' } },
+  { campo: 'ventaInmueble',             orden: 47, texto: { es: '¿Has vendido algún inmueble este año?',                                  fr: 'Avez-vous vendu un bien immobilier cette année?',                      ca: "Has venut algun immoble aquest any?",                             en: 'Have you sold any real estate this year?' } },
+  { campo: 'ventaAcciones',             orden: 48, texto: { es: '¿Has vendido acciones o participaciones?',                               fr: 'Avez-vous vendu des actions ou des parts?',                            ca: 'Has venut accions o participacions?',                             en: 'Have you sold stocks or shares?' } },
+  { campo: 'participacionSociedades',   orden: 49, texto: { es: '¿Participas en el capital de alguna sociedad?',                          fr: "Participez-vous au capital d'une société?",                            ca: "Participes en el capital d'alguna societat?",                     en: 'Do you have a stake in any company?' } },
+  { campo: 'prestamosPersonales',       orden: 50, texto: { es: '¿Tienes préstamos personales relevantes?',                               fr: 'Avez-vous des prêts personnels importants?',                           ca: 'Tens préstecs personals rellevants?',                              en: 'Do you have significant personal loans?' } },
+  // ── Section 6: Salud y Discapacidad ──────────────────────────────────────
+  { campo: 'discapacidadPropia',        orden: 51, texto: { es: '¿Tienes reconocida alguna discapacidad?',                                fr: 'Avez-vous un handicap reconnu?',                                       ca: 'Tens reconeguda alguna discapacitat?',                             en: 'Do you have a recognized disability?' } },
+  { campo: 'gastosSalud',               orden: 52, texto: { es: '¿Tienes gastos de salud importantes este año?',                          fr: 'Avez-vous des dépenses de santé importantes cette année?',             ca: 'Tens despeses de salut importants aquest any?',                   en: 'Do you have significant health expenses this year?' } },
+  { campo: 'seguroMedico',              orden: 53, texto: { es: '¿Tienes seguro médico privado?',                                         fr: 'Avez-vous une assurance médicale privée?',                             ca: 'Tens assegurança mèdica privada?',                                en: 'Do you have private health insurance?' } },
+  { campo: 'gastosDiscapacidad',        orden: 54, texto: { es: '¿Tienes gastos especiales por discapacidad?',                            fr: 'Avez-vous des dépenses spéciales pour handicap?',                      ca: 'Tens despeses especials per discapacitat?',                       en: 'Do you have special disability expenses?' } },
+  { campo: 'dependiente',               orden: 55, texto: { es: '¿Eres persona dependiente o cuidador de dependiente?',                   fr: "Êtes-vous une personne dépendante ou aidant d'un dépendant?",          ca: 'Ets persona dependent o cuidador de dependent?',                  en: 'Are you a dependent person or a caregiver?' } },
+  // ── Section 7: Formación y Otros ─────────────────────────────────────────
+  { campo: 'gastoFormacion',            orden: 56, texto: { es: '¿Has tenido gastos de formación o reciclaje profesional?',                fr: 'Avez-vous eu des frais de formation ou de reconversion professionnelle?', ca: 'Has tingut despeses de formació o reciclatge professional?',     en: 'Have you had training or professional development expenses?' } },
+  { campo: 'actividadInternacional',    orden: 57, texto: { es: '¿Has trabajado o tenido ingresos en el extranjero?',                     fr: "Avez-vous travaillé ou eu des revenus à l'étranger?",                  ca: "Has treballat o tingut ingressos a l'estranger?",                 en: 'Have you worked or earned income abroad?' } },
+  { campo: 'cuotasSindicales',          orden: 58, texto: { es: '¿Has pagado cuotas sindicales?',                                         fr: 'Avez-vous payé des cotisations syndicales?',                           ca: 'Has pagat quotes sindicals?',                                     en: 'Have you paid union dues?' } },
+  { campo: 'aportacionesPartidosPoliticos', orden: 59, texto: { es: '¿Has hecho aportaciones a partidos políticos?',                     fr: 'Avez-vous fait des contributions à des partis politiques?',            ca: 'Has fet aportacions a partits polítics?',                         en: 'Have you made contributions to political parties?' } },
+  { campo: 'reembolsoIRPF',             orden: 60, texto: { es: '¿Esperas una devolución de IRPF este año?',                              fr: "Attendez-vous un remboursement d'impôt cette année?",                  ca: "Esperes una devolució d'IRPF aquest any?",                        en: 'Are you expecting an income tax refund this year?' } },
+]
+
+// ---------------------------------------------------------------------------
+// 100 Usuarios
+// ---------------------------------------------------------------------------
+
+const NOMBRES = ['Alejandro', 'María', 'Carlos', 'Laura', 'Miguel', 'Sofía', 'Javier', 'Lucía', 'Daniel', 'Ana']
+const APELLIDOS_A = ['García', 'Martínez', 'López', 'Sánchez', 'González', 'Pérez', 'Rodríguez', 'Fernández', 'Torres', 'Ramírez']
+const APELLIDOS_B = ['Mora', 'Ruiz', 'Jiménez', 'Herrera', 'Díaz', 'Vega', 'Castro', 'Romero', 'Navarro', 'Blanco']
+
+function buildUsuarios() {
+  const list = []
+  for (let i = 1; i <= 100; i++) {
+    const nombre = NOMBRES[(i - 1) % NOMBRES.length]
+    const apellido1 = APELLIDOS_A[(i - 1) % APELLIDOS_A.length]
+    const apellido2 = APELLIDOS_B[(i - 1) % APELLIDOS_B.length]
+    const dni = makeDni('1', i) // e.g. 10000001A .. 10000100Z
+    list.push({
+      dni_nie: dni,
+      nombre,
+      apellidos: `${apellido1} ${apellido2}`,
+      email: `usuario${String(i).padStart(3, '0')}@rentaform.test`,
+      telefono: `6${String(600000000 + i).slice(1)}`,
+      role: 'user',
+      password: 'Password123!',
+    })
+  }
+  return list
+}
+
+// ---------------------------------------------------------------------------
+// 100 Declaraciones
+// ---------------------------------------------------------------------------
+
+const ESTADOS = ['recibido', 'en_revision', 'documentacion_pendiente', 'completado', 'archivado']
+const YN = ['si', 'no']
+
+function yn(i, offset = 0) {
+  return YN[(i + offset) % 2]
+}
+
+function buildDeclaraciones() {
+  const list = []
+  for (let i = 1; i <= 100; i++) {
+    const nombre = NOMBRES[(i - 1) % NOMBRES.length]
+    const apellido1 = APELLIDOS_A[(i - 1) % APELLIDOS_A.length]
+    const apellido2 = APELLIDOS_B[(i - 1) % APELLIDOS_B.length]
+    const dni = makeDni('2', i) // Different prefix from usuarios to keep DNIs unique
+    const estado = ESTADOS[(i - 1) % ESTADOS.length]
+    list.push({
+      nombre,
+      apellidos: `${apellido1} ${apellido2}`,
+      dni_nie: dni,
+      email: `decl${String(i).padStart(3, '0')}@rentaform.test`,
+      telefono: `7${String(700000000 + i).slice(1)}`,
+      estado,
+      vivienda_alquiler:           yn(i, 0),
+      alquiler_menos_35:           yn(i, 1),
+      vivienda_propiedad:          yn(i, 1),
+      propiedad_antes_2013:        yn(i, 0),
+      pisos_alquilados_terceros:   yn(i, 1),
+      segunda_residencia:          yn(i, 0),
+      familia_numerosa:            yn(i, 1),
+      ayudas_gobierno:             yn(i, 0),
+      mayores_65_a_cargo:          yn(i, 1),
+      mayores_conviven:            yn(i, 0),
+      hijos_menores_26:            yn(i, 1),
+      ingresos_juego:              yn(i, 0),
+      ingresos_inversiones:        yn(i, 1),
+    })
+  }
+  return list
+}
+
+// ---------------------------------------------------------------------------
+// Main seed function
+// ---------------------------------------------------------------------------
+
+async function seed100(client) {
+  const useLocalClient = !client
+  if (useLocalClient) {
+    client = await pool.connect()
+  }
+
+  try {
+    // ── 1. Seed 60 preguntas ────────────────────────────────────────────────
+    console.log('[seed100] Seeding 60 preguntas...')
+    for (const p of PREGUNTAS_60) {
+      await client.query(
+        `INSERT INTO preguntas (campo, texto, orden)
+         VALUES ($1, $2::jsonb, $3)
+         ON CONFLICT (campo) DO UPDATE SET texto = EXCLUDED.texto, orden = EXCLUDED.orden`,
+        [p.campo, JSON.stringify(p.texto), p.orden]
+      )
+    }
+    console.log('[seed100] 60 preguntas seeded.')
+
+    // ── 2. Seed 100 usuarios ────────────────────────────────────────────────
+    console.log('[seed100] Seeding 100 usuarios...')
+    const SALT_ROUNDS = 10
+    const usuarios = buildUsuarios()
+    for (const u of usuarios) {
+      const passwordHash = await bcrypt.hash(u.password, SALT_ROUNDS)
+      await client.query(
+        `INSERT INTO usuarios (dni_nie, nombre, apellidos, email, telefono, role, password_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         ON CONFLICT (dni_nie) DO UPDATE SET
+           nombre = EXCLUDED.nombre,
+           apellidos = EXCLUDED.apellidos,
+           email = EXCLUDED.email,
+           telefono = EXCLUDED.telefono`,
+        [u.dni_nie, u.nombre, u.apellidos, u.email, u.telefono, u.role, passwordHash]
+      )
+    }
+    console.log('[seed100] 100 usuarios seeded.')
+
+    // ── 3. Seed 100 declaraciones ───────────────────────────────────────────
+    console.log('[seed100] Seeding 100 declaraciones...')
+    const declaraciones = buildDeclaraciones()
+    for (const d of declaraciones) {
+      await client.query(
+        `INSERT INTO declaraciones (
+           nombre, apellidos, dni_nie, email, telefono, estado,
+           vivienda_alquiler, alquiler_menos_35, vivienda_propiedad, propiedad_antes_2013,
+           pisos_alquilados_terceros, segunda_residencia, familia_numerosa, ayudas_gobierno,
+           mayores_65_a_cargo, mayores_conviven, hijos_menores_26, ingresos_juego,
+           ingresos_inversiones
+         ) VALUES (
+           $1, $2, $3, $4, $5, $6::estado_expediente,
+           $7::respuesta_yn, $8::respuesta_yn, $9::respuesta_yn, $10::respuesta_yn,
+           $11::respuesta_yn, $12::respuesta_yn, $13::respuesta_yn, $14::respuesta_yn,
+           $15::respuesta_yn, $16::respuesta_yn, $17::respuesta_yn, $18::respuesta_yn,
+           $19::respuesta_yn
+         )
+         ON CONFLICT (dni_nie) DO UPDATE SET
+           nombre = EXCLUDED.nombre,
+           apellidos = EXCLUDED.apellidos,
+           email = EXCLUDED.email,
+           estado = EXCLUDED.estado`,
+        [
+          d.nombre, d.apellidos, d.dni_nie, d.email, d.telefono, d.estado,
+          d.vivienda_alquiler, d.alquiler_menos_35, d.vivienda_propiedad, d.propiedad_antes_2013,
+          d.pisos_alquilados_terceros, d.segunda_residencia, d.familia_numerosa, d.ayudas_gobierno,
+          d.mayores_65_a_cargo, d.mayores_conviven, d.hijos_menores_26, d.ingresos_juego,
+          d.ingresos_inversiones,
+        ]
+      )
+    }
+    console.log('[seed100] 100 declaraciones seeded.')
+  } finally {
+    if (useLocalClient) {
+      client.release()
+    }
+  }
+}
+
+module.exports = seed100
+
+// Allow running directly: node db/seed100.js
+if (require.main === module) {
+  seed100()
+    .then(() => {
+      console.log('[seed100] Done.')
+      process.exit(0)
+    })
+    .catch((err) => {
+      console.error('[seed100] Failed:', err)
+      process.exit(1)
+    })
+}
