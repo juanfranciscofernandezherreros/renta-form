@@ -1,0 +1,66 @@
+name: Sync Translations to SQL
+
+# Triggers on every push to master (which includes merged pull requests).
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write   # needed to commit the migration file back to the repo
+
+jobs:
+  sync-translations:
+    name: Detect new translation keys and generate SQL migration
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout the full repository ─────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Fetch full history so git can push the migration commit back
+          fetch-depth: 0
+
+      # ── 2. Setup Node.js (no extra dependencies needed) ─────────────────────
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # ── 3. Run the translation sync script ──────────────────────────────────
+      #      Exit code 0 → all keys already present, nothing to do
+      #      Exit code 2 → new migration file written to database/
+      #      Exit code 1 → unexpected error (step and job fail)
+      - name: Check for new translation keys
+        run: |
+          # Capture the exit code without letting bash's errexit abort the step.
+          # Exit 0 = nothing to do, exit 2 = migration file created, exit 1 = error.
+          node scripts/sync-translations.js || SYNC_EXIT=$?
+          if [ "${SYNC_EXIT:-0}" = "1" ]; then
+            echo "::error::sync-translations.js exited with an unexpected error."
+            exit 1
+          fi
+
+      # ── 5. Commit and push the migration file if one was created ─────────────
+      - name: Commit migration file
+        run: |
+          NEW_FILES=$(git status --porcelain -- 'database/*.sql' 2>/dev/null || true)
+
+          if [ -z "$NEW_FILES" ]; then
+            echo "No new SQL migration files to commit."
+            exit 0
+          fi
+
+          echo "New migration file(s) detected:"
+          echo "$NEW_FILES"
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add database/*.sql
+          git commit -m "chore(i18n): auto-generate SQL migration for new translation keys [skip ci]"
+          git push origin master
+
+          echo "✅ Migration file committed and pushed to master."
+
