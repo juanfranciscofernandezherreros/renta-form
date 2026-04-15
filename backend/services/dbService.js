@@ -659,38 +659,45 @@ async function getMissingTranslations(ref = 'es') {
   }
   const refId = refCheck.rows[0].id
 
-  // All keys present in the reference language
-  const refKeysRes = await pool.query(
-    `SELECT clave FROM traducciones WHERE idioma_id = $1 ORDER BY clave`,
+  // Single query: for every active language (except reference), find the keys
+  // present in the reference that are absent in that language.
+  const { rows } = await pool.query(
+    `SELECT i.code AS idioma, r.clave
+     FROM traducciones r
+     CROSS JOIN idiomas i
+     LEFT JOIN traducciones t ON t.idioma_id = i.id AND t.clave = r.clave
+     WHERE r.idioma_id = $1
+       AND i.activo   = TRUE
+       AND i.code    != $2
+       AND t.clave   IS NULL
+     ORDER BY i.code, r.clave`,
+    [refId, refCode]
+  )
+
+  // Total keys in the reference language
+  const totalRes = await pool.query(
+    `SELECT COUNT(*) AS cnt FROM traducciones WHERE idioma_id = $1`,
     [refId]
   )
-  const refKeys = refKeysRes.rows.map((r) => r.clave)
-  const totalClaves = refKeys.length
+  const totalClaves = parseInt(totalRes.rows[0].cnt, 10)
 
-  // All other active languages
+  // All other active languages (to include ones with 0 missing keys in the result)
   const otherLangsRes = await pool.query(
-    `SELECT id, code FROM idiomas WHERE activo = TRUE AND code != $1 ORDER BY code`,
+    `SELECT code FROM idiomas WHERE activo = TRUE AND code != $1 ORDER BY code`,
     [refCode]
   )
 
   const faltantes = {}
-  const resumen = []
+  for (const { code } of otherLangsRes.rows) faltantes[code] = []
 
-  for (const lang of otherLangsRes.rows) {
-    // Keys that exist in the reference but NOT in this language
-    const missingRes = await pool.query(
-      `SELECT clave
-       FROM traducciones
-       WHERE idioma_id = $1
-         AND clave = ANY($2::text[])`,
-      [lang.id, refKeys]
-    )
-    const presentSet = new Set(missingRes.rows.map((r) => r.clave))
-    const missing = refKeys.filter((k) => !presentSet.has(k))
-
-    faltantes[lang.code] = missing
-    resumen.push({ idioma: lang.code, total_faltantes: missing.length })
+  for (const r of rows) {
+    faltantes[r.idioma].push(r.clave)
   }
+
+  const resumen = Object.entries(faltantes).map(([idioma, claves]) => ({
+    idioma,
+    total_faltantes: claves.length,
+  }))
 
   return {
     data: {
