@@ -4,6 +4,7 @@ import { listDeclaraciones, changePassword, getPreguntas } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
 import Footer from './Footer.jsx'
 import { generateDeclaracionPDF, downloadRentaPdf } from './pdfUtils.js'
+import { translateYN } from './i18nUtils.js'
 
 const MIN_PASSWORD_LENGTH = 6
 const LANG_FLAGS = { es: '🇪🇸', fr: '🇫🇷', en: '🇬🇧', de: '🇩🇪', pt: '🇵🇹', it: '🇮🇹' }
@@ -234,7 +235,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
                               {preguntasConValor.map(pregunta => (
                                 <tr key={pregunta.id}>
                                   <td className="campo-label">{(pregunta.textos && pregunta.textos[lang]) ? pregunta.textos[lang] : pregunta.texto}</td>
-                                  <td className="campo-valor">{dec[pregunta.id] === 'si' ? t('yes') : dec[pregunta.id] === 'no' ? t('no') : dec[pregunta.id]}</td>
+                                  <td className="campo-valor">{translateYN(dec[pregunta.id], t)}</td>
                                 </tr>
                               ))}
                             </tbody>

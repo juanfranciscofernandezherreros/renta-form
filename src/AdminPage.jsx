@@ -13,6 +13,7 @@ import {
   getPreguntas,
 } from './apiClient.js'
 import { downloadRentaPdf } from './pdfUtils.js'
+import { translateYN } from './i18nUtils.js'
 import PreguntasFormularioAdminTab from './PreguntasFormularioAdminTab.jsx'
 import UsuariosAdminTab from './UsuariosAdminTab.jsx'
 import IdiomasAdminTab from './IdiomasAdminTab.jsx'
@@ -539,7 +540,7 @@ export default function AdminPage({ onNavigate }) {
                               {preguntasConValor.map(pregunta => (
                                 <tr key={pregunta.id}>
                                   <td className="campo-label">{pregunta.texto}</td>
-                                  <td className="campo-valor">{dec[pregunta.id] === 'si' ? t('yes') : dec[pregunta.id] === 'no' ? t('no') : dec[pregunta.id]}</td>
+                                  <td className="campo-valor">{translateYN(dec[pregunta.id], t)}</td>
                                 </tr>
                               ))}
                             </tbody>
