@@ -10,12 +10,12 @@ const LANG_FLAGS = { es: '🇪🇸', fr: '🇫🇷', en: '🇬🇧', de: '🇩�
 
 const LOCALE_MAP = { es: 'es-ES', fr: 'fr-FR', en: 'en-GB', ca: 'ca-ES' }
 
-const ESTADO_LABELS = {
-  recibido: 'Recibido',
-  en_revision: 'En revisión',
-  documentacion_pendiente: 'Documentación pendiente',
-  completado: 'Completado',
-  archivado: 'Archivado',
+const ESTADO_T_KEYS = {
+  recibido: 'estadoRecibido',
+  en_revision: 'estadoEnRevision',
+  documentacion_pendiente: 'estadoDocumentacionPendiente',
+  completado: 'estadoCompletado',
+  archivado: 'estadoArchivado',
 }
 
 const ESTADO_CLASS = {
@@ -103,7 +103,7 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion, initi
     <>
       <header>
         <div className="header-inner">
-          <div className="logo">NH Gestión Integral</div>
+          <div className="logo">{t('logoText')}</div>
           <nav className="header-nav">
             <div className="lang-flags-top" role="group" aria-label={t('langLabel')}>
               {availableLanguages.map(l => (
@@ -168,7 +168,7 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion, initi
                 <div className="declaracion-meta">
                   <span className="declaracion-id">#{result.id.slice(0, 8)}…</span>
                   <span className={`estado-badge ${ESTADO_CLASS[result.estado] ?? 'badge-blue'}`}>
-                    {ESTADO_LABELS[result.estado] ?? result.estado}
+                    {t(ESTADO_T_KEYS[result.estado] ?? result.estado)}
                   </span>
                 </div>
                 <div className="declaracion-dates">
@@ -221,9 +221,9 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion, initi
                       type="button"
                       className="btn btn-primary btn-sm"
                       onClick={() => downloadRentaPdf(result.rentaPdf)}
-                      title="Descargar el PDF de la renta preparado por el gestor"
+                      title={t('rentaPdfBtnTitle')}
                     >
-                      📥 Descargar PDF de la renta
+                      {t('rentaPdfBtn')}
                     </button>
                   )}
                 </div>

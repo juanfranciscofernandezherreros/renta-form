@@ -22,12 +22,12 @@ import Footer from './Footer.jsx'
 
 const ESTADOS = ['recibido', 'en_revision', 'documentacion_pendiente', 'completado', 'archivado']
 
-const ESTADO_LABELS = {
-  recibido: 'Recibido',
-  en_revision: 'En revisión',
-  documentacion_pendiente: 'Documentación pendiente',
-  completado: 'Completado',
-  archivado: 'Archivado',
+const ESTADO_T_KEYS = {
+  recibido: 'estadoRecibido',
+  en_revision: 'estadoEnRevision',
+  documentacion_pendiente: 'estadoDocumentacionPendiente',
+  completado: 'estadoCompletado',
+  archivado: 'estadoArchivado',
 }
 
 const ESTADO_CLASS = {
@@ -38,14 +38,12 @@ const ESTADO_CLASS = {
   archivado: 'badge-gray',
 }
 
-const YN_LABELS = { si: 'Sí', no: 'No' }
-
-const ID_CAMPOS_LABELS = {
-  nombre: 'Nombre',
-  apellidos: 'Apellidos',
-  dniNie: 'DNI / NIE',
-  email: 'Correo electrónico',
-  telefono: 'Teléfono',
+const ID_CAMPO_T_KEYS = {
+  nombre: 'fieldNombre',
+  apellidos: 'fieldApellidos',
+  dniNie: 'tokenResultDni',
+  email: 'tokenResultEmail',
+  telefono: 'labelTelefono',
 }
 
 function formatFecha(iso) {
@@ -64,10 +62,11 @@ function escHtml(str) {
 
 function buildAdminSecciones(preguntasSecciones) {
   const ID_CAMPOS = ['nombre', 'apellidos', 'dniNie', 'email', 'telefono']
+  const ID_CAMPOS_ES = { nombre: 'Nombre', apellidos: 'Apellidos', dniNie: 'DNI / NIE', email: 'Correo electrónico', telefono: 'Teléfono' }
   const idSection = {
     titulo: '1. Datos de Identificación',
     campos: ID_CAMPOS,
-    labels: ID_CAMPOS_LABELS,
+    labels: ID_CAMPOS_ES,
   }
   const dynamic = (preguntasSecciones ?? []).map(sec => {
     const labels = {}
@@ -79,6 +78,8 @@ function buildAdminSecciones(preguntasSecciones) {
 
 function downloadDeclaracionPdf(dec, preguntasSecciones) {
   const allSections = buildAdminSecciones(preguntasSecciones)
+  const YN_ES = { si: 'Sí', no: 'No' }
+  const ESTADO_ES = { recibido: 'Recibido', en_revision: 'En revisión', documentacion_pendiente: 'Documentación pendiente', completado: 'Completado', archivado: 'Archivado' }
 
   const rows = allSections.flatMap(sec => {
     const camposVisibles = sec.campos
@@ -88,7 +89,7 @@ function downloadDeclaracionPdf(dec, preguntasSecciones) {
     return [
       `<tr><td colspan="2" class="sec-header">${escHtml(sec.titulo)}</td></tr>`,
       ...camposVisibles.map(
-        ([c, v]) => `<tr><td class="lbl">${escHtml((sec.labels && sec.labels[c]) ? sec.labels[c] : c)}</td><td class="val">${escHtml(YN_LABELS[v] ?? v)}</td></tr>`
+        ([c, v]) => `<tr><td class="lbl">${escHtml((sec.labels && sec.labels[c]) ? sec.labels[c] : c)}</td><td class="val">${escHtml(YN_ES[v] ?? v)}</td></tr>`
       ),
     ]
   }).join('')
@@ -114,7 +115,7 @@ function downloadDeclaracionPdf(dec, preguntasSecciones) {
 <h1>🏛️ NH Gestión Integral – Cuestionario IRPF 2025</h1>
 <div class="meta">
   Declaración: <strong>${escHtml(dec.id)}</strong> &nbsp;·&nbsp;
-  Estado: <strong>${escHtml(ESTADO_LABELS[dec.estado] ?? dec.estado)}</strong> &nbsp;·&nbsp;
+  Estado: <strong>${escHtml(ESTADO_ES[dec.estado] ?? dec.estado)}</strong> &nbsp;·&nbsp;
   Enviada: <strong>${escHtml(formatFecha(dec.creadoEn))}</strong> &nbsp;·&nbsp;
   Última actualización: <strong>${escHtml(formatFecha(dec.actualizadoEn))}</strong>
 </div>
@@ -207,7 +208,7 @@ export default function AdminPage({ onNavigate }) {
     setDeclaraciones(prev =>
       prev.map(d => d.id === dec.id ? { ...d, estado: nuevoEstado, actualizadoEn: new Date().toISOString() } : d)
     )
-    showToast(`Estado actualizado a "${ESTADO_LABELS[nuevoEstado]}"`)
+    showToast(`Estado actualizado a "${t(ESTADO_T_KEYS[nuevoEstado] ?? nuevoEstado)}"`)
   }
 
   const handleDelete = async (id) => {
@@ -326,7 +327,7 @@ export default function AdminPage({ onNavigate }) {
     <>
       <header>
         <div className="header-inner">
-          <div className="logo">NH Gestión Integral</div>
+          <div className="logo">{t('logoText')}</div>
           <nav className="header-nav">
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/')}>
               📋 Formulario
@@ -439,7 +440,7 @@ export default function AdminPage({ onNavigate }) {
             >
               <option value="">Todos los estados</option>
               {ESTADOS.map(e => (
-                <option key={e} value={e}>{ESTADO_LABELS[e]}</option>
+                <option key={e} value={e}>{t(ESTADO_T_KEYS[e] ?? e)}</option>
               ))}
             </select>
           </div>
@@ -460,7 +461,7 @@ export default function AdminPage({ onNavigate }) {
                   <div className="declaracion-meta">
                     <span className="declaracion-id">#{dec.id.slice(0, 8)}…</span>
                     <span className={`estado-badge ${ESTADO_CLASS[dec.estado] ?? 'badge-blue'}`}>
-                      {ESTADO_LABELS[dec.estado] ?? dec.estado}
+                      {t(ESTADO_T_KEYS[dec.estado] ?? dec.estado)}
                     </span>
                   </div>
                   <div className="admin-dec-info">
@@ -499,7 +500,7 @@ export default function AdminPage({ onNavigate }) {
                         onChange={e => handleEstadoChange(dec, e.target.value)}
                       >
                         {ESTADOS.map(e => (
-                          <option key={e} value={e}>{ESTADO_LABELS[e]}</option>
+                          <option key={e} value={e}>{t(ESTADO_T_KEYS[e] ?? e)}</option>
                         ))}
                       </select>
                       <span className="admin-updated">Actualizado: {formatFecha(dec.actualizadoEn)}</span>
@@ -516,7 +517,7 @@ export default function AdminPage({ onNavigate }) {
                               if (val === undefined || val === null) return null
                               return (
                                 <tr key={campo}>
-                                  <td className="campo-label">{ID_CAMPOS_LABELS[campo] ?? campo}</td>
+                                  <td className="campo-label">{t(ID_CAMPO_T_KEYS[campo] ?? campo)}</td>
                                   <td className="campo-valor">{val}</td>
                                 </tr>
                               )
@@ -538,7 +539,7 @@ export default function AdminPage({ onNavigate }) {
                               {preguntasConValor.map(pregunta => (
                                 <tr key={pregunta.id}>
                                   <td className="campo-label">{pregunta.texto}</td>
-                                  <td className="campo-valor">{YN_LABELS[dec[pregunta.id]] ?? dec[pregunta.id]}</td>
+                                  <td className="campo-valor">{dec[pregunta.id] === 'si' ? t('yes') : dec[pregunta.id] === 'no' ? t('no') : dec[pregunta.id]}</td>
                                 </tr>
                               ))}
                             </tbody>

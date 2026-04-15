@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useAuth } from './AuthContext.jsx'
 import { loginUser } from './apiClient.js'
+import { useLanguage } from './LanguageContext.jsx'
 import Footer from './Footer.jsx'
 
 export default function AdminLoginPage() {
   const { login } = useAuth()
+  const { t } = useLanguage()
   const [form, setForm] = useState({ username: '', password: '' })
   const [errors, setErrors] = useState({})
   const [loading, setLoading] = useState(false)
@@ -52,7 +54,7 @@ export default function AdminLoginPage() {
     <>
       <header>
         <div className="header-inner">
-          <div className="logo">NH Gestión Integral</div>
+          <div className="logo">{t('logoText')}</div>
         </div>
       </header>
 

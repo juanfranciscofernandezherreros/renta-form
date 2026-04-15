@@ -313,7 +313,18 @@ CROSS JOIN (VALUES
   ('btnBack', 'Volver'),
   ('btnDismissError', '×'),
   ('step1Subtitle', 'Rellene sus datos de identificación para continuar'),
-  ('toastSuccess', '✅ Cuestionario enviado correctamente')
+  ('toastSuccess', '✅ Cuestionario enviado correctamente'),
+  ('logoText', 'NH Gestión Integral'),
+  ('footerBrandName', 'NH Gestión Integral'),
+  ('estadoRecibido', 'Recibido'),
+  ('estadoEnRevision', 'En revisión'),
+  ('estadoDocumentacionPendiente', 'Documentación pendiente'),
+  ('estadoCompletado', 'Completado'),
+  ('estadoArchivado', 'Archivado'),
+  ('labelTelefono', 'Teléfono'),
+  ('rentaPdfBtn', '📥 Descargar PDF de la renta'),
+  ('rentaPdfBtnTitle', 'Descargar el PDF de la renta preparado por el gestor'),
+  ('btnAdmin', '🛡️ Admin')
 ) AS k(clave, valor)
 WHERE i.code = 'es'
 ON CONFLICT (idioma_id, clave) DO NOTHING;
@@ -468,7 +479,18 @@ CROSS JOIN (VALUES
   ('btnBack', 'Retour'),
   ('btnDismissError', '×'),
   ('step1Subtitle', 'Remplissez vos données d''identification pour continuer'),
-  ('toastSuccess', '✅ Questionnaire envoyé avec succès')
+  ('toastSuccess', '✅ Questionnaire envoyé avec succès'),
+  ('logoText', 'NH Gestión Integral'),
+  ('footerBrandName', 'NH Gestión Integral'),
+  ('estadoRecibido', 'Reçu'),
+  ('estadoEnRevision', 'En cours de révision'),
+  ('estadoDocumentacionPendiente', 'Documentation en attente'),
+  ('estadoCompletado', 'Terminé'),
+  ('estadoArchivado', 'Archivé'),
+  ('labelTelefono', 'Téléphone'),
+  ('rentaPdfBtn', '📥 Télécharger le PDF fiscal'),
+  ('rentaPdfBtnTitle', 'Télécharger le PDF fiscal préparé par le gestionnaire'),
+  ('btnAdmin', '🛡️ Admin')
 ) AS k(clave, valor)
 WHERE i.code = 'fr'
 ON CONFLICT (idioma_id, clave) DO NOTHING;
@@ -623,7 +645,18 @@ CROSS JOIN (VALUES
   ('btnBack', 'Back'),
   ('btnDismissError', '×'),
   ('step1Subtitle', 'Fill in your identification details to continue'),
-  ('toastSuccess', '✅ Questionnaire submitted successfully')
+  ('toastSuccess', '✅ Questionnaire submitted successfully'),
+  ('logoText', 'NH Gestión Integral'),
+  ('footerBrandName', 'NH Gestión Integral'),
+  ('estadoRecibido', 'Received'),
+  ('estadoEnRevision', 'Under review'),
+  ('estadoDocumentacionPendiente', 'Pending documentation'),
+  ('estadoCompletado', 'Completed'),
+  ('estadoArchivado', 'Archived'),
+  ('labelTelefono', 'Phone'),
+  ('rentaPdfBtn', '📥 Download income tax PDF'),
+  ('rentaPdfBtnTitle', 'Download the income tax PDF prepared by the manager'),
+  ('btnAdmin', '🛡️ Admin')
 ) AS k(clave, valor)
 WHERE i.code = 'en'
 ON CONFLICT (idioma_id, clave) DO NOTHING;
@@ -778,7 +811,18 @@ CROSS JOIN (VALUES
   ('btnBack', 'Tornar'),
   ('btnDismissError', '×'),
   ('step1Subtitle', 'Ompliu les vostres dades d''identificació per continuar'),
-  ('toastSuccess', '✅ Qüestionari enviat correctament')
+  ('toastSuccess', '✅ Qüestionari enviat correctament'),
+  ('logoText', 'NH Gestión Integral'),
+  ('footerBrandName', 'NH Gestión Integral'),
+  ('estadoRecibido', 'Rebut'),
+  ('estadoEnRevision', 'En revisió'),
+  ('estadoDocumentacionPendiente', 'Documentació pendent'),
+  ('estadoCompletado', 'Completat'),
+  ('estadoArchivado', 'Arxivat'),
+  ('labelTelefono', 'Telèfon'),
+  ('rentaPdfBtn', '📥 Descarregar PDF de la renda'),
+  ('rentaPdfBtnTitle', 'Descarregar el PDF de la renda preparat pel gestor'),
+  ('btnAdmin', '🛡️ Admin')
 ) AS k(clave, valor)
 WHERE i.code = 'ca'
 ON CONFLICT (idioma_id, clave) DO NOTHING;

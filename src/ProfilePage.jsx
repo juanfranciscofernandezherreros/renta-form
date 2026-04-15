@@ -8,12 +8,12 @@ import { generateDeclaracionPDF, downloadRentaPdf } from './pdfUtils.js'
 const MIN_PASSWORD_LENGTH = 6
 const LANG_FLAGS = { es: '🇪🇸', fr: '🇫🇷', en: '🇬🇧', de: '🇩🇪', pt: '🇵🇹', it: '🇮🇹' }
 
-const ESTADO_LABELS = {
-  recibido: 'Recibido',
-  en_revision: 'En revisión',
-  documentacion_pendiente: 'Documentación pendiente',
-  completado: 'Completado',
-  archivado: 'Archivado',
+const ESTADO_T_KEYS = {
+  recibido: 'estadoRecibido',
+  en_revision: 'estadoEnRevision',
+  documentacion_pendiente: 'estadoDocumentacionPendiente',
+  completado: 'estadoCompletado',
+  archivado: 'estadoArchivado',
 }
 
 const ESTADO_CLASS = {
@@ -24,14 +24,12 @@ const ESTADO_CLASS = {
   archivado: 'badge-gray',
 }
 
-const YN_LABELS = { si: 'Sí', no: 'No' }
-
-const ID_CAMPOS_LABELS = {
-  nombre: 'Nombre',
-  apellidos: 'Apellidos',
-  dniNie: 'DNI / NIE',
-  email: 'Correo electrónico',
-  telefono: 'Teléfono',
+const ID_CAMPO_T_KEYS = {
+  nombre: 'fieldNombre',
+  apellidos: 'fieldApellidos',
+  dniNie: 'tokenResultDni',
+  email: 'tokenResultEmail',
+  telefono: 'labelTelefono',
 }
 
 const ID_CAMPOS = ['nombre', 'apellidos', 'dniNie', 'email', 'telefono']
@@ -116,7 +114,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
     <>
       <header>
         <div className="header-inner">
-          <div className="logo">NH Gestión Integral</div>
+          <div className="logo">{t('logoText')}</div>
           <nav className="header-nav">
             <div className="lang-flags-top" role="group" aria-label={t('langLabel')}>
               {availableLanguages.map(l => (
@@ -138,7 +136,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
             </button>
             {user?.role === 'admin' && (
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/admin')}>
-                🛡️ Admin
+                {t('btnAdmin')}
               </button>
             )}
             <button type="button" className="btn btn-danger btn-sm" onClick={handleLogout}>
@@ -191,7 +189,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
                   <div className="declaracion-meta">
                     <span className="declaracion-id">#{dec.id.slice(0, 8)}…</span>
                     <span className={`estado-badge ${ESTADO_CLASS[dec.estado] ?? 'badge-blue'}`}>
-                      {ESTADO_LABELS[dec.estado] ?? dec.estado}
+                      {t(ESTADO_T_KEYS[dec.estado] ?? dec.estado)}
                     </span>
                   </div>
                   <div className="declaracion-dates">
@@ -215,7 +213,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
                             if (valor === undefined || valor === null) return null
                             return (
                               <tr key={campo}>
-                                <td className="campo-label">{ID_CAMPOS_LABELS[campo] ?? campo}</td>
+                                <td className="campo-label">{t(ID_CAMPO_T_KEYS[campo] ?? campo)}</td>
                                 <td className="campo-valor">{valor}</td>
                               </tr>
                             )
@@ -236,7 +234,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
                               {preguntasConValor.map(pregunta => (
                                 <tr key={pregunta.id}>
                                   <td className="campo-label">{(pregunta.textos && pregunta.textos[lang]) ? pregunta.textos[lang] : pregunta.texto}</td>
-                                  <td className="campo-valor">{YN_LABELS[dec[pregunta.id]] ?? dec[pregunta.id]}</td>
+                                  <td className="campo-valor">{dec[pregunta.id] === 'si' ? t('yes') : dec[pregunta.id] === 'no' ? t('no') : dec[pregunta.id]}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -269,9 +267,9 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
                           type="button"
                           className="btn btn-primary"
                           onClick={() => downloadRentaPdf(dec.rentaPdf)}
-                          title="Descargar el PDF de la renta preparado por el gestor"
+                          title={t('rentaPdfBtnTitle')}
                         >
-                          📥 Descargar PDF de la renta
+                          {t('rentaPdfBtn')}
                         </button>
                       )}
                     </div>
