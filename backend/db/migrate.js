@@ -58,24 +58,8 @@ async function migrate() {
       )
     `)
     await client.query(`CREATE INDEX IF NOT EXISTS idx_traducciones_idioma ON traducciones (idioma_id)`)
-    await client.query(`
-      INSERT INTO idiomas (code, label, activo) VALUES
-        ('es', 'Español',  TRUE),
-        ('fr', 'Français', TRUE),
-        ('en', 'English',  TRUE),
-        ('ca', 'Català',   TRUE)
-      ON CONFLICT (code) DO NOTHING
-    `)
   } finally {
     client.release()
-  }
-
-  // Seed translations from static data (idempotent)
-  try {
-    const seedTraducciones = require('./seedTraducciones')
-    await seedTraducciones()
-  } catch (err) {
-    console.error('[migrate] Failed to seed translations:', err)
   }
 }
 
