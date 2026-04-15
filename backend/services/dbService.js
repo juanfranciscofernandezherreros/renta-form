@@ -639,6 +639,77 @@ async function updateIdiomaContent(id, { content }) {
   return getIdiomaContent(id)
 }
 
+// ── Admin: Traducciones faltantes ─────────────────────────────────────────
+
+async function getMissingTranslations(ref = 'es') {
+  // Normalise the reference code
+  const refCode = String(ref).trim().toLowerCase()
+
+  // Verify the reference language exists and is active
+  const refCheck = await pool.query(
+    `SELECT id FROM idiomas WHERE code = $1 AND activo = TRUE`,
+    [refCode]
+  )
+  if (!refCheck.rows.length) {
+    return {
+      data: null,
+      error: { message: `El idioma de referencia '${refCode}' no existe o no está activo` },
+      status: 404,
+    }
+  }
+  const refId = refCheck.rows[0].id
+
+  // Single query: for every active language (except reference), find the keys
+  // present in the reference that are absent in that language.
+  const { rows } = await pool.query(
+    `SELECT i.code AS idioma, r.clave
+     FROM traducciones r
+     CROSS JOIN idiomas i
+     LEFT JOIN traducciones t ON t.idioma_id = i.id AND t.clave = r.clave
+     WHERE r.idioma_id = $1
+       AND i.activo   = TRUE
+       AND i.code    != $2
+       AND t.clave   IS NULL
+     ORDER BY i.code, r.clave`,
+    [refId, refCode]
+  )
+
+  // Total keys in the reference language
+  const totalRes = await pool.query(
+    `SELECT COUNT(*) AS cnt FROM traducciones WHERE idioma_id = $1`,
+    [refId]
+  )
+  const totalClaves = parseInt(totalRes.rows[0].cnt, 10)
+
+  // All other active languages (to include ones with 0 missing keys in the result)
+  const otherLangsRes = await pool.query(
+    `SELECT code FROM idiomas WHERE activo = TRUE AND code != $1 ORDER BY code`,
+    [refCode]
+  )
+
+  const faltantes = {}
+  for (const { code } of otherLangsRes.rows) faltantes[code] = []
+
+  for (const r of rows) {
+    faltantes[r.idioma].push(r.clave)
+  }
+
+  const resumen = Object.entries(faltantes).map(([idioma, claves]) => ({
+    idioma,
+    total_faltantes: claves.length,
+  }))
+
+  return {
+    data: {
+      referencia: refCode,
+      total_claves: totalClaves,
+      faltantes,
+      resumen,
+    },
+    error: null,
+  }
+}
+
 // ── Exports ────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -671,4 +742,5 @@ module.exports = {
   deleteIdiomaAdmin,
   getIdiomaContent,
   updateIdiomaContent,
+  getMissingTranslations,
 }
