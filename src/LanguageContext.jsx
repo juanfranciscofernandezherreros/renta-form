@@ -52,11 +52,6 @@ export function LanguageProvider({ children }) {
       if (langTranslations && langTranslations[key]) {
         return langTranslations[key]
       }
-      // Fallback to Spanish, then the key itself
-      const esTranslations = translations.es
-      if (esTranslations && esTranslations[key]) {
-        return esTranslations[key]
-      }
       return key
     },
     [lang, translations]
