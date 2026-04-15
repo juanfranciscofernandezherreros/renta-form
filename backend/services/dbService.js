@@ -12,25 +12,104 @@ const pool = require('../db/pool')
 const BCRYPT_ROUNDS = 12
 
 // ── Translation keys ───────────────────────────────────────────────────────
-// Canonical set of i18n keys used by the frontend.  Kept here so that
-// getMissingTranslations can report what is missing even when the DB is empty.
+// Canonical set of i18n keys used by the frontend.  Extracted from all t('key')
+// calls in the src/ directory.  Used by getMissingTranslations so the endpoint
+// can report gaps for every language without needing a base/reference language.
 const ALL_REQUIRED_KEYS = [
-  'btnContinue',
-  'btnSubmit',
-  'btnSubmitting',
+  'btnAdmin',
   'btnBack',
   'btnClear',
-  'fieldNombre',
+  'btnConsultando',
+  'btnConsultar',
+  'btnContinue',
+  'btnDismissError',
+  'btnDownloadPDF',
+  'btnLoggingIn',
+  'btnLogin',
+  'btnSendAnother',
+  'btnSubmit',
+  'btnSubmitting',
+  'btnUpdatePassword',
+  'btnUpdatingPassword',
+  'campaignName',
+  'changePasswordTitle',
+  'confirmClear',
+  'errDniFormat',
+  'errNewPasswordLength',
+  'errNewPasswordLengthSuffix',
+  'errOldPasswordRequired',
+  'errPasswordRequired',
+  'errPasswordsNoMatch',
+  'errTokenRequired',
+  'errUserBlocked',
+  'errValidationQuestions',
+  'errValidationRequired',
+  'errorQuestions',
   'fieldApellidos',
+  'fieldApellidosPlaceholder',
+  'fieldConfirmPassword',
   'fieldDniNie',
   'fieldEmail',
+  'fieldEmailOptional',
+  'fieldEmailPlaceholder',
+  'fieldNewPassword',
+  'fieldNombre',
+  'fieldOldPassword',
+  'fieldPassword',
+  'fieldPasswordPlaceholder',
   'fieldTelefono',
-  'yes',
-  'no',
-  'langLabel',
-  'successTitle',
-  'section1',
+  'fieldTelefonoPlaceholder',
+  'footerBrandName',
+  'footerDisclaimer',
+  'instructionsText',
+  'instructionsText2',
   'instructionsTitle',
+  'langLabel',
+  'loadingQuestions',
+  'loginInfoText',
+  'loginInfoTitle',
+  'loginSectionId',
+  'loginTestPassword',
+  'loginTestUsers',
+  'logoText',
+  'navLogin',
+  'navLogout',
+  'navNewForm',
+  'no',
+  'profileDeclaraciones',
+  'profileEdit',
+  'profileEditLocked',
+  'profileEmpty',
+  'profileEmptyLink',
+  'profileEmptyText',
+  'profileLoadError',
+  'profileLoading',
+  'profileSent',
+  'profileUpdated',
+  'pwSuccess',
+  'rentaPdfBtn',
+  'rentaPdfBtnTitle',
+  'section1',
+  'step1Subtitle',
+  'successText',
+  'successTitle',
+  'toastErrorHttp',
+  'toastErrorHttpSuffix',
+  'toastErrorNetwork',
+  'toastSuccess',
+  'tokenClearHistory',
+  'tokenConsultaDesc',
+  'tokenConsultaTitle',
+  'tokenLabel',
+  'tokenMyTokens',
+  'tokenNoHistory',
+  'tokenNotFound',
+  'tokenPlaceholder',
+  'tokenResultDni',
+  'tokenResultEmail',
+  'tokenResultNombre',
+  'tokenResultTitle',
+  'yes',
 ]
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -663,9 +742,45 @@ async function updateIdiomaContent(id, { content }) {
 
 // ── Admin: Traducciones faltantes ─────────────────────────────────────────
 
-async function getMissingTranslations(ref = 'es') {
+async function getMissingTranslations(ref = 'static') {
   // Normalise the reference code
-  const refCode = String(ref).trim().toLowerCase()
+  const refCode = String(ref || 'static').trim().toLowerCase()
+
+  // ── Static mode: compare every active language against the canonical key
+  //    list extracted from the frontend source.  No base language required.
+  if (refCode === 'static') {
+    const allLangsRes = await pool.query(
+      `SELECT code, id FROM idiomas WHERE activo = TRUE ORDER BY code`
+    )
+
+    const faltantes = {}
+    for (const { code, id } of allLangsRes.rows) {
+      const existingRes = await pool.query(
+        `SELECT clave FROM traducciones WHERE idioma_id = $1`,
+        [id]
+      )
+      const existing = new Set(existingRes.rows.map(r => r.clave))
+      faltantes[code] = ALL_REQUIRED_KEYS.filter(k => !existing.has(k))
+    }
+
+    const resumen = Object.entries(faltantes).map(([idioma, claves]) => ({
+      idioma,
+      total_faltantes: claves.length,
+    }))
+
+    return {
+      data: {
+        referencia: 'static',
+        total_claves: ALL_REQUIRED_KEYS.length,
+        claves_requeridas: ALL_REQUIRED_KEYS,
+        faltantes,
+        resumen,
+      },
+      error: null,
+    }
+  }
+
+  // ── Reference-language mode: use a DB language as the key source ──────────
 
   // Check if the reference language exists and is active
   const refCheck = await pool.query(
@@ -673,34 +788,10 @@ async function getMissingTranslations(ref = 'es') {
     [refCode]
   )
 
-  // ── Empty-state: reference language does not exist ──────────────────────
-  // When the DB has no languages at all (or the reference is absent) we fall
-  // back to the hard-coded list of required keys so callers can still discover
-  // what needs to be set up.
+  // When the reference language does not exist fall back to static mode so
+  // callers always get a useful response.
   if (!refCheck.rows.length) {
-    // Count how many active languages exist (there may be non-'es' ones)
-    const otherLangsRes = await pool.query(
-      `SELECT code FROM idiomas WHERE activo = TRUE AND code != $1 ORDER BY code`,
-      [refCode]
-    )
-    const faltantes = {}
-    for (const { code } of otherLangsRes.rows) {
-      faltantes[code] = [...ALL_REQUIRED_KEYS]
-    }
-    const resumen = Object.entries(faltantes).map(([idioma, claves]) => ({
-      idioma,
-      total_faltantes: claves.length,
-    }))
-    return {
-      data: {
-        referencia: refCode,
-        total_claves: 0,
-        claves_requeridas: ALL_REQUIRED_KEYS,
-        faltantes,
-        resumen,
-      },
-      error: null,
-    }
+    return getMissingTranslations('static')
   }
 
   const refId = refCheck.rows[0].id
@@ -722,7 +813,10 @@ async function getMissingTranslations(ref = 'es') {
       `SELECT clave FROM traducciones WHERE idioma_id = $1 ORDER BY clave`,
       [refId]
     )
-    refKeys = refKeysRes.rows.map(r => r.clave)
+    // Merge DB keys with static keys so newly added frontend keys are always reported
+    const dbKeys = new Set(refKeysRes.rows.map(r => r.clave))
+    const merged = new Set([...dbKeys, ...ALL_REQUIRED_KEYS])
+    refKeys = [...merged].sort()
   }
 
   // All other active languages (to include ones with 0 missing keys in the result)
@@ -735,7 +829,6 @@ async function getMissingTranslations(ref = 'es') {
   for (const { code } of otherLangsRes.rows) faltantes[code] = []
 
   if (otherLangsRes.rows.length > 0) {
-    // For each other language, find which ref keys it is missing
     for (const { code, id } of otherLangsRes.rows) {
       const existingRes = await pool.query(
         `SELECT clave FROM traducciones WHERE idioma_id = $1`,
@@ -754,7 +847,7 @@ async function getMissingTranslations(ref = 'es') {
   return {
     data: {
       referencia: refCode,
-      total_claves: totalClaves === 0 ? ALL_REQUIRED_KEYS.length : totalClaves,
+      total_claves: refKeys.length,
       claves_requeridas: ALL_REQUIRED_KEYS,
       faltantes,
       resumen,
