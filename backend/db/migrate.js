@@ -3,6 +3,7 @@
 const fs = require('fs')
 const path = require('path')
 const pool = require('./pool')
+const seedTraducciones = require('./seedTraducciones')
 
 const INIT_SQL = path.join(__dirname, '../../database/init.sql')
 
@@ -58,6 +59,15 @@ async function migrate() {
       )
     `)
     await client.query(`CREATE INDEX IF NOT EXISTS idx_traducciones_idioma ON traducciones (idioma_id)`)
+
+    // Seed languages and translations (idempotent)
+    try {
+      await seedTraducciones(client)
+      console.log('[migrate] Translations seeded.')
+    } catch (err) {
+      console.error('[migrate] Failed to seed translations:', err)
+      throw err
+    }
   } finally {
     client.release()
   }
