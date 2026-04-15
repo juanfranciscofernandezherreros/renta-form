@@ -6,6 +6,7 @@ const pool = require('./pool')
 
 const INIT_SQL = path.join(__dirname, '../../database/init.sql')
 const IDIOMAS_SQL = path.join(__dirname, '../../database/002_idiomas_traducciones.sql')
+const SECCIONES_SQL = path.join(__dirname, '../../database/003_preguntas_secciones.sql')
 
 async function tableExists(client, tableName) {
   const { rows } = await client.query(
@@ -14,6 +15,17 @@ async function tableExists(client, tableName) {
        WHERE table_schema = 'public' AND table_name = $1
      )`,
     [tableName]
+  )
+  return rows[0].exists
+}
+
+async function columnExists(client, tableName, columnName) {
+  const { rows } = await client.query(
+    `SELECT EXISTS (
+       SELECT 1 FROM information_schema.columns
+       WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2
+     )`,
+    [tableName, columnName]
   )
   return rows[0].exists
 }
@@ -37,6 +49,15 @@ async function migrate() {
       console.log('[migrate] 002_idiomas_traducciones.sql applied.')
     } else {
       console.log('[migrate] idiomas table already exists, skipping.')
+    }
+
+    // Run secciones migration if preguntas.seccion column is missing
+    if (!(await columnExists(client, 'preguntas', 'seccion'))) {
+      console.log('[migrate] Running 003_preguntas_secciones.sql ...')
+      await client.query(fs.readFileSync(SECCIONES_SQL, 'utf8'))
+      console.log('[migrate] 003_preguntas_secciones.sql applied.')
+    } else {
+      console.log('[migrate] preguntas.seccion column already exists, skipping.')
     }
   } finally {
     client.release()
