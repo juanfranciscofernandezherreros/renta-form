@@ -1969,3 +1969,55 @@ footer.footer-main {
   background: #f3eeff;
   color: #6c11c8;
 }
+
+/* ── Admin panel mobile responsive ── */
+@media (max-width: 600px) {
+  /* Tabs: horizontal scroll so Idiomas/Traducciones tabs are reachable */
+  .admin-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    gap: 2px;
+    scrollbar-width: none;
+  }
+  .admin-tabs::-webkit-scrollbar { display: none; }
+  .admin-tab {
+    flex-shrink: 0;
+    padding: 8px 12px;
+    font-size: 0.78rem;
+    border-radius: 6px 6px 0 0;
+    white-space: nowrap;
+  }
+
+  /* Traducción panel: full-screen fixed overlay so it's usable on small screens */
+  .traduccion-panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-height: 100dvh;
+    border-radius: 0;
+    z-index: 1000;
+    padding: 16px 14px 12px;
+  }
+
+  /* Admin modals: bottom-sheet style on mobile */
+  .admin-modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+  .admin-modal {
+    width: 100%;
+    border-radius: 18px 18px 0 0;
+    max-height: 90dvh;
+    overflow-y: auto;
+    padding: 20px 16px 24px;
+  }
+
+  /* Idioma cards: slightly smaller on mobile */
+  .traduccion-idioma-card {
+    min-width: 80px;
+    padding: 10px 14px;
+  }
+}
