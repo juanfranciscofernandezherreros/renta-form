@@ -4,11 +4,10 @@ Node.js/Express REST API that backs the Renta Form frontend.
 
 ## Quick start
 
-1. Create the PostgreSQL database and apply the schema:
+1. Create the PostgreSQL database:
 
    ```bash
    psql -U postgres -c "CREATE DATABASE renta_form;"
-   psql -U postgres -d renta_form -f ../database/init.sql
    ```
 
 2. Copy `.env.example` to `.env` and set the Postgres credentials:
@@ -21,14 +20,25 @@ Node.js/Express REST API that backs the Renta Form frontend.
    PGPASSWORD=yourpassword
    ```
 
-3. Start the server:
+3. Apply the schema and seed data:
 
    ```bash
-   # Mock profile (no DB required, useful for local development without PostgreSQL)
-   npm start
+   cd backend
 
-   # PostgreSQL profile
-   npm run start:db
+   # Apply schema migrations (creates all tables from database/init.sql)
+   npm run migrate
+
+   # Seed translations into the DB
+   npm run seed
+
+   # Or run both in one command
+   npm run db:setup
+   ```
+
+4. Start the server:
+
+   ```bash
+   npm start
    ```
 
 The server listens on `http://localhost:3001`.
@@ -86,6 +96,16 @@ All endpoints are prefixed with `/v1`.
 | PUT | `/v1/admin/idiomas/:id/content` | Update translations for a language |
 | GET | `/v1/admin/traducciones/faltantes` | Missing translation keys per language |
 
+## npm scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm start` | Start server (PostgreSQL, port 3001) |
+| `npm run dev` | Start server with `--watch` (auto-restart on file changes) |
+| `npm run migrate` | Apply schema migrations only (no server start) |
+| `npm run seed` | Seed translations into the DB (no server start) |
+| `npm run db:setup` | Run `migrate` + `seed` in sequence |
+
 ## Development proxy
 
 In development the Vite frontend proxies `/v1` → `http://localhost:3001/v1`.  
@@ -93,7 +113,7 @@ Run both servers at the same time:
 
 ```bash
 # Terminal 1 – backend (PostgreSQL)
-cd backend && npm run start:db
+cd backend && npm start
 
 # Terminal 2 – frontend
 cd .. && npm run dev

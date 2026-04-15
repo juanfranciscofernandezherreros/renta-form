@@ -7,7 +7,10 @@
   "scripts": {
     "start": "PROFILE=db node server.js",
     "dev": "node --watch server.js",
-    "start:db": "PROFILE=db node server.js"
+    "start:db": "PROFILE=db node server.js",
+    "migrate": "node db/migrate.js",
+    "seed": "node db/seedTraducciones.js",
+    "db:setup": "node db/migrate.js && node db/seedTraducciones.js"
   },
   "engines": {
     "node": ">=20.0.0"

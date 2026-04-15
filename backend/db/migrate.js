@@ -80,3 +80,16 @@ async function migrate() {
 }
 
 module.exports = migrate
+
+// Allow running directly: node db/migrate.js
+if (require.main === module) {
+  migrate()
+    .then(() => {
+      console.log('[migrate] Done.')
+      process.exit(0)
+    })
+    .catch((err) => {
+      console.error('[migrate] Failed:', err)
+      process.exit(1)
+    })
+}
