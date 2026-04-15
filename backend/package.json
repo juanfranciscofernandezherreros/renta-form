@@ -11,8 +11,7 @@
     "migrate": "node db/migrate.js",
     "seed": "node db/seedTraducciones.js",
     "db:setup": "node db/migrate.js && node db/seedTraducciones.js",
-    "db:setup-100": "node db/migrate.js && node db/seedTraducciones.js && node db/seed100.js"
-    "db:setup": "node db/migrate.js",
+    "db:setup-100": "node db/migrate.js && node db/seedTraducciones.js && node db/seed100.js",
     "db:seed-translations": "node db/seedTraducciones.js",
     "db:seed-languages": "node db/seedLanguages.js"
   },
