@@ -5,7 +5,6 @@ const path = require('path')
 const pool = require('./pool')
 
 const INIT_SQL = path.join(__dirname, '../../database/init.sql')
-const IDIOMAS_SQL = path.join(__dirname, '../../database/002_idiomas_traducciones.sql')
 
 async function tableExists(client, tableName) {
   const { rows } = await client.query(
@@ -27,17 +26,46 @@ async function migrate() {
       await client.query(fs.readFileSync(INIT_SQL, 'utf8'))
       console.log('[migrate] init.sql applied.')
     } else {
-      console.log('[migrate] init.sql already applied, skipping.')
+      console.log('[migrate] Tables already exist, skipping init.sql.')
     }
 
-    // Run idiomas/traducciones migration if not yet created
-    if (!(await tableExists(client, 'idiomas'))) {
-      console.log('[migrate] Running 002_idiomas_traducciones.sql ...')
-      await client.query(fs.readFileSync(IDIOMAS_SQL, 'utf8'))
-      console.log('[migrate] 002_idiomas_traducciones.sql applied.')
-    } else {
-      console.log('[migrate] idiomas table already exists, skipping.')
-    }
+    // Drop legacy section columns from preguntas if they still exist
+    await client.query(`
+      ALTER TABLE preguntas
+        DROP COLUMN IF EXISTS seccion,
+        DROP COLUMN IF EXISTS seccion_orden,
+        DROP COLUMN IF EXISTS seccion_titulos
+    `)
+
+    // Create idiomas/traducciones tables if they were not in the original schema
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS idiomas (
+        id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+        code           VARCHAR(10)  NOT NULL UNIQUE,
+        label          VARCHAR(100) NOT NULL,
+        activo         BOOLEAN      NOT NULL DEFAULT TRUE,
+        creado_en      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+        actualizado_en TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+      )
+    `)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS traducciones (
+        id        UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+        idioma_id UUID         NOT NULL REFERENCES idiomas(id) ON DELETE CASCADE,
+        clave     VARCHAR(200) NOT NULL,
+        valor     TEXT         NOT NULL DEFAULT '',
+        UNIQUE (idioma_id, clave)
+      )
+    `)
+    await client.query(`CREATE INDEX IF NOT EXISTS idx_traducciones_idioma ON traducciones (idioma_id)`)
+    await client.query(`
+      INSERT INTO idiomas (code, label, activo) VALUES
+        ('es', 'Español',  TRUE),
+        ('fr', 'Français', TRUE),
+        ('en', 'English',  TRUE),
+        ('ca', 'Català',   TRUE)
+      ON CONFLICT (code) DO NOTHING
+    `)
   } finally {
     client.release()
   }

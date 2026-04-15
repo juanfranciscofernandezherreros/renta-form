@@ -1,5 +1,5 @@
 -- =============================================================
---  Renta Form – Esquema i18n (ES, FR, CA, EN)
+--  Renta Form – Esquema completo (ES, FR, CA, EN)
 -- =============================================================
 
 BEGIN;
@@ -43,14 +43,11 @@ CREATE TABLE IF NOT EXISTS usuarios (
 
 -- 4. Tabla: Preguntas (Traducciones en JSONB)
 CREATE TABLE IF NOT EXISTS preguntas (
-    id               UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    campo            VARCHAR(100) NOT NULL UNIQUE,
-    texto            JSONB        NOT NULL DEFAULT '{}', -- Estructura: {"es": "", "fr": "", "ca": "", "en": ""}
-    orden            INTEGER      NOT NULL DEFAULT 0,
-    seccion          VARCHAR(50)  NOT NULL DEFAULT 'general',
-    seccion_orden    INTEGER      NOT NULL DEFAULT 0,
-    seccion_titulos  JSONB        NOT NULL DEFAULT '{}',
-    actualizada_en   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    campo          VARCHAR(100) NOT NULL UNIQUE,
+    texto          JSONB        NOT NULL DEFAULT '{}', -- Estructura: {"es": "", "fr": "", "ca": "", "en": ""}
+    orden          INTEGER      NOT NULL DEFAULT 0,
+    actualizada_en TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
 -- 5. Tabla: Declaraciones
@@ -64,7 +61,7 @@ CREATE TABLE IF NOT EXISTS declaraciones (
     dni_nie                   VARCHAR(9)        NOT NULL UNIQUE,
     email                     VARCHAR(254)      NOT NULL,
     telefono                  VARCHAR(20)       NOT NULL,
-    
+
     -- Respuestas (mapeadas con preguntas.campo)
     vivienda_alquiler         respuesta_yn      NOT NULL,
     alquiler_menos_35         respuesta_yn,
@@ -83,73 +80,86 @@ CREATE TABLE IF NOT EXISTS declaraciones (
     CONSTRAINT chk_dni_nie_formato CHECK (dni_nie ~ '^[0-9XYZ][0-9]{7}[A-Z]$')
 );
 
--- 6. Trigger
+-- 6. Tabla: Idiomas
+CREATE TABLE IF NOT EXISTS idiomas (
+    id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    code           VARCHAR(10)  NOT NULL UNIQUE,
+    label          VARCHAR(100) NOT NULL,
+    activo         BOOLEAN      NOT NULL DEFAULT TRUE,
+    creado_en      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    actualizado_en TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+-- 7. Tabla: Traducciones
+CREATE TABLE IF NOT EXISTS traducciones (
+    id        UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    idioma_id UUID         NOT NULL REFERENCES idiomas(id) ON DELETE CASCADE,
+    clave     VARCHAR(200) NOT NULL,
+    valor     TEXT         NOT NULL DEFAULT '',
+    UNIQUE (idioma_id, clave)
+);
+
+CREATE INDEX IF NOT EXISTS idx_traducciones_idioma ON traducciones (idioma_id);
+
+-- 8. Triggers
 CREATE OR REPLACE TRIGGER trg_declaraciones_actualizado_en
     BEFORE UPDATE ON declaraciones FOR EACH ROW EXECUTE FUNCTION fn_set_actualizado_en();
 
--- 7. Datos de Inicio (Admin y Preguntas traducidas)
+CREATE OR REPLACE TRIGGER trg_idiomas_actualizado_en
+    BEFORE UPDATE ON idiomas FOR EACH ROW EXECUTE FUNCTION fn_set_actualizado_en();
+
+-- 9. Datos de inicio
 INSERT INTO usuarios (dni_nie, nombre, email, role, password_hash)
 VALUES ('ADMIN', 'Admin', 'admin@renta-form.local', 'admin', '$2b$12$a3QpSIVIiYpVQuwcWtYIbO.5/VbAKdDNClFrl0WTe4GVN7sjA0ruW')
 ON CONFLICT DO NOTHING;
 
-INSERT INTO preguntas (campo, texto, orden, seccion, seccion_orden, seccion_titulos) VALUES
-    -- Sección 1: Situación de Vivienda (seccion_orden = 0)
+INSERT INTO idiomas (code, label, activo) VALUES
+    ('es', 'Español',  TRUE),
+    ('fr', 'Français', TRUE),
+    ('en', 'English',  TRUE),
+    ('ca', 'Català',   TRUE)
+ON CONFLICT (code) DO NOTHING;
+
+INSERT INTO preguntas (campo, texto, orden) VALUES
     ('viviendaAlquiler',
      '{"es": "¿Vive de alquiler?", "fr": "Vivez-vous en location ?", "ca": "Viu de lloguer?", "en": "Do you live in a rental?"}',
-     1, 'seccion-vivienda', 0,
-     '{"es": "Situación de Vivienda", "fr": "Situation de logement", "ca": "Situació d''habitatge", "en": "Housing Situation"}'),
+     1),
     ('alquilerMenos35',
      '{"es": "¿El importe del alquiler es inferior al 35 % de los ingresos?", "fr": "Le montant du loyer est-il inférieur à 35 % des revenus ?", "ca": "L''import del lloguer és inferior al 35 % dels ingressos?", "en": "Is the rent amount less than 35% of your income?"}',
-     2, 'seccion-vivienda', 0,
-     '{"es": "Situación de Vivienda", "fr": "Situation de logement", "ca": "Situació d''habitatge", "en": "Housing Situation"}'),
+     2),
     ('viviendaPropiedad',
      '{"es": "¿Es propietario de su vivienda habitual?", "fr": "Êtes-vous propriétaire de votre résidence principale ?", "ca": "És propietari del seu habitatge habitual?", "en": "Do you own your primary residence?"}',
-     3, 'seccion-vivienda', 0,
-     '{"es": "Situación de Vivienda", "fr": "Situation de logement", "ca": "Situació d''habitatge", "en": "Housing Situation"}'),
+     3),
     ('propiedadAntes2013',
      '{"es": "¿Adquirió la vivienda antes de 2013?", "fr": "Avez-vous acquis le logement avant 2013 ?", "ca": "Va adquirir l''habitatge abans de 2013?", "en": "Did you purchase the property before 2013?"}',
-     4, 'seccion-vivienda', 0,
-     '{"es": "Situación de Vivienda", "fr": "Situation de logement", "ca": "Situació d''habitatge", "en": "Housing Situation"}'),
+     4),
     ('pisosAlquiladosTerceros',
      '{"es": "¿Tiene pisos alquilados a terceros?", "fr": "Avez-vous des appartements loués à des tiers ?", "ca": "Té pisos llogats a tercers?", "en": "Do you have properties rented to third parties?"}',
-     5, 'seccion-vivienda', 0,
-     '{"es": "Situación de Vivienda", "fr": "Situation de logement", "ca": "Situació d''habitatge", "en": "Housing Situation"}'),
+     5),
     ('segundaResidencia',
      '{"es": "¿Posee una segunda residencia?", "fr": "Possédez-vous une résidence secondaire ?", "ca": "Posseeix una segona residència?", "en": "Do you own a second residence?"}',
-     6, 'seccion-vivienda', 0,
-     '{"es": "Situación de Vivienda", "fr": "Situation de logement", "ca": "Situació d''habitatge", "en": "Housing Situation"}'),
-
-    -- Sección 2: Cargas familiares y ayudas públicas (seccion_orden = 1)
+     6),
     ('familiaNumerosa',
      '{"es": "¿Es familia numerosa?", "fr": "Êtes-vous une famille nombreuse ?", "ca": "És família nombrosa?", "en": "Are you a large family?"}',
-     1, 'seccion-familia', 1,
-     '{"es": "Cargas familiares y ayudas públicas", "fr": "Charges familiales et aides publiques", "ca": "Càrregues familiars i ajudes públiques", "en": "Family Charges and Public Aid"}'),
+     7),
     ('ayudasGobierno',
      '{"es": "¿Ha recibido ayudas del Gobierno?", "fr": "Avez-vous reçu des aides du gouvernement ?", "ca": "Ha rebut ajudes del Govern?", "en": "Have you received government grants?"}',
-     2, 'seccion-familia', 1,
-     '{"es": "Cargas familiares y ayudas públicas", "fr": "Charges familiales et aides publiques", "ca": "Càrregues familiars i ajudes públiques", "en": "Family Charges and Public Aid"}'),
+     8),
     ('mayores65ACargo',
      '{"es": "¿Tiene mayores de 65 años a su cargo?", "fr": "Avez-vous des personnes de plus de 65 ans à votre charge ?", "ca": "Té majors de 65 anys al seu càrrec?", "en": "Do you have dependants over 65?"}',
-     3, 'seccion-familia', 1,
-     '{"es": "Cargas familiares y ayudas públicas", "fr": "Charges familiales et aides publiques", "ca": "Càrregues familiars i ajudes públiques", "en": "Family Charges and Public Aid"}'),
+     9),
     ('mayoresConviven',
      '{"es": "¿Conviven con usted?", "fr": "Vivent-ils avec vous ?", "ca": "Conviuen amb vostè?", "en": "Do they live with you?"}',
-     4, 'seccion-familia', 1,
-     '{"es": "Cargas familiares y ayudas públicas", "fr": "Charges familiales et aides publiques", "ca": "Càrregues familiars i ajudes públiques", "en": "Family Charges and Public Aid"}'),
+     10),
     ('hijosMenores26',
      '{"es": "¿Tiene hijos menores de 26 años?", "fr": "Avez-vous des enfants de moins de 26 ans ?", "ca": "Té fills menors de 26 anys?", "en": "Do you have children under 26?"}',
-     5, 'seccion-familia', 1,
-     '{"es": "Cargas familiares y ayudas públicas", "fr": "Charges familiales et aides publiques", "ca": "Càrregues familiars i ajudes públiques", "en": "Family Charges and Public Aid"}'),
-
-    -- Sección 3: Ingresos extraordinarios e inversiones (seccion_orden = 2)
+     11),
     ('ingresosJuego',
      '{"es": "¿Ha tenido ganancias procedentes del juego?", "fr": "Avez-vous eu des gains provenant de jeux ?", "ca": "Ha tingut guanys procedents del joc?", "en": "Have you had gambling winnings?"}',
-     1, 'seccion-ingresos', 2,
-     '{"es": "Ingresos extraordinarios e inversiones", "fr": "Revenus extraordinaires et investissements", "ca": "Ingressos extraordinaris i inversions", "en": "Extraordinary Income and Investments"}'),
+     12),
     ('ingresosInversiones',
      '{"es": "¿Ha obtenido rendimientos de capital mobiliario o inversiones?", "fr": "Avez-vous obtenu des revenus de capitaux mobiliers ou investissements ?", "ca": "Ha obtingut rendiments de capital mobiliari o inversions?", "en": "Have you earned income from investments or securities?"}',
-     2, 'seccion-ingresos', 2,
-     '{"es": "Ingresos extraordinarios e inversiones", "fr": "Revenus extraordinaires et investissements", "ca": "Ingressos extraordinaris i inversions", "en": "Extraordinary Income and Investments"}')
+     13)
 ON CONFLICT DO NOTHING;
 
 COMMIT;
