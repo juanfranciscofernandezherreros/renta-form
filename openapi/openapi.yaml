@@ -695,16 +695,29 @@ paths:
       tags: [IdiomasAdmin]
       summary: Traducciones faltantes por idioma
       description: |
-        Compara las claves del idioma de referencia (por defecto `es`) con el resto
-        de idiomas activos y devuelve qué claves faltan en cada uno de ellos.
+        Compara las claves de cada idioma activo con el conjunto canónico de claves
+        extraído del código fuente del frontend (`ALL_REQUIRED_KEYS`) y devuelve
+        qué claves faltan en cada idioma.
+
+        Cuando se omite `ref` o se pasa `ref=static` (por defecto), el conjunto de
+        referencia son las claves estáticas del proyecto — **no hace falta tener
+        ningún idioma base** en la base de datos.
+
+        Si se indica un código de idioma concreto (p.ej. `ref=es`), ese idioma se
+        usa como referencia adicional: sus claves en BD se combinan con las estáticas
+        para formar el conjunto de referencia.  Si el idioma indicado no existe,
+        el endpoint vuelve automáticamente al modo estático.
       parameters:
         - name: ref
           in: query
           required: false
-          description: Código del idioma de referencia (por defecto `es`)
+          description: |
+            Código del idioma de referencia o `static` (valor por defecto).
+            Usa `static` para comparar contra las claves del código fuente del
+            frontend sin depender de ningún idioma base en la BD.
           schema:
             type: string
-            default: es
+            default: static
       responses:
         '200':
           description: Resumen de traducciones faltantes
