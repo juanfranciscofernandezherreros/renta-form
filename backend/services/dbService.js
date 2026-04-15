@@ -197,17 +197,20 @@ async function createPreguntaFormulario({ texto }) {
 
   try {
     const textoJson = buildTextoJsonb(texto)
+    // Use a CTE to insert and immediately set campo = id::text in one atomic step,
+    // because campo is NOT NULL and we want its value to match the generated UUID.
     const { rows } = await pool.query(
-      `INSERT INTO preguntas (texto) VALUES ($1::jsonb) RETURNING id`,
+      `WITH ins AS (
+         INSERT INTO preguntas (campo, texto)
+         VALUES (gen_random_uuid()::text, $1::jsonb)
+         RETURNING id
+       )
+       UPDATE preguntas SET campo = ins.id::text
+       FROM ins WHERE preguntas.id = ins.id
+       RETURNING preguntas.id`,
       [textoJson]
     )
     if (!rows.length) return { data: null, error: { message: 'No se pudo crear la pregunta' } }
-
-    // Use the UUID as the internal campo key so the public form can reference it
-    await pool.query(
-      `UPDATE preguntas SET campo = id::text WHERE id = $1 AND (campo IS NULL OR campo = '')`,
-      [rows[0].id]
-    ).catch(err => console.error('Warning: could not auto-set campo for new question:', err.message))
 
     const { rows: full } = await pool.query(
       `SELECT id, texto, actualizada_en FROM preguntas WHERE id = $1`,
