@@ -141,6 +141,8 @@ export default function UsuariosAdminTab({ showToast }) {
   const [error, setError] = useState(null)
   const [filtroBloqueado, setFiltroBloqueado] = useState('')
   const [filtroDenunciado, setFiltroDenunciado] = useState('')
+  const [filtroSearch, setFiltroSearch] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [page, setPage] = useState(1)
   const limit = 10
   const [refreshKey, setRefreshKey] = useState(0)
@@ -160,6 +162,7 @@ export default function UsuariosAdminTab({ showToast }) {
     const query = { page, limit }
     if (filtroBloqueado !== '') query.bloqueado = filtroBloqueado === 'true'
     if (filtroDenunciado !== '') query.denunciado = filtroDenunciado === 'true'
+    if (filtroSearch !== '') query.search = filtroSearch
     listUsersAdmin({ query })
       .then(({ data, error: apiErr }) => {
         if (cancelled) return
@@ -171,7 +174,7 @@ export default function UsuariosAdminTab({ showToast }) {
       .catch(err => { if (!cancelled) setError(err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [filtroBloqueado, filtroDenunciado, page, refreshKey])
+  }, [filtroBloqueado, filtroDenunciado, filtroSearch, page, refreshKey])
 
   const handleBlock = async (user) => {
     const nuevoEstado = !user.bloqueado
@@ -226,6 +229,28 @@ export default function UsuariosAdminTab({ showToast }) {
           <span className="admin-stat-badge">{total} usuario{total !== 1 ? 's' : ''}</span>
         </div>
         <div className="admin-filters">
+          <form
+            onSubmit={e => { e.preventDefault(); setFiltroSearch(searchInput.trim()); setPage(1) }}
+            style={{ display: 'flex', gap: 6 }}
+          >
+            <input
+              type="search"
+              className="admin-filter-select"
+              placeholder="Buscar por nombre, DNI o email…"
+              value={searchInput}
+              onChange={e => setSearchInput(e.target.value)}
+              style={{ minWidth: 230 }}
+            />
+            <button type="submit" className="btn btn-secondary btn-sm">🔍</button>
+            {filtroSearch && (
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                onClick={() => { setSearchInput(''); setFiltroSearch(''); setPage(1) }}
+                title="Limpiar búsqueda"
+              >✕</button>
+            )}
+          </form>
           <select
             className="admin-filter-select"
             value={filtroBloqueado}
@@ -273,6 +298,9 @@ export default function UsuariosAdminTab({ showToast }) {
                   <td>
                     <div className="pregunta-texto">{u.nombre} {u.apellidos}</div>
                     <div className="pregunta-seccion">📞 {u.telefono || '—'}</div>
+                    {u.role === 'admin' && (
+                      <span className="estado-badge badge-blue" style={{ marginTop: 4 }}>🛡️ Admin</span>
+                    )}
                   </td>
                   <td><code>{u.dniNie}</code></td>
                   <td style={{ fontSize: '.85rem' }}>{u.email}</td>
@@ -282,9 +310,7 @@ export default function UsuariosAdminTab({ showToast }) {
                         <span className="estado-badge badge-orange">🔒 Bloqueado</span>
                       )}
                       {u.denunciado && (
-                        <span className="estado-badge badge-orange" style={{ background: '#fee2e2', color: '#991b1b' }}>
-                          🚨 Denunciado
-                        </span>
+                        <span className="estado-badge badge-red">🚨 Denunciado</span>
                       )}
                       {!u.bloqueado && !u.denunciado && (
                         <span className="estado-badge badge-activa">✅ Activo</span>

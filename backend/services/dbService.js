@@ -408,11 +408,17 @@ async function sendEmailDeclaracion({ declaracionId, email, mensaje }) {
 
 // ── Admin: Usuarios ────────────────────────────────────────────────────────
 
-async function listUsersAdmin({ bloqueado, denunciado, page = 1, limit = 10 }) {
+async function listUsersAdmin({ bloqueado, denunciado, search, page = 1, limit = 10 }) {
   const conditions = []
   const params = []
   if (bloqueado !== undefined) { conditions.push(`bloqueado = $${params.length + 1}`); params.push(bloqueado) }
   if (denunciado !== undefined) { conditions.push(`denunciado = $${params.length + 1}`); params.push(denunciado) }
+  if (search) {
+    const escaped = search.replace(/[%_\\]/g, '\\$&')
+    const like = `%${escaped}%`
+    conditions.push(`(nombre ILIKE $${params.length + 1} OR apellidos ILIKE $${params.length + 2} OR email ILIKE $${params.length + 3} OR dni_nie ILIKE $${params.length + 4})`)
+    params.push(like, like, like, like)
+  }
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
   const countRes = await pool.query(`SELECT COUNT(*) FROM usuarios ${where}`, params)
   const total = parseInt(countRes.rows[0].count, 10)
@@ -444,6 +450,7 @@ async function reportUser(dniNie, denunciado) {
 }
 
 async function deleteUser(dniNie) {
+  await pool.query('DELETE FROM declaraciones WHERE dni_nie = $1', [dniNie])
   const { rowCount } = await pool.query('DELETE FROM usuarios WHERE dni_nie = $1', [dniNie])
   if (!rowCount) return { data: null, error: { message: 'Usuario no encontrado' } }
   return { data: { success: true }, error: null }
