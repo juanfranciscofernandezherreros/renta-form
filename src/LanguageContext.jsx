@@ -1,6 +1,10 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react'
 import { getIdiomas, getTraducciones } from './apiClient'
+import esStatic from '../translations/es.json'
+import caStatic from '../translations/ca.json'
+import enStatic from '../translations/en.json'
+import frStatic from '../translations/fr.json'
 
 const LanguageContext = createContext(null)
 
@@ -10,6 +14,8 @@ const STATIC_LANGUAGES = [
   { code: 'en', label: 'English' },
   { code: 'fr', label: 'Français' },
 ]
+
+const STATIC_TRANSLATIONS = { es: esStatic, ca: caStatic, en: enStatic, fr: frStatic }
 
 async function fetchLanguageData() {
   const [idiomasRes, traduccionesRes] = await Promise.all([
@@ -52,6 +58,19 @@ export function LanguageProvider({ children }) {
       if (langTranslations && langTranslations[key]) {
         return langTranslations[key]
       }
+      // Fall back to static translations and warn about the missing DB entry
+      const staticLang = STATIC_TRANSLATIONS[lang]
+      if (staticLang && staticLang[key]) {
+        console.warn(`[i18n] Missing DB translation for lang="${lang}" key="${key}" — using static fallback`)
+        return staticLang[key]
+      }
+      // Last resort: try Spanish static translations
+      const esFallback = STATIC_TRANSLATIONS['es']
+      if (esFallback && esFallback[key]) {
+        console.warn(`[i18n] Missing translation for lang="${lang}" key="${key}" — falling back to es static`)
+        return esFallback[key]
+      }
+      console.warn(`[i18n] No translation found for lang="${lang}" key="${key}"`)
       return key
     },
     [lang, translations]
