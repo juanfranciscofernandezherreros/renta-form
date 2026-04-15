@@ -4,6 +4,7 @@ import {
   listIdiomasAdmin,
   getIdiomaContent,
   updateIdiomaContent,
+  getTraduccionesFaltantes,
 } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
 
@@ -16,6 +17,9 @@ export default function TraduccionesAdminTab({ showToast }) {
   const [idiomas, setIdiomas] = useState([])
   const [idiomasLoading, setIdiomasLoading] = useState(true)
   const [idiomasError, setIdiomasError] = useState(null)
+
+  // Missing translations summary
+  const [faltantesData, setFaltantesData] = useState(null)
 
   // Selected idioma + its content panel
   const [selected, setSelected] = useState(null) // idioma object
@@ -42,7 +46,14 @@ export default function TraduccionesAdminTab({ showToast }) {
     setIdiomas(data?.data ?? [])
   }, [])
 
+  // Load missing translations summary
+  const loadFaltantes = useCallback(async () => {
+    const { data } = await getTraduccionesFaltantes()
+    if (data) setFaltantesData(data)
+  }, [])
+
   useEffect(() => { loadIdiomas() }, [loadIdiomas])
+  useEffect(() => { loadFaltantes() }, [loadFaltantes])
 
   const openPanel = async (idioma) => {
     setSelected(idioma)
@@ -54,7 +65,17 @@ export default function TraduccionesAdminTab({ showToast }) {
     const { data, error: apiErr } = await getIdiomaContent({ path: { id: idioma.id } })
     setContentLoading(false)
     if (apiErr) { showToast(`Error al cargar contenido: ${apiErr.message}`, 'error'); return }
-    setContent(data?.content ?? {})
+    const loaded = data?.content ?? {}
+    // Pre-populate with required keys that are missing so the user knows what to fill in
+    if (faltantesData?.claves_requeridas) {
+      const withMissing = { ...loaded }
+      for (const key of faltantesData.claves_requeridas) {
+        if (!(key in withMissing)) withMissing[key] = ''
+      }
+      setContent(withMissing)
+    } else {
+      setContent(loaded)
+    }
   }
 
   const closePanel = () => {
@@ -96,6 +117,7 @@ export default function TraduccionesAdminTab({ showToast }) {
       if (apiErr) { showToast(`Error al guardar: ${apiErr.message}`, 'error'); return }
       showToast(`Traducciones de "${selected.label}" guardadas correctamente`)
       reloadTranslations()
+      loadFaltantes()
       closePanel()
     } finally {
       setContentSaving(false)
@@ -118,26 +140,53 @@ export default function TraduccionesAdminTab({ showToast }) {
       {idiomasError && <div className="info-box info-box-error">❌ {idiomasError}</div>}
 
       {!idiomasLoading && !idiomasError && idiomas.length === 0 && (
-        <div className="info-box">No hay idiomas configurados. Ve a la pestaña «Idiomas» para crear uno.</div>
+        <div>
+          <div className="info-box">No hay idiomas configurados. Ve a la pestaña «Idiomas» para crear uno.</div>
+          {faltantesData?.claves_requeridas?.length > 0 && (
+            <div className="info-box" style={{ marginTop: 10 }}>
+              <strong>Claves de traducción requeridas ({faltantesData.claves_requeridas.length}):</strong>
+              <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {faltantesData.claves_requeridas.map(k => (
+                  <span key={k} style={{ fontFamily: 'monospace', fontSize: '.78rem', background: '#f3eeff', border: '1px solid #c9b4f5', borderRadius: 4, padding: '2px 7px' }}>
+                    {k}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Idioma cards */}
       {!idiomasLoading && !idiomasError && idiomas.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-          {idiomas.map(idioma => (
-            <button
-              key={idioma.id}
-              type="button"
-              onClick={() => openPanel(idioma)}
-              className={`traduccion-idioma-card${selected?.id === idioma.id && panelOpen ? ' selected' : ''}`}
-            >
-              <span className="traduccion-idioma-code">{idioma.code}</span>
-              <span className="traduccion-idioma-label">{idioma.label}</span>
-              {!idioma.activo && (
-                <span className="estado-badge badge-inactiva" style={{ fontSize: '.65rem', marginTop: 4 }}>Inactivo</span>
-              )}
-            </button>
-          ))}
+          {idiomas.map(idioma => {
+            const missingCount = faltantesData?.faltantes?.[idioma.code]?.length ?? null
+            return (
+              <button
+                key={idioma.id}
+                type="button"
+                onClick={() => openPanel(idioma)}
+                className={`traduccion-idioma-card${selected?.id === idioma.id && panelOpen ? ' selected' : ''}`}
+              >
+                <span className="traduccion-idioma-code">{idioma.code}</span>
+                <span className="traduccion-idioma-label">{idioma.label}</span>
+                {!idioma.activo && (
+                  <span className="estado-badge badge-inactiva" style={{ fontSize: '.65rem', marginTop: 4 }}>Inactivo</span>
+                )}
+                {missingCount !== null && missingCount > 0 && (
+                  <span className="estado-badge badge-inactiva" style={{ fontSize: '.65rem', marginTop: 4 }}>
+                    ⚠️ {missingCount} faltante{missingCount !== 1 ? 's' : ''}
+                  </span>
+                )}
+                {missingCount === 0 && (
+                  <span className="estado-badge badge-activa" style={{ fontSize: '.65rem', marginTop: 4 }}>
+                    ✓ Completo
+                  </span>
+                )}
+              </button>
+            )
+          })}
         </div>
       )}
 

@@ -120,3 +120,17 @@ Feature: Idiomas y traducciones de la interfaz
     And el administrador crea un nuevo idioma con código "de" y etiqueta "Deutsch"
     Then la tabla de idiomas muestra el idioma recién creado
     Then se toma un screenshot "idiomas_11_nuevo_idioma_creado"
+
+  # ── Sin idiomas ni traducciones: estado vacío ───────────────────────────
+
+  Scenario: Sin idiomas la pestaña de traducciones muestra las claves requeridas
+    Given el administrador accede al panel de administracion con traducciones vacías
+    When el administrador navega a la pestaña de traducciones
+    Then la pestaña de traducciones indica que no hay idiomas configurados
+    Then la pestaña de traducciones muestra las claves de traducción requeridas
+    Then se toma un screenshot "idiomas_12_traducciones_vacias_claves_requeridas"
+
+  Scenario: Sin traducciones el endpoint faltantes devuelve las claves requeridas
+    Given el usuario abre la pagina principal
+    When se llama al endpoint de traducciones faltantes
+    Then la respuesta de faltantes incluye claves requeridas

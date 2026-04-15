@@ -186,6 +186,10 @@ export async function updateIdiomaContent({ path: { id } = {}, body } = {}) {
   return request('PUT', `/admin/idiomas/${encodeURIComponent(id)}/content`, { body })
 }
 
+export async function getTraduccionesFaltantes({ query } = {}) {
+  return request('GET', '/admin/traducciones/faltantes', { query })
+}
+
 // ── PDF upload (stored as part of declaración) ─────────────────────────────
 // We update the declaración with the rentaPdf field so the data persists
 // across page reloads via the DB.

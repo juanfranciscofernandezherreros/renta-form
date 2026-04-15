@@ -330,3 +330,102 @@ Then('la tabla de idiomas muestra el idioma recién creado', async function () {
     throw new Error(`El idioma "${label}" (${code}) no aparece en la tabla tras crearlo`)
   }
 })
+
+// ── Steps: estado vacío (sin idiomas ni traducciones) ────────────────────────
+
+/** Intercept admin idiomas and faltantes APIs with empty data. */
+async function interceptAdminEmptyAPIs(page) {
+  // Public endpoints (used by LanguageContext)
+  await page.route('**/v1/irpf/idiomas', route =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) })
+  )
+  await page.route('**/v1/irpf/traducciones', route =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({}) })
+  )
+  // Admin idiomas list
+  await page.route('**/v1/admin/idiomas*', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ data: [], total: 0, page: 1, totalPages: 0 }),
+    })
+  )
+  // Faltantes endpoint – simulate empty DB but return required keys
+  await page.route('**/v1/admin/traducciones/faltantes*', route =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        referencia: 'es',
+        total_claves: 0,
+        claves_requeridas: [
+          'btnContinue', 'btnSubmit', 'btnSubmitting', 'btnBack', 'btnClear',
+          'fieldNombre', 'fieldApellidos', 'fieldDniNie', 'fieldEmail', 'fieldTelefono',
+          'yes', 'no', 'langLabel', 'successTitle', 'section1', 'instructionsTitle',
+        ],
+        faltantes: {},
+        resumen: [],
+      }),
+    })
+  )
+}
+
+Given('el administrador accede al panel de administracion con traducciones vacías', async function () {
+  await interceptAdminEmptyAPIs(this.page)
+  await this.page.goto(`${this.baseUrl}/#/admin`, { waitUntil: 'networkidle' })
+  const loginForm = this.page.locator('form')
+  if (await loginForm.isVisible()) {
+    await this.page.fill('input[name="dniNie"], input[type="text"]', 'ADMIN')
+    await this.page.fill('input[name="password"], input[type="password"]', 'admin1234')
+    // Re-intercept after navigation triggered by login (routes may reset)
+    await interceptAdminEmptyAPIs(this.page)
+    await this.page.click('button[type="submit"]')
+    await this.page.waitForSelector('.admin-tabs, .admin-panel, [class*="admin"]', { timeout: 10000 })
+  }
+})
+
+When('el administrador navega a la pestaña de traducciones', async function () {
+  const tab = this.page.locator('.admin-tabs button:has-text("Traducciones"), .admin-tabs [role="tab"]:has-text("Traducciones")').first()
+  await tab.waitFor({ state: 'visible', timeout: 10000 })
+  await tab.click()
+  await this.page.waitForSelector('.info-box, .traduccion-idioma-card', { timeout: 10000 })
+})
+
+Then('la pestaña de traducciones indica que no hay idiomas configurados', async function () {
+  const msg = this.page.locator('.info-box').filter({ hasText: /no hay idiomas/i })
+  await msg.waitFor({ state: 'visible', timeout: 8000 })
+})
+
+Then('la pestaña de traducciones muestra las claves de traducción requeridas', async function () {
+  // The tab should render a badge for each required key when no idiomas exist
+  await this.page.waitForSelector('.info-box', { timeout: 8000 })
+  const text = await this.page.locator('body').innerText()
+  // At least one known required key should be visible
+  const knownKeys = ['btnContinue', 'fieldNombre', 'yes', 'no', 'langLabel']
+  const found = knownKeys.filter(k => text.includes(k))
+  if (found.length === 0) {
+    throw new Error(`Ninguna clave requerida aparece en la pestaña de traducciones vacía. Claves esperadas: ${knownKeys.join(', ')}`)
+  }
+})
+
+// ── Steps: API de faltantes ────────────────────────────────────────────────
+
+When('se llama al endpoint de traducciones faltantes', async function () {
+  const response = await this.page.request.get(`${this.baseUrl}/v1/admin/traducciones/faltantes`)
+  this.lastApiResponse = { status: response.status(), body: await response.json() }
+})
+
+Then('la respuesta de faltantes incluye claves requeridas', async function () {
+  const { status, body } = this.lastApiResponse
+  if (status !== 200) throw new Error(`El endpoint de faltantes devolvió status ${status}`)
+  if (!body || typeof body !== 'object') throw new Error('La respuesta de faltantes debe ser un objeto')
+  if (!Array.isArray(body.claves_requeridas) || body.claves_requeridas.length === 0) {
+    throw new Error('La respuesta de faltantes debe incluir un array "claves_requeridas" no vacío')
+  }
+  const expected = ['btnContinue', 'fieldNombre', 'yes', 'no']
+  for (const key of expected) {
+    if (!body.claves_requeridas.includes(key)) {
+      throw new Error(`La clave requerida "${key}" no está en claves_requeridas: ${body.claves_requeridas.join(', ')}`)
+    }
+  }
+})
