@@ -16,6 +16,7 @@ import { downloadRentaPdf } from './pdfUtils.js'
 import PreguntasFormularioAdminTab from './PreguntasFormularioAdminTab.jsx'
 import UsuariosAdminTab from './UsuariosAdminTab.jsx'
 import IdiomasAdminTab from './IdiomasAdminTab.jsx'
+import TraduccionesAdminTab from './TraduccionesAdminTab.jsx'
 import Pagination from './Pagination.jsx'
 import Footer from './Footer.jsx'
 
@@ -386,6 +387,13 @@ export default function AdminPage({ onNavigate }) {
           >
             🌐 Idiomas
           </button>
+          <button
+            type="button"
+            className={`admin-tab${activeTab === 'traducciones' ? ' active' : ''}`}
+            onClick={() => setActiveTab('traducciones')}
+          >
+            📝 Traducciones
+          </button>
         </div>
 
         {activeTab === 'preguntas' && (
@@ -413,6 +421,18 @@ export default function AdminPage({ onNavigate }) {
               Gestiona los idiomas disponibles y las traducciones de la interfaz.
             </p>
             <IdiomasAdminTab showToast={showToast} />
+          </>
+        )}
+
+        {activeTab === 'traducciones' && (
+          <>
+            <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: '0 0 4px', color: '#333' }}>
+              📝 Traducciones
+            </h2>
+            <p style={{ fontSize: '.82rem', color: '#666', margin: '0 0 16px' }}>
+              Selecciona un idioma para editar sus traducciones. El panel de edición se mostrará sobre la lista.
+            </p>
+            <TraduccionesAdminTab showToast={showToast} />
           </>
         )}
 
