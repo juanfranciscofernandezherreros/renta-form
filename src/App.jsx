@@ -31,6 +31,16 @@ const INITIAL_STATE = {
 
 const STEP_ICONS = ['👤', '🏠', '👨‍👩‍👧', '💶', '📝', '⭐', '❓']
 
+/**
+ * Map of conditional question IDs to their parent field and required value.
+ * A conditional question is only shown when form[dependeDe] === valor.
+ */
+const CONDITIONAL_QUESTIONS = {
+  alquilerMenos35:    { dependeDe: 'viviendaAlquiler',  valor: 'si' },
+  propiedadAntes2013: { dependeDe: 'viviendaPropiedad', valor: 'si' },
+  mayoresConviven:    { dependeDe: 'mayores65ACargo',   valor: 'si' },
+}
+
 const LANG_FLAGS = {
   es: '🇪🇸',
   fr: '🇫🇷',
@@ -234,16 +244,26 @@ export default function App({ editData, onEditDataConsumed }) {
   // Wizard step helpers
   // Steps: 0 = ID fields, 1..N = API sections, N+1 = Docs + Comments (last)
   // Build a flat list of visible steps: id → individual questions → docs
+  // Derive a stable key from the form fields that control conditional question visibility.
+  // This changes only when a parent field (viviendaAlquiler, viviendaPropiedad, mayores65ACargo)
+  // changes value, avoiding recomputation on unrelated field edits.
+  const conditionalKey = Object.values(CONDITIONAL_QUESTIONS)
+    .map(c => form[c.dependeDe] ?? '')
+    .join('|')
+
   const visibleSteps = useMemo(() => {
     if (loadingPreguntas || secciones.length === 0) return []
     const steps = [{ type: 'id', key: 'id' }]
     for (const seccion of secciones) {
       for (const pregunta of seccion.preguntas) {
+        const cond = CONDITIONAL_QUESTIONS[pregunta.id]
+        if (cond && form[cond.dependeDe] !== cond.valor) continue
         steps.push({ type: 'question', key: `q:${pregunta.id}`, seccion, pregunta })
       }
     }
     return steps
-  }, [loadingPreguntas, secciones])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingPreguntas, secciones, conditionalKey])
   const totalSteps = visibleSteps.length
   const safeStep = Math.min(currentStep, Math.max(0, visibleSteps.length - 1))
   const currentStepInfo = visibleSteps[safeStep]
@@ -296,12 +316,10 @@ export default function App({ editData, onEditDataConsumed }) {
       return
     }
 
-    // Validate all questions are answered
-    const unanswered = secciones.some(seccion =>
-      seccion.preguntas.some(pregunta => {
-        return form[pregunta.id] == null || form[pregunta.id] === ''
-      })
-    )
+    // Validate all visible questions are answered (excludes conditional questions whose condition is not met)
+    const unanswered = visibleSteps
+      .filter(s => s.type === 'question')
+      .some(s => form[s.pregunta.id] == null || form[s.pregunta.id] === '')
     if (unanswered) {
       setFormError(t('errValidationQuestions'))
       return

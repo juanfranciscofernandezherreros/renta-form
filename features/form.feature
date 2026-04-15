@@ -27,7 +27,6 @@ Feature: Rellenar el formulario de declaración de la Renta
     Given el usuario rellena los datos de identificacion
     Given el usuario avanza al siguiente paso
     Given el usuario responde No a todas las preguntas de vivienda
-    Given el usuario avanza al siguiente paso
     Then se toma un screenshot "06_paso_familia"
     When el usuario responde No a todas las preguntas de familia
     Then se toma un screenshot "07_familia_respondida"
@@ -37,9 +36,7 @@ Feature: Rellenar el formulario de declaración de la Renta
     Given el usuario rellena los datos de identificacion
     Given el usuario avanza al siguiente paso
     Given el usuario responde No a todas las preguntas de vivienda
-    Given el usuario avanza al siguiente paso
     Given el usuario responde No a todas las preguntas de familia
-    Given el usuario avanza al siguiente paso
     Then se toma un screenshot "08_paso_ingresos"
     When el usuario responde No a todas las preguntas de ingresos
     Then se toma un screenshot "09_ingresos_respondidos"
@@ -49,9 +46,7 @@ Feature: Rellenar el formulario de declaración de la Renta
     Given el usuario rellena los datos de identificacion
     Given el usuario avanza al siguiente paso
     Given el usuario responde No a todas las preguntas de vivienda
-    Given el usuario avanza al siguiente paso
     Given el usuario responde No a todas las preguntas de familia
-    Given el usuario avanza al siguiente paso
     Given el usuario responde No a todas las preguntas de ingresos
     When el usuario envia el formulario
     Then se toma un screenshot "10_formulario_enviado_exito"
@@ -61,9 +56,7 @@ Feature: Rellenar el formulario de declaración de la Renta
     Given el usuario rellena los datos de identificacion con DNI "99999999R"
     Given el usuario avanza al siguiente paso
     Given el usuario responde No a todas las preguntas de vivienda
-    Given el usuario avanza al siguiente paso
     Given el usuario responde No a todas las preguntas de familia
-    Given el usuario avanza al siguiente paso
     Given el usuario responde No a todas las preguntas de ingresos
     When el usuario envia el formulario
     Then se toma un screenshot "11_primer_envio_exito"
@@ -71,9 +64,7 @@ Feature: Rellenar el formulario de declaración de la Renta
     Given el usuario rellena los datos de identificacion con DNI "99999999R"
     Given el usuario avanza al siguiente paso
     Given el usuario responde No a todas las preguntas de vivienda
-    Given el usuario avanza al siguiente paso
     Given el usuario responde No a todas las preguntas de familia
-    Given el usuario avanza al siguiente paso
     Given el usuario responde No a todas las preguntas de ingresos
     When el usuario intenta enviar el formulario duplicado
     Then se muestra un error de declaracion duplicada

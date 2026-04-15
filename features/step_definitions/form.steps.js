@@ -37,20 +37,36 @@ async function clickContinuar(page) {
   await page.waitForTimeout(700)
 }
 
-async function answerAllButtons(page, value) {
+/**
+ * Answer a single yes/no question card visible on screen.
+ * After clicking, auto-advance animates to the next question.
+ * @param {import('playwright').Page} page
+ * @param {'si'|'no'} value
+ */
+async function answerQuestion(page, value) {
   await page.waitForSelector('.wizard-step .question-card', { timeout: 10000 })
-  await page.waitForTimeout(400)
-  const cards = page.locator('.wizard-step .question-card')
-  const count = await cards.count()
+  await page.waitForTimeout(200)
+  const card = page.locator('.wizard-step .question-card').first()
+  const cssClass = value === 'si' ? 'yes' : 'no'
+  const alreadySelected = card.locator(`.yesno-btn.selected.${cssClass}`)
+  if ((await alreadySelected.count()) === 0) {
+    const btnIndex = value === 'si' ? 0 : 1
+    await card.locator('.yesno-btn').nth(btnIndex).click()
+    // Wait for auto-advance animation (700 ms matches the wizard transition)
+    await page.waitForTimeout(700)
+  }
+}
+
+/**
+ * Answer the next N questions sequentially.
+ * When answering 'no', conditional sub-questions are skipped automatically.
+ * @param {import('playwright').Page} page
+ * @param {'si'|'no'} value
+ * @param {number} count
+ */
+async function answerNQuestions(page, value, count) {
   for (let i = 0; i < count; i++) {
-    const card = cards.nth(i)
-    const cssClass = value === 'si' ? 'yes' : 'no'
-    const alreadySelected = card.locator(`.yesno-btn.selected.${cssClass}`)
-    if ((await alreadySelected.count()) === 0) {
-      const btnIndex = value === 'si' ? 0 : 1
-      await card.locator('.yesno-btn').nth(btnIndex).click()
-      await page.waitForTimeout(200)
-    }
+    await answerQuestion(page, value)
   }
 }
 
@@ -88,20 +104,28 @@ Given('el usuario avanza al siguiente paso', async function () {
   await clickContinuar(this.page)
 })
 
+// ── Respuestas de vivienda ──
+// When answering 'si': 6 questions appear (including 2 conditional sub-questions)
+// When answering 'no': 4 questions (conditional sub-questions are hidden)
 Given('el usuario responde Si a todas las preguntas de vivienda', async function () {
-  await answerAllButtons(this.page, 'si')
+  await answerNQuestions(this.page, 'si', 6)
 })
 
 Given('el usuario responde No a todas las preguntas de vivienda', async function () {
-  await answerAllButtons(this.page, 'no')
+  await answerNQuestions(this.page, 'no', 4)
 })
 
+// ── Respuestas de familia ──
+// When answering 'si': 5 questions (including 1 conditional sub-question)
+// When answering 'no': 4 questions
 Given('el usuario responde No a todas las preguntas de familia', async function () {
-  await answerAllButtons(this.page, 'no')
+  await answerNQuestions(this.page, 'no', 4)
 })
 
+// ── Respuestas de ingresos ──
+// Always 2 questions
 Given('el usuario responde No a todas las preguntas de ingresos', async function () {
-  await answerAllButtons(this.page, 'no')
+  await answerNQuestions(this.page, 'no', 2)
 })
 
 Given('el usuario envia el formulario', async function () {
@@ -146,3 +170,4 @@ Then('se toma un screenshot {string}', async function (name) {
   const path = await this.screenshot(name)
   console.log(`  Screenshot guardado: ${path}`)
 })
+

@@ -145,6 +145,7 @@ function rowToPreguntaFormulario(r) {
   }
   return {
     id: r.id,
+    campo: r.campo,
     texto: textoDisplay,
     tipo: 'sino',
     actualizadaEn: r.actualizada_en,
@@ -157,7 +158,7 @@ async function listPreguntasFormulario({ page = 1, limit = 10 } = {}) {
     const total = parseInt(countRes.rows[0].count, 10)
     const offset = (page - 1) * limit
     const { rows } = await pool.query(
-      `SELECT id, texto, actualizada_en
+      `SELECT id, campo, texto, actualizada_en
        FROM preguntas
        ORDER BY orden, id
        LIMIT $1 OFFSET $2`,
