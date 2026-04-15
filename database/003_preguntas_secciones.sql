@@ -8,7 +8,6 @@ BEGIN;
 
 -- 1. Añadir columnas faltantes (idempotente)
 ALTER TABLE preguntas
-    ADD COLUMN IF NOT EXISTS campo           VARCHAR(100) NOT NULL DEFAULT '',
     ADD COLUMN IF NOT EXISTS seccion         VARCHAR(50)  NOT NULL DEFAULT 'general',
     ADD COLUMN IF NOT EXISTS seccion_orden   INTEGER      NOT NULL DEFAULT 0,
     ADD COLUMN IF NOT EXISTS seccion_titulos JSONB        NOT NULL DEFAULT '{}';
