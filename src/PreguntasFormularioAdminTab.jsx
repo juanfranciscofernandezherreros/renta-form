@@ -128,6 +128,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
             <thead>
               <tr>
                 <th style={{ minWidth: 240 }}>Pregunta</th>
+                <th style={{ whiteSpace: 'nowrap', fontFamily: 'monospace' }}>Campo</th>
                 <th style={{ whiteSpace: 'nowrap' }}>Tipo</th>
                 <th style={{ whiteSpace: 'nowrap' }}>Última modificación</th>
                 <th style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Acciones</th>
@@ -139,6 +140,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
                   <td>
                     <div className="pregunta-texto">{p.texto}</div>
                   </td>
+                  <td style={{ whiteSpace: 'nowrap', fontFamily: 'monospace', fontSize: '.85em', color: '#555' }}>{p.campo}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>Sí / No</td>
                   <td style={{ whiteSpace: 'nowrap' }}>{formatFecha(p.actualizadaEn)}</td>
                   <td>

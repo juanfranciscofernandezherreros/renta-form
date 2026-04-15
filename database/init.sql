@@ -308,7 +308,12 @@ CROSS JOIN (VALUES
   ('btnDownloadPDF', '📄 Descargar PDF'),
   ('fieldEmailOptional', '(opcional)'),
   ('errValidationRequired', '❌ Por favor, rellena los campos obligatorios: Nombre, Apellidos, DNI/NIE y Teléfono móvil.'),
-  ('errValidationQuestions', '❌ Por favor, responde a todas las preguntas antes de enviar el formulario.')
+  ('errValidationQuestions', '❌ Por favor, responde a todas las preguntas antes de enviar el formulario.'),
+  ('btnContinue', 'Continuar'),
+  ('btnBack', 'Volver'),
+  ('btnDismissError', '×'),
+  ('step1Subtitle', 'Rellene sus datos de identificación para continuar'),
+  ('toastSuccess', '✅ Cuestionario enviado correctamente')
 ) AS k(clave, valor)
 WHERE i.code = 'es'
 ON CONFLICT (idioma_id, clave) DO NOTHING;
@@ -458,7 +463,12 @@ CROSS JOIN (VALUES
   ('btnDownloadPDF', '📄 Télécharger le PDF'),
   ('fieldEmailOptional', '(optionnel)'),
   ('errValidationRequired', '❌ Veuillez remplir les champs obligatoires : Prénom, Nom, DNI/NIE et Téléphone mobile.'),
-  ('errValidationQuestions', '❌ Veuillez répondre à toutes les questions avant d''envoyer le formulaire.')
+  ('errValidationQuestions', '❌ Veuillez répondre à toutes les questions avant d''envoyer le formulaire.'),
+  ('btnContinue', 'Continuer'),
+  ('btnBack', 'Retour'),
+  ('btnDismissError', '×'),
+  ('step1Subtitle', 'Remplissez vos données d''identification pour continuer'),
+  ('toastSuccess', '✅ Questionnaire envoyé avec succès')
 ) AS k(clave, valor)
 WHERE i.code = 'fr'
 ON CONFLICT (idioma_id, clave) DO NOTHING;
@@ -608,7 +618,12 @@ CROSS JOIN (VALUES
   ('btnDownloadPDF', '📄 Download PDF'),
   ('fieldEmailOptional', '(optional)'),
   ('errValidationRequired', '❌ Please fill in the required fields: First name, Surname(s), DNI/NIE and Mobile phone.'),
-  ('errValidationQuestions', '❌ Please answer all questions before submitting the form.')
+  ('errValidationQuestions', '❌ Please answer all questions before submitting the form.'),
+  ('btnContinue', 'Continue'),
+  ('btnBack', 'Back'),
+  ('btnDismissError', '×'),
+  ('step1Subtitle', 'Fill in your identification details to continue'),
+  ('toastSuccess', '✅ Questionnaire submitted successfully')
 ) AS k(clave, valor)
 WHERE i.code = 'en'
 ON CONFLICT (idioma_id, clave) DO NOTHING;
@@ -758,7 +773,12 @@ CROSS JOIN (VALUES
   ('btnDownloadPDF', '📄 Descarregar PDF'),
   ('fieldEmailOptional', '(opcional)'),
   ('errValidationRequired', '❌ Si us plau, ompliu els camps obligatoris: Nom, Cognoms, DNI/NIE i Telèfon mòbil.'),
-  ('errValidationQuestions', '❌ Si us plau, responeu a totes les preguntes abans d''enviar el formulari.')
+  ('errValidationQuestions', '❌ Si us plau, responeu a totes les preguntes abans d''enviar el formulari.'),
+  ('btnContinue', 'Continuar'),
+  ('btnBack', 'Tornar'),
+  ('btnDismissError', '×'),
+  ('step1Subtitle', 'Ompliu les vostres dades d''identificació per continuar'),
+  ('toastSuccess', '✅ Qüestionari enviat correctament')
 ) AS k(clave, valor)
 WHERE i.code = 'ca'
 ON CONFLICT (idioma_id, clave) DO NOTHING;
