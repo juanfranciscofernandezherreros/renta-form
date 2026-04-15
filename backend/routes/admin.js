@@ -79,12 +79,6 @@ module.exports = function adminRoutes(svc) {
     send(res, result)
   })
 
-  router.post('/users/:dniNie/email', async (req, res) => {
-    const { email, mensaje } = req.body ?? {}
-    const result = await svc.sendEmailToUser({ dniNie: req.params.dniNie, email, mensaje })
-    send(res, result)
-  })
-
   // ── Idiomas & Traducciones ───────────────────────────────────────────────
 
   router.get('/idiomas', async (req, res) => {
