@@ -20,6 +20,7 @@
     "db:setup-100": "cd backend && npm run db:setup-100",
     "db:seed-translations": "cd backend && npm run db:seed-translations",
     "db:seed-languages": "cd backend && npm run db:seed-languages",
+    "db:seed-100": "cd backend && npm run db:seed-100",
     "heroku-postbuild": "npm install --prefix backend && npm run build"
   },
   "engines": {
