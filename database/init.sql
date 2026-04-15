@@ -16,11 +16,19 @@ DO $$ BEGIN
     END IF;
 END $$;
 
--- 2. Función de Auditoría
+-- 2. Funciones de Auditoría
 CREATE OR REPLACE FUNCTION fn_set_actualizado_en()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
     NEW.actualizado_en = NOW();
+    RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION fn_set_actualizada_en()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+    NEW.actualizada_en = NOW();
     RETURN NEW;
 END;
 $$;
@@ -58,7 +66,7 @@ CREATE TABLE IF NOT EXISTS declaraciones (
     estado                    estado_expediente NOT NULL DEFAULT 'recibido',
     nombre                    VARCHAR(100)      NOT NULL,
     apellidos                 VARCHAR(200)      NOT NULL,
-    dni_nie                   VARCHAR(9)        NOT NULL UNIQUE,
+    dni_nie                   VARCHAR(9)        NOT NULL,
     email                     VARCHAR(254)      NOT NULL,
     telefono                  VARCHAR(20)       NOT NULL,
 
@@ -77,7 +85,8 @@ CREATE TABLE IF NOT EXISTS declaraciones (
     ingresos_juego            respuesta_yn      NOT NULL,
     ingresos_inversiones      respuesta_yn      NOT NULL,
 
-    CONSTRAINT chk_dni_nie_formato CHECK (dni_nie ~ '^[0-9XYZ][0-9]{7}[A-Z]$')
+    CONSTRAINT chk_dni_nie_formato       CHECK (dni_nie ~ '^[0-9XYZ][0-9]{7}[A-Z]$'),
+    CONSTRAINT uq_declaraciones_dni_nie  UNIQUE (dni_nie)
 );
 
 -- 6. Tabla: Idiomas
@@ -108,10 +117,13 @@ CREATE OR REPLACE TRIGGER trg_declaraciones_actualizado_en
 CREATE OR REPLACE TRIGGER trg_idiomas_actualizado_en
     BEFORE UPDATE ON idiomas FOR EACH ROW EXECUTE FUNCTION fn_set_actualizado_en();
 
+CREATE OR REPLACE TRIGGER trg_preguntas_actualizada_en
+    BEFORE UPDATE ON preguntas FOR EACH ROW EXECUTE FUNCTION fn_set_actualizada_en();
+
 -- 9. Datos de inicio
 INSERT INTO usuarios (dni_nie, nombre, email, role, password_hash)
 VALUES ('ADMIN', 'Admin', 'admin@renta-form.local', 'admin', '$2b$12$a3QpSIVIiYpVQuwcWtYIbO.5/VbAKdDNClFrl0WTe4GVN7sjA0ruW')
-ON CONFLICT DO NOTHING;
+ON CONFLICT (dni_nie) DO NOTHING;
 
 INSERT INTO idiomas (code, label, activo) VALUES
     ('es', 'Español',  TRUE),
@@ -160,7 +172,7 @@ INSERT INTO preguntas (campo, texto, orden) VALUES
     ('ingresosInversiones',
      '{"es": "¿Ha obtenido rendimientos de capital mobiliario o inversiones?", "fr": "Avez-vous obtenu des revenus de capitaux mobiliers ou investissements ?", "ca": "Ha obtingut rendiments de capital mobiliari o inversions?", "en": "Have you earned income from investments or securities?"}',
      13)
-ON CONFLICT DO NOTHING;
+ON CONFLICT (campo) DO NOTHING;
 
 -- Seed traducciones
 INSERT INTO traducciones (idioma_id, clave, valor)
