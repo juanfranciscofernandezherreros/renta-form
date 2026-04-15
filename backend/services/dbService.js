@@ -137,7 +137,7 @@ async function listPreguntasFormulario() {
   const { rows } = await pool.query(
     `SELECT id, texto, actualizada_en
      FROM preguntas
-     ORDER BY seccion_orden, orden`
+     ORDER BY orden`
   )
   return { data: rows.map(rowToPreguntaFormulario), error: null }
 }
