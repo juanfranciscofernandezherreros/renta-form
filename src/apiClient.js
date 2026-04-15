@@ -174,27 +174,28 @@ export async function getTraducciones() {
 }
 
 export async function listIdiomasAdmin(options = {}) {
-  return request('GET', '/admin/idiomas', { query: options })
+  const { query } = options
+  return request('GET', '/admin/idiomas', { query })
 }
 
-export async function createIdiomaAdmin(body) {
+export async function createIdiomaAdmin({ body } = {}) {
   return request('POST', '/admin/idiomas', { body })
 }
 
-export async function updateIdiomaAdmin({ idiomaId, body }) {
-  return request('PUT', `/admin/idiomas/${encodeURIComponent(idiomaId)}`, { body })
+export async function updateIdiomaAdmin({ path: { id } = {}, body } = {}) {
+  return request('PUT', `/admin/idiomas/${encodeURIComponent(id)}`, { body })
 }
 
-export async function deleteIdiomaAdmin({ idiomaId }) {
-  return request('DELETE', `/admin/idiomas/${encodeURIComponent(idiomaId)}`)
+export async function deleteIdiomaAdmin({ path: { id } = {} } = {}) {
+  return request('DELETE', `/admin/idiomas/${encodeURIComponent(id)}`)
 }
 
-export async function getIdiomaContent({ idiomaId }) {
-  return request('GET', `/admin/idiomas/${encodeURIComponent(idiomaId)}/content`)
+export async function getIdiomaContent({ path: { id } = {} } = {}) {
+  return request('GET', `/admin/idiomas/${encodeURIComponent(id)}/content`)
 }
 
-export async function updateIdiomaContent({ idiomaId, body }) {
-  return request('PUT', `/admin/idiomas/${encodeURIComponent(idiomaId)}/content`, { body })
+export async function updateIdiomaContent({ path: { id } = {}, body } = {}) {
+  return request('PUT', `/admin/idiomas/${encodeURIComponent(id)}/content`, { body })
 }
 
 // ── PDF upload (stored as part of declaración) ─────────────────────────────
