@@ -117,5 +117,13 @@ module.exports = function adminRoutes(svc) {
     send(res, result)
   })
 
+  // ── Traducciones faltantes ─────────────────────────────────────────────
+
+  router.get('/traducciones/faltantes', async (req, res) => {
+    const ref = req.query.ref || 'es'
+    const result = await svc.getMissingTranslations(ref)
+    send(res, result)
+  })
+
   return router
 }

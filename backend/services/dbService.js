@@ -639,6 +639,70 @@ async function updateIdiomaContent(id, { content }) {
   return getIdiomaContent(id)
 }
 
+// ── Admin: Traducciones faltantes ─────────────────────────────────────────
+
+async function getMissingTranslations(ref = 'es') {
+  // Normalise the reference code
+  const refCode = String(ref).trim().toLowerCase()
+
+  // Verify the reference language exists and is active
+  const refCheck = await pool.query(
+    `SELECT id FROM idiomas WHERE code = $1 AND activo = TRUE`,
+    [refCode]
+  )
+  if (!refCheck.rows.length) {
+    return {
+      data: null,
+      error: { message: `El idioma de referencia '${refCode}' no existe o no está activo` },
+      status: 404,
+    }
+  }
+  const refId = refCheck.rows[0].id
+
+  // All keys present in the reference language
+  const refKeysRes = await pool.query(
+    `SELECT clave FROM traducciones WHERE idioma_id = $1 ORDER BY clave`,
+    [refId]
+  )
+  const refKeys = refKeysRes.rows.map((r) => r.clave)
+  const totalClaves = refKeys.length
+
+  // All other active languages
+  const otherLangsRes = await pool.query(
+    `SELECT id, code FROM idiomas WHERE activo = TRUE AND code != $1 ORDER BY code`,
+    [refCode]
+  )
+
+  const faltantes = {}
+  const resumen = []
+
+  for (const lang of otherLangsRes.rows) {
+    // Keys that exist in the reference but NOT in this language
+    const missingRes = await pool.query(
+      `SELECT clave
+       FROM traducciones
+       WHERE idioma_id = $1
+         AND clave = ANY($2::text[])`,
+      [lang.id, refKeys]
+    )
+    const presentSet = new Set(missingRes.rows.map((r) => r.clave))
+    const missing = refKeys.filter((k) => !presentSet.has(k))
+
+    faltantes[lang.code] = missing
+    resumen.push({ idioma: lang.code, total_faltantes: missing.length })
+  }
+
+  return {
+    data: {
+      referencia: refCode,
+      total_claves: totalClaves,
+      faltantes,
+      resumen,
+    },
+    error: null,
+  }
+}
+
 // ── Exports ────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -671,4 +735,5 @@ module.exports = {
   deleteIdiomaAdmin,
   getIdiomaContent,
   updateIdiomaContent,
+  getMissingTranslations,
 }
