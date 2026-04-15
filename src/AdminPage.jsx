@@ -16,6 +16,7 @@ import { downloadRentaPdf } from './pdfUtils.js'
 import PreguntasFormularioAdminTab from './PreguntasFormularioAdminTab.jsx'
 import UsuariosAdminTab from './UsuariosAdminTab.jsx'
 import IdiomasAdminTab from './IdiomasAdminTab.jsx'
+import Pagination from './Pagination.jsx'
 import Footer from './Footer.jsx'
 
 const ESTADOS = ['recibido', 'en_revision', 'documentacion_pendiente', 'completado', 'archivado']
@@ -145,6 +146,8 @@ export default function AdminPage({ onNavigate }) {
   const [emailSending, setEmailSending] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [page, setPage] = useState(1)
+  const limit = 10
 
   // Edit declaration modal
   const [editModal, setEditModal] = useState(null) // declaration object being edited
@@ -181,7 +184,8 @@ export default function AdminPage({ onNavigate }) {
       query: {
         ...(filtroEstado && { estado: filtroEstado }),
         ...(filtroDni && { dniNie: filtroDni }),
-        limit: 100,
+        page,
+        limit,
       },
     })
       .then(({ data, error: apiErr }) => {
@@ -194,7 +198,7 @@ export default function AdminPage({ onNavigate }) {
       .catch(err => { if (!cancelled) setError(err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [filtroEstado, filtroDni, refreshKey])
+  }, [filtroEstado, filtroDni, page, refreshKey])
 
   const handleEstadoChange = async (dec, nuevoEstado) => {
     const { error: apiErr } = await updateEstadoDeclaracion({
@@ -424,12 +428,12 @@ export default function AdminPage({ onNavigate }) {
               className="admin-filter-input"
               placeholder="Buscar por DNI/NIE…"
               value={filtroDni}
-              onChange={e => setFiltroDni(e.target.value)}
+              onChange={e => { setFiltroDni(e.target.value); setPage(1) }}
             />
             <select
               className="admin-filter-select"
               value={filtroEstado}
-              onChange={e => setFiltroEstado(e.target.value)}
+              onChange={e => { setFiltroEstado(e.target.value); setPage(1) }}
             >
               <option value="">Todos los estados</option>
               {ESTADOS.map(e => (
@@ -635,6 +639,11 @@ export default function AdminPage({ onNavigate }) {
             ))}
           </div>
         )}
+        <Pagination
+          page={page}
+          totalPages={Math.ceil(total / limit)}
+          onPageChange={setPage}
+        />
           </>
         )}
       </div>
