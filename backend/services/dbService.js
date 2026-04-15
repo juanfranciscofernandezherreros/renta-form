@@ -11,6 +11,28 @@ const pool = require('../db/pool')
 
 const BCRYPT_ROUNDS = 12
 
+// ── Translation keys ───────────────────────────────────────────────────────
+// Canonical set of i18n keys used by the frontend.  Kept here so that
+// getMissingTranslations can report what is missing even when the DB is empty.
+const ALL_REQUIRED_KEYS = [
+  'btnContinue',
+  'btnSubmit',
+  'btnSubmitting',
+  'btnBack',
+  'btnClear',
+  'fieldNombre',
+  'fieldApellidos',
+  'fieldDniNie',
+  'fieldEmail',
+  'fieldTelefono',
+  'yes',
+  'no',
+  'langLabel',
+  'successTitle',
+  'section1',
+  'instructionsTitle',
+]
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function hashPassword(password) {
@@ -645,34 +667,43 @@ async function getMissingTranslations(ref = 'es') {
   // Normalise the reference code
   const refCode = String(ref).trim().toLowerCase()
 
-  // Verify the reference language exists and is active
+  // Check if the reference language exists and is active
   const refCheck = await pool.query(
     `SELECT id FROM idiomas WHERE code = $1 AND activo = TRUE`,
     [refCode]
   )
+
+  // ── Empty-state: reference language does not exist ──────────────────────
+  // When the DB has no languages at all (or the reference is absent) we fall
+  // back to the hard-coded list of required keys so callers can still discover
+  // what needs to be set up.
   if (!refCheck.rows.length) {
+    // Count how many active languages exist (there may be non-'es' ones)
+    const otherLangsRes = await pool.query(
+      `SELECT code FROM idiomas WHERE activo = TRUE AND code != $1 ORDER BY code`,
+      [refCode]
+    )
+    const faltantes = {}
+    for (const { code } of otherLangsRes.rows) {
+      faltantes[code] = [...ALL_REQUIRED_KEYS]
+    }
+    const resumen = Object.entries(faltantes).map(([idioma, claves]) => ({
+      idioma,
+      total_faltantes: claves.length,
+    }))
     return {
-      data: null,
-      error: { message: `El idioma de referencia '${refCode}' no existe o no está activo` },
-      status: 404,
+      data: {
+        referencia: refCode,
+        total_claves: 0,
+        claves_requeridas: ALL_REQUIRED_KEYS,
+        faltantes,
+        resumen,
+      },
+      error: null,
     }
   }
-  const refId = refCheck.rows[0].id
 
-  // Single query: for every active language (except reference), find the keys
-  // present in the reference that are absent in that language.
-  const { rows } = await pool.query(
-    `SELECT i.code AS idioma, r.clave
-     FROM traducciones r
-     CROSS JOIN idiomas i
-     LEFT JOIN traducciones t ON t.idioma_id = i.id AND t.clave = r.clave
-     WHERE r.idioma_id = $1
-       AND i.activo   = TRUE
-       AND i.code    != $2
-       AND t.clave   IS NULL
-     ORDER BY i.code, r.clave`,
-    [refId, refCode]
-  )
+  const refId = refCheck.rows[0].id
 
   // Total keys in the reference language
   const totalRes = await pool.query(
@@ -681,17 +712,38 @@ async function getMissingTranslations(ref = 'es') {
   )
   const totalClaves = parseInt(totalRes.rows[0].cnt, 10)
 
+  // Determine the effective reference key set: DB keys, or fallback to
+  // ALL_REQUIRED_KEYS when the reference language has no translations yet.
+  let refKeys
+  if (totalClaves === 0) {
+    refKeys = ALL_REQUIRED_KEYS
+  } else {
+    const refKeysRes = await pool.query(
+      `SELECT clave FROM traducciones WHERE idioma_id = $1 ORDER BY clave`,
+      [refId]
+    )
+    refKeys = refKeysRes.rows.map(r => r.clave)
+  }
+
   // All other active languages (to include ones with 0 missing keys in the result)
   const otherLangsRes = await pool.query(
-    `SELECT code FROM idiomas WHERE activo = TRUE AND code != $1 ORDER BY code`,
+    `SELECT code, id FROM idiomas WHERE activo = TRUE AND code != $1 ORDER BY code`,
     [refCode]
   )
 
   const faltantes = {}
   for (const { code } of otherLangsRes.rows) faltantes[code] = []
 
-  for (const r of rows) {
-    faltantes[r.idioma].push(r.clave)
+  if (otherLangsRes.rows.length > 0) {
+    // For each other language, find which ref keys it is missing
+    for (const { code, id } of otherLangsRes.rows) {
+      const existingRes = await pool.query(
+        `SELECT clave FROM traducciones WHERE idioma_id = $1`,
+        [id]
+      )
+      const existing = new Set(existingRes.rows.map(r => r.clave))
+      faltantes[code] = refKeys.filter(k => !existing.has(k))
+    }
   }
 
   const resumen = Object.entries(faltantes).map(([idioma, claves]) => ({
@@ -702,7 +754,8 @@ async function getMissingTranslations(ref = 'es') {
   return {
     data: {
       referencia: refCode,
-      total_claves: totalClaves,
+      total_claves: totalClaves === 0 ? ALL_REQUIRED_KEYS.length : totalClaves,
+      claves_requeridas: ALL_REQUIRED_KEYS,
       faltantes,
       resumen,
     },
@@ -743,4 +796,5 @@ module.exports = {
   getIdiomaContent,
   updateIdiomaContent,
   getMissingTranslations,
+  ALL_REQUIRED_KEYS,
 }
