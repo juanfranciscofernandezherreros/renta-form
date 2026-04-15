@@ -5,7 +5,6 @@ import {
   blockUser,
   reportUser,
   deleteUser,
-  sendEmailToUser,
   listDeclaraciones,
 } from './apiClient.js'
 import Pagination from './Pagination.jsx'
@@ -148,9 +147,6 @@ export default function UsuariosAdminTab({ showToast }) {
   const [refreshKey, setRefreshKey] = useState(0)
 
   // Modals
-  const [emailModal, setEmailModal] = useState(null)
-  const [emailMsg, setEmailMsg] = useState('')
-  const [emailSending, setEmailSending] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
 
   const refresh = useCallback(() => setRefreshKey(k => k + 1), [])
@@ -204,21 +200,6 @@ export default function UsuariosAdminTab({ showToast }) {
     if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
     showToast('Usuario eliminado correctamente')
     refresh()
-  }
-
-  const handleSendEmail = async () => {
-    if (!emailModal) return
-    setEmailSending(true)
-    const { error: apiErr } = await sendEmailToUser({
-      dniNie: emailModal.dniNie,
-      email: emailModal.email,
-      mensaje: emailMsg || undefined,
-    })
-    setEmailSending(false)
-    setEmailModal(null)
-    setEmailMsg('')
-    if (apiErr) { showToast(`Error al enviar email: ${apiErr.message}`, 'error'); return }
-    showToast(`📧 Email enviado a ${emailModal.email}`)
   }
 
   return (
@@ -339,14 +320,6 @@ export default function UsuariosAdminTab({ showToast }) {
                       <button
                         type="button"
                         className="btn btn-secondary btn-sm btn-xs"
-                        onClick={() => { setEmailModal(u); setEmailMsg('') }}
-                        title="Enviar email al usuario"
-                      >
-                        📧 Email
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm btn-xs"
                         onClick={() => downloadUserDeclaracionPdf(u.dniNie)}
                         title="Descargar PDF de la declaración"
                       >
@@ -374,41 +347,6 @@ export default function UsuariosAdminTab({ showToast }) {
         totalPages={Math.ceil(total / limit)}
         onPageChange={setPage}
       />
-
-      {/* Email modal */}
-      {emailModal && createPortal(
-        <div className="admin-modal-overlay" onClick={() => setEmailModal(null)}>
-          <div className="admin-modal" onClick={e => e.stopPropagation()}>
-            <h2 className="admin-modal-title">📧 Enviar email</h2>
-            <p className="admin-modal-desc">
-              Destinatario: <strong>{emailModal.nombre} {emailModal.apellidos}</strong><br />
-              Correo: <strong>{emailModal.email}</strong>
-            </p>
-            <div className="field">
-              <label>Mensaje (opcional)</label>
-              <textarea
-                value={emailMsg}
-                onChange={e => setEmailMsg(e.target.value)}
-                placeholder="Escribe un mensaje personalizado para el usuario…"
-                rows={4}
-              />
-            </div>
-            <div className="btn-row">
-              <button type="button" className="btn btn-secondary" onClick={() => setEmailModal(null)}>
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={emailSending}
-                onClick={handleSendEmail}
-              >
-                {emailSending ? 'Enviando…' : '📧 Enviar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      , document.body)}
 
       {/* Delete confirmation modal */}
       {confirmDelete && createPortal(

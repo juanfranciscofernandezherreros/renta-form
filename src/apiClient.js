@@ -96,12 +96,6 @@ export async function deleteDeclaracion(options) {
   return request('DELETE', `/irpf/declaraciones/${encodeURIComponent(id)}`)
 }
 
-export async function sendEmailDeclaracion({ declaracionId, email, mensaje }) {
-  return request('POST', `/irpf/declaraciones/${encodeURIComponent(declaracionId)}/email`, {
-    body: { email, mensaje },
-  })
-}
-
 // ── Admin: Preguntas del formulario ───────────────────────────────────────
 
 export async function listPreguntasFormulario(options = {}) {
@@ -155,12 +149,6 @@ export async function reportUser(options) {
 export async function deleteUser(options) {
   const { dniNie } = options?.path ?? {}
   return request('DELETE', `/admin/users/${encodeURIComponent(dniNie)}`)
-}
-
-export async function sendEmailToUser({ dniNie, email, mensaje }) {
-  return request('POST', `/admin/users/${encodeURIComponent(dniNie)}/email`, {
-    body: { email, mensaje },
-  })
 }
 
 // ── Idiomas & Traducciones ─────────────────────────────────────────────────

@@ -397,11 +397,6 @@ async function deleteDeclaracion(id) {
   return { data: { success: true }, error: null }
 }
 
-async function sendEmailDeclaracion({ declaracionId, email, mensaje }) {
-  console.info(`[DB EMAIL] → ${email} (declaracion: ${declaracionId}): ${mensaje ?? 'Notificación enviada.'}`)
-  return { data: { success: true, to: email }, error: null }
-}
-
 // ── Admin: Secciones ───────────────────────────────────────────────────────
 
 // (secciones table removed – no longer used)
@@ -481,11 +476,6 @@ async function assignUserAccount({ dniNie, password, declaracionId }) {
 async function getUserByDniNie(dniNie) {
   const { rows } = await pool.query('SELECT * FROM usuarios WHERE dni_nie = $1', [dniNie])
   return { data: rows.length ? rowToUser(rows[0]) : null, error: null }
-}
-
-async function sendEmailToUser({ dniNie, email, mensaje }) {
-  console.info(`[DB EMAIL → USUARIO] → ${email} (${dniNie}): ${mensaje ?? 'Notificación enviada.'}`)
-  return { data: { success: true, to: email }, error: null }
 }
 
 // ── Public: Idiomas & Traducciones ─────────────────────────────────────────
@@ -663,7 +653,6 @@ module.exports = {
   updateEstadoDeclaracion,
   updateDeclaracion,
   deleteDeclaracion,
-  sendEmailDeclaracion,
   listPreguntasFormulario,
   createPreguntaFormulario,
   updatePreguntaFormulario,
@@ -674,7 +663,6 @@ module.exports = {
   deleteUser,
   assignUserAccount,
   getUserByDniNie,
-  sendEmailToUser,
   getIdiomas,
   getTraducciones,
   listIdiomasAdmin,

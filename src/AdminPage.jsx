@@ -6,7 +6,6 @@ import {
   listDeclaracionesAll,
   updateEstadoDeclaracion,
   deleteDeclaracion,
-  sendEmailDeclaracion,
   updateDeclaracion,
   assignUserAccount,
   getUserByDniNie,
@@ -143,9 +142,6 @@ export default function AdminPage({ onNavigate }) {
   const [filtroDni, setFiltroDni] = useState('')
   const [expanded, setExpanded] = useState(null)
   const [toast, setToast] = useState(null)
-  const [emailModal, setEmailModal] = useState(null)
-  const [emailMsg, setEmailMsg] = useState('')
-  const [emailSending, setEmailSending] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [page, setPage] = useState(1)
@@ -221,21 +217,6 @@ export default function AdminPage({ onNavigate }) {
     setExpanded(null)
     showToast('Declaración eliminada correctamente')
     refresh()
-  }
-
-  const handleSendEmail = async () => {
-    if (!emailModal) return
-    setEmailSending(true)
-    const { error: apiErr } = await sendEmailDeclaracion({
-      declaracionId: emailModal.id,
-      email: emailModal.email,
-      mensaje: emailMsg || undefined,
-    })
-    setEmailSending(false)
-    setEmailModal(null)
-    setEmailMsg('')
-    if (apiErr) { showToast(`Error al enviar email: ${apiErr.message}`, 'error'); return }
-    showToast(`📧 Email enviado a ${emailModal.email}`)
   }
 
   const openEditModal = (dec) => {
@@ -639,14 +620,6 @@ export default function AdminPage({ onNavigate }) {
                       </label>
                       <button
                         type="button"
-                        className="btn btn-primary"
-                        onClick={() => { setEmailModal(dec); setEmailMsg('') }}
-                        title="Enviar email al contribuyente"
-                      >
-                        📧 Enviar email
-                      </button>
-                      <button
-                        type="button"
                         className="btn btn-danger"
                         onClick={() => setConfirmDelete(dec.id)}
                         title="Eliminar declaración"
@@ -668,41 +641,6 @@ export default function AdminPage({ onNavigate }) {
           </>
         )}
       </div>
-
-      {/* Email modal */}
-      {emailModal && createPortal(
-        <div className="admin-modal-overlay" onClick={() => setEmailModal(null)}>
-          <div className="admin-modal" onClick={e => e.stopPropagation()}>
-            <h2 className="admin-modal-title">📧 Enviar email</h2>
-            <p className="admin-modal-desc">
-              Destinatario: <strong>{emailModal.nombre} {emailModal.apellidos}</strong><br />
-              Correo: <strong>{emailModal.email}</strong>
-            </p>
-            <div className="field">
-              <label>Mensaje (opcional)</label>
-              <textarea
-                value={emailMsg}
-                onChange={e => setEmailMsg(e.target.value)}
-                placeholder="Escribe un mensaje personalizado para el contribuyente…"
-                rows={4}
-              />
-            </div>
-            <div className="btn-row">
-              <button type="button" className="btn btn-secondary" onClick={() => setEmailModal(null)}>
-                Cancelar
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                disabled={emailSending}
-                onClick={handleSendEmail}
-              >
-                {emailSending ? 'Enviando…' : '📧 Enviar'}
-              </button>
-            </div>
-          </div>
-        </div>
-      , document.body)}
 
       {/* Delete confirmation modal */}
       {confirmDelete && createPortal(
