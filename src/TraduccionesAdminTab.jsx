@@ -265,7 +265,7 @@ export default function TraduccionesAdminTab({ showToast }) {
                   name="valor"
                   value={form.valor}
                   onChange={handleFormChange}
-                  rows={String(form.valor).length > TEXTAREA_EXPAND_THRESHOLD ? 4 : 2}
+                  rows={(form.valor?.length ?? 0) > TEXTAREA_EXPAND_THRESHOLD ? 4 : 2}
                   placeholder="Texto de la traducción"
                   style={{ width: '100%', resize: 'vertical', fontFamily: 'inherit', fontSize: '.9rem', padding: '6px 8px', border: '1px solid #ccc', borderRadius: 4 }}
                 />

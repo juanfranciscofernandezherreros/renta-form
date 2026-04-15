@@ -695,7 +695,7 @@ async function updateTraduccionAdmin(id, { clave, valor }) {
   const updates = []
   const values = []
   let idx = 1
-  if (clave !== undefined) { updates.push(`clave = $${idx}`); values.push(clave.trim()); idx++ }
+  if (clave !== undefined) { updates.push(`clave = $${idx}`); values.push(clave != null ? clave.trim() : ''); idx++ }
   if (valor !== undefined) { updates.push(`valor = $${idx}`); values.push(valor); idx++ }
   if (!updates.length) return { data: null, error: { message: 'No hay campos para actualizar' } }
   values.push(id)
