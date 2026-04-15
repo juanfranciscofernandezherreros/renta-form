@@ -1,0 +1,38 @@
+name: Delete Copilot Branches Annually
+
+on:
+  schedule:
+    # Runs every year on January 1st at 00:00 UTC
+    - cron: '0 0 1 1 *'
+  workflow_dispatch: {}
+
+jobs:
+  delete-copilot-branches:
+    name: Delete all copilot/* branches
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Delete copilot/* branches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+          echo "Fetching all copilot/* branches in $REPO..."
+          branches=$(gh api repos/$REPO/branches --paginate --jq '.[].name' | grep '^copilot/' || true)
+
+          if [ -z "$branches" ]; then
+            echo "No copilot/* branches found."
+            exit 0
+          fi
+
+          echo "Branches to delete:"
+          echo "$branches"
+
+          while IFS= read -r branch; do
+            echo "Deleting branch: $branch"
+            gh api -X DELETE "repos/$REPO/git/refs/heads/$branch" && echo "Deleted: $branch" || echo "Failed to delete: $branch"
+          done <<< "$branches"
+
+          echo "Done."
