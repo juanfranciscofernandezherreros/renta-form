@@ -90,7 +90,10 @@ function insertEntries(sql, lang, newEntries) {
     .map(([k, v]) => `  ('${sqlEscape(k)}', '${sqlEscape(v)}')`)
     .join(',\n');
 
-  return sql.slice(0, idx) + ',\n' + newLines + '\n' + sql.slice(idx);
+  // Ensure there is no trailing blank line before the closing marker
+  // and place the comma at the end of the last existing entry line.
+  const before = sql.slice(0, idx).replace(/\n+$/, '');
+  return before + ',\n' + newLines + '\n' + sql.slice(idx);
 }
 
 // ---------------------------------------------------------------------------
