@@ -1882,3 +1882,90 @@ footer.footer-main {
 }
 .answer-ring.no { border-color: rgba(224,32,32,.6); }
 
+
+/* ── Traducciones Admin Tab ── */
+.traduccion-idioma-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 20px;
+  border: 2px solid #e0d4f7;
+  border-radius: 12px;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color .2s, box-shadow .2s, background .2s;
+  min-width: 110px;
+}
+.traduccion-idioma-card:hover {
+  border-color: #a78bfa;
+  background: #f5f0ff;
+  box-shadow: 0 4px 14px rgba(108,17,200,.15);
+}
+.traduccion-idioma-card.selected {
+  border-color: #6c11c8;
+  background: #ede9ff;
+  box-shadow: 0 4px 18px rgba(108,17,200,.25);
+}
+.traduccion-idioma-code {
+  font-family: monospace;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #6c11c8;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.traduccion-idioma-label {
+  font-size: .82rem;
+  color: #555;
+}
+
+/* Panel absolutely positioned above idioma cards */
+.traduccion-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background: #fff;
+  border: 2px solid #6c11c8;
+  border-radius: 14px;
+  box-shadow: 0 8px 40px rgba(108,17,200,.22);
+  display: flex;
+  flex-direction: column;
+  max-height: 82vh;
+  padding: 18px 20px 14px;
+  animation: panelSlideIn .18s ease;
+}
+@keyframes panelSlideIn {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.traduccion-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+.traduccion-panel-title {
+  font-size: .98rem;
+  font-weight: 700;
+  color: #6c11c8;
+  margin: 0;
+}
+.traduccion-panel-close {
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  color: #888;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: background .15s, color .15s;
+}
+.traduccion-panel-close:hover {
+  background: #f3eeff;
+  color: #6c11c8;
+}
