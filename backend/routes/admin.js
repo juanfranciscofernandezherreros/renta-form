@@ -14,8 +14,12 @@ function send(res, result) {
 module.exports = function adminRoutes(svc) {
   // ── Preguntas del formulario (editables por el admin) ───────────────────
 
-  router.get('/preguntas-formulario', async (_req, res) => {
-    const result = await svc.listPreguntasFormulario()
+  router.get('/preguntas-formulario', async (req, res) => {
+    const { page, limit } = req.query
+    const result = await svc.listPreguntasFormulario({
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 10,
+    })
     send(res, result)
   })
 
