@@ -57,3 +57,16 @@ async function seedTraducciones() {
 }
 
 module.exports = seedTraducciones
+
+// Allow running directly: node db/seedTraducciones.js
+if (require.main === module) {
+  seedTraducciones()
+    .then(() => {
+      console.log('[seed] Done.')
+      process.exit(0)
+    })
+    .catch((err) => {
+      console.error('[seed] Failed:', err)
+      process.exit(1)
+    })
+}
