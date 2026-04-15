@@ -5,8 +5,10 @@ import {
   updatePreguntaFormulario,
   deletePreguntaFormulario,
 } from './apiClient.js'
+import Pagination from './Pagination.jsx'
 
 const EMPTY_FORM = { texto: '' }
+const PAGE_LIMIT = 10
 
 function formatFecha(iso) {
   if (!iso) return '—'
@@ -15,8 +17,10 @@ function formatFecha(iso) {
 
 export default function PreguntasFormularioAdminTab({ showToast }) {
   const [preguntas, setPreguntas] = useState([])
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [page, setPage] = useState(1)
   const [modal, setModal] = useState(null) // null | 'create' | 'edit'
   const [editando, setEditando] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
@@ -29,17 +33,18 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    listPreguntasFormulario()
-      .then(pregRes => {
+    listPreguntasFormulario({ query: { page, limit: PAGE_LIMIT } })
+      .then(({ data, error: apiErr }) => {
         if (cancelled) return
-        if (pregRes.error) throw new Error(pregRes.error.message ?? 'Error desconocido')
-        setPreguntas(pregRes.data ?? [])
+        if (apiErr) throw new Error(apiErr.message ?? 'Error desconocido')
+        setPreguntas(data?.data ?? [])
+        setTotal(data?.total ?? 0)
         setError(null)
       })
       .catch(err => { if (!cancelled) setError(err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [refreshKey])
+  }, [page, refreshKey])
 
   const openCreate = () => {
     setForm(EMPTY_FORM)
@@ -103,7 +108,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
     <div>
       <div className="admin-toolbar">
         <div className="admin-stats">
-          <span className="admin-stat-badge">{preguntas.length} pregunta{preguntas.length !== 1 ? 's' : ''} del formulario</span>
+          <span className="admin-stat-badge">{total} pregunta{total !== 1 ? 's' : ''} del formulario</span>
         </div>
         <button type="button" className="btn btn-primary btn-sm" onClick={openCreate} disabled={loading}>
           ➕ Nueva pregunta
@@ -162,6 +167,12 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
           </table>
         </div>
       )}
+
+      <Pagination
+        page={page}
+        totalPages={Math.ceil(total / PAGE_LIMIT)}
+        onPageChange={setPage}
+      />
 
       {/* Create / Edit modal */}
       {modal && (

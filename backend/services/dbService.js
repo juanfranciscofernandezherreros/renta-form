@@ -151,14 +151,19 @@ function rowToPreguntaFormulario(r) {
   }
 }
 
-async function listPreguntasFormulario() {
+async function listPreguntasFormulario({ page = 1, limit = 10 } = {}) {
   try {
+    const countRes = await pool.query('SELECT COUNT(*) FROM preguntas')
+    const total = parseInt(countRes.rows[0].count, 10)
+    const offset = (page - 1) * limit
     const { rows } = await pool.query(
       `SELECT id, texto, actualizada_en
        FROM preguntas
-       ORDER BY orden`
+       ORDER BY orden, id
+       LIMIT $1 OFFSET $2`,
+      [limit, offset]
     )
-    return { data: rows.map(rowToPreguntaFormulario), error: null }
+    return { data: { data: rows.map(rowToPreguntaFormulario), total, page, limit }, error: null }
   } catch (err) {
     console.error('listPreguntasFormulario error:', err.message)
     return { data: null, error: { message: err.message }, status: 500 }
@@ -197,17 +202,13 @@ async function createPreguntaFormulario({ texto }) {
 
   try {
     const textoJson = buildTextoJsonb(texto)
-    // Use a CTE to insert and immediately set campo = id::text in one atomic step,
-    // because campo is NOT NULL and we want its value to match the generated UUID.
+    // Generate the UUID first and use it for both id and campo in a single INSERT,
+    // avoiding the CTE pattern where the outer UPDATE cannot see rows inserted by the CTE.
     const { rows } = await pool.query(
-      `WITH ins AS (
-         INSERT INTO preguntas (campo, texto)
-         VALUES (gen_random_uuid()::text, $1::jsonb)
-         RETURNING id
-       )
-       UPDATE preguntas SET campo = ins.id::text
-       FROM ins WHERE preguntas.id = ins.id
-       RETURNING preguntas.id`,
+      `WITH new_id AS (SELECT gen_random_uuid() AS id)
+       INSERT INTO preguntas (id, campo, texto)
+       SELECT id, id::text, $1::jsonb FROM new_id
+       RETURNING id`,
       [textoJson]
     )
     if (!rows.length) return { data: null, error: { message: 'No se pudo crear la pregunta' } }
@@ -225,12 +226,17 @@ async function createPreguntaFormulario({ texto }) {
 
 async function deletePreguntaFormulario(id) {
   if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
-  const { rowCount } = await pool.query(
-    'DELETE FROM preguntas WHERE id = $1',
-    [id]
-  )
-  if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
-  return { data: { deleted: true }, error: null }
+  try {
+    const { rowCount } = await pool.query(
+      'DELETE FROM preguntas WHERE id = $1',
+      [id]
+    )
+    if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
+    return { data: { deleted: true }, error: null }
+  } catch (err) {
+    console.error('deletePreguntaFormulario error:', err.message)
+    return { data: null, error: { message: err.message }, status: 500 }
+  }
 }
 
 // ── Declaraciones ──────────────────────────────────────────────────────────
