@@ -143,6 +143,7 @@ Then('la tabla muestra las preguntas con columna Campo', async function () {
 })
 
 When('el administrador edita la primera pregunta con texto {string}', async function (newText) {
+  this.lastEditedText = newText
   // Click the first Edit button in the table
   const editBtn = this.page.locator('table tbody tr button:has-text("Editar")').first()
   await editBtn.waitFor({ state: 'visible', timeout: 10000 })
@@ -160,9 +161,10 @@ When('el administrador edita la primera pregunta con texto {string}', async func
 
 Then('la pregunta muestra el texto actualizado', async function () {
   await this.page.waitForSelector('.preguntas-table, table', { timeout: 5000 })
-  // The table should now contain the updated text
   const tableText = await this.page.locator('table').innerText()
-  if (!tableText.includes('Texto de prueba editado')) {
-    throw new Error('El texto actualizado no apareció en la tabla')
+  const expectedText = this.lastEditedText
+  if (!expectedText) throw new Error('No se guardó el texto editado en el paso anterior')
+  if (!tableText.includes(expectedText)) {
+    throw new Error(`El texto actualizado "${expectedText}" no apareció en la tabla`)
   }
 })

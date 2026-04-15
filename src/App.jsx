@@ -244,6 +244,13 @@ export default function App({ editData, onEditDataConsumed }) {
   // Wizard step helpers
   // Steps: 0 = ID fields, 1..N = API sections, N+1 = Docs + Comments (last)
   // Build a flat list of visible steps: id → individual questions → docs
+  // Derive a stable key from the form fields that control conditional question visibility.
+  // This changes only when a parent field (viviendaAlquiler, viviendaPropiedad, mayores65ACargo)
+  // changes value, avoiding recomputation on unrelated field edits.
+  const conditionalKey = Object.values(CONDITIONAL_QUESTIONS)
+    .map(c => form[c.dependeDe] ?? '')
+    .join('|')
+
   const visibleSteps = useMemo(() => {
     if (loadingPreguntas || secciones.length === 0) return []
     const steps = [{ type: 'id', key: 'id' }]
@@ -255,7 +262,8 @@ export default function App({ editData, onEditDataConsumed }) {
       }
     }
     return steps
-  }, [loadingPreguntas, secciones, form.viviendaAlquiler, form.viviendaPropiedad, form.mayores65ACargo])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadingPreguntas, secciones, conditionalKey])
   const totalSteps = visibleSteps.length
   const safeStep = Math.min(currentStep, Math.max(0, visibleSteps.length - 1))
   const currentStepInfo = visibleSteps[safeStep]
