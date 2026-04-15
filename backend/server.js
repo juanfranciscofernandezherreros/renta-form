@@ -41,6 +41,15 @@ app.use('/v1/auth', authRoutes(svc))
 app.use('/v1/irpf', irpfRoutes(svc))
 app.use('/v1/admin', adminRoutes(svc))
 
+// ── Public alias: GET /v1/preguntas → same catalog as GET /v1/irpf/preguntas ─
+app.get('/v1/preguntas', async (_req, res) => {
+  const result = await svc.getPreguntas()
+  if (result.error) {
+    return res.status(result.status || 503).json({ error: result.error.message })
+  }
+  res.json(result.data)
+})
+
 // ── 404 catch-all / SPA fallback ─────────────────────────────────────────
 const DIST_DIR = path.join(__dirname, '..', 'dist')
 if (fs.existsSync(DIST_DIR)) {
