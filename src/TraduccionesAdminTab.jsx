@@ -185,85 +185,88 @@ export default function TraduccionesAdminTab({ showToast }) {
 
               {/* Table */}
               <div style={{ overflowY: 'auto', flex: 1, minHeight: 0 }}>
-                {filteredKeys.length === 0 && !newKey ? (
-                  <div className="info-box">No se encontraron claves.</div>
-                ) : (
-                  <table className="preguntas-table" style={{ tableLayout: 'fixed', width: '100%' }}>
-                    <colgroup>
-                      <col style={{ width: '32%' }} />
-                      <col style={{ width: '58%' }} />
-                      <col style={{ width: '10%' }} />
-                    </colgroup>
-                    <thead>
+                <table className="preguntas-table" style={{ tableLayout: 'fixed', width: '100%' }}>
+                  <colgroup>
+                    <col style={{ width: '32%' }} />
+                    <col style={{ width: '58%' }} />
+                    <col style={{ width: '10%' }} />
+                  </colgroup>
+                  <thead>
+                    <tr>
+                      <th>Clave</th>
+                      <th>Traducción</th>
+                      <th style={{ textAlign: 'center' }}>Borrar</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredKeys.length === 0 && (
                       <tr>
-                        <th>Clave</th>
-                        <th>Traducción</th>
-                        <th style={{ textAlign: 'center' }}>Borrar</th>
+                        <td colSpan={3} style={{ textAlign: 'center', color: '#888', fontStyle: 'italic', padding: '10px 0' }}>
+                          {contentFilter.trim() ? 'No se encontraron claves.' : 'No hay traducciones todavía. Añade la primera a continuación.'}
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {filteredKeys.map(key => (
-                        <tr key={key}>
-                          <td style={{ fontFamily: 'monospace', fontSize: '.78rem', color: '#555', verticalAlign: 'top', paddingTop: 10 }}>
-                            {key}
-                          </td>
-                          <td>
-                            <textarea
-                              rows={String(content[key] ?? '').length > TEXTAREA_EXPAND_THRESHOLD ? 3 : 1}
-                              value={content[key] ?? ''}
-                              onChange={e => handleContentChange(key, e.target.value)}
-                              style={{ width: '100%', resize: 'vertical', fontFamily: 'inherit', fontSize: '.85rem', padding: '4px 6px', border: '1px solid #ccc', borderRadius: 4 }}
-                            />
-                          </td>
-                          <td style={{ textAlign: 'center', verticalAlign: 'top', paddingTop: 8 }}>
-                            <button
-                              type="button"
-                              className="btn btn-danger btn-sm btn-xs"
-                              onClick={() => handleDeleteKey(key)}
-                              title="Eliminar clave"
-                            >
-                              🗑️
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-
-                      {/* Add new row */}
-                      <tr style={{ background: '#f9f6ff' }}>
-                        <td>
-                          <input
-                            type="text"
-                            value={newKey}
-                            onChange={e => setNewKey(e.target.value)}
-                            placeholder="nueva.clave"
-                            style={{ width: '100%', fontFamily: 'monospace', fontSize: '.82rem', padding: '4px 6px', border: '1px dashed #b89ef0', borderRadius: 4 }}
-                            onKeyDown={e => { if (e.key === 'Enter') handleAddKey() }}
-                          />
+                    )}
+                    {filteredKeys.map(key => (
+                      <tr key={key}>
+                        <td style={{ fontFamily: 'monospace', fontSize: '.78rem', color: '#555', verticalAlign: 'top', paddingTop: 10 }}>
+                          {key}
                         </td>
                         <td>
-                          <input
-                            type="text"
-                            value={newValue}
-                            onChange={e => setNewValue(e.target.value)}
-                            placeholder="Traducción…"
-                            style={{ width: '100%', fontSize: '.85rem', padding: '4px 6px', border: '1px dashed #b89ef0', borderRadius: 4 }}
-                            onKeyDown={e => { if (e.key === 'Enter') handleAddKey() }}
+                          <textarea
+                            rows={String(content[key] ?? '').length > TEXTAREA_EXPAND_THRESHOLD ? 3 : 1}
+                            value={content[key] ?? ''}
+                            onChange={e => handleContentChange(key, e.target.value)}
+                            style={{ width: '100%', resize: 'vertical', fontFamily: 'inherit', fontSize: '.85rem', padding: '4px 6px', border: '1px solid #ccc', borderRadius: 4 }}
                           />
                         </td>
-                        <td style={{ textAlign: 'center' }}>
+                        <td style={{ textAlign: 'center', verticalAlign: 'top', paddingTop: 8 }}>
                           <button
                             type="button"
-                            className="btn btn-primary btn-sm btn-xs"
-                            onClick={handleAddKey}
-                            title="Añadir clave"
+                            className="btn btn-danger btn-sm btn-xs"
+                            onClick={() => handleDeleteKey(key)}
+                            title="Eliminar clave"
                           >
-                            ➕
+                            🗑️
                           </button>
                         </td>
                       </tr>
-                    </tbody>
-                  </table>
-                )}
+                    ))}
+
+                    {/* Add new row — always visible */}
+                    <tr style={{ background: '#f9f6ff' }}>
+                      <td>
+                        <input
+                          type="text"
+                          value={newKey}
+                          onChange={e => setNewKey(e.target.value)}
+                          placeholder="nueva.clave"
+                          style={{ width: '100%', fontFamily: 'monospace', fontSize: '.82rem', padding: '4px 6px', border: '1px dashed #b89ef0', borderRadius: 4 }}
+                          onKeyDown={e => { if (e.key === 'Enter') handleAddKey() }}
+                        />
+                      </td>
+                      <td>
+                        <input
+                          type="text"
+                          value={newValue}
+                          onChange={e => setNewValue(e.target.value)}
+                          placeholder="Traducción…"
+                          style={{ width: '100%', fontSize: '.85rem', padding: '4px 6px', border: '1px dashed #b89ef0', borderRadius: 4 }}
+                          onKeyDown={e => { if (e.key === 'Enter') handleAddKey() }}
+                        />
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <button
+                          type="button"
+                          className="btn btn-primary btn-sm btn-xs"
+                          onClick={handleAddKey}
+                          title="Añadir clave"
+                        >
+                          ➕
+                        </button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
 
               {/* Footer actions */}
