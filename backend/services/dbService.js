@@ -101,36 +101,15 @@ async function changePassword({ dniNie, oldPassword, newPassword }) {
 async function getPreguntas() {
   try {
     const { rows } = await pool.query(
-      `SELECT campo, texto, seccion, seccion_orden, seccion_titulos, orden
+      `SELECT campo, texto, orden
        FROM preguntas
-       ORDER BY seccion_orden, orden`
+       ORDER BY orden`
     )
-    if (!rows.length) return { data: { secciones: [] }, error: null }
-
-    const seccionMap = new Map()
-    for (const r of rows) {
-      const key = r.seccion || 'general'
-      if (!seccionMap.has(key)) {
-        const titulos = typeof r.seccion_titulos === 'string'
-          ? JSON.parse(r.seccion_titulos)
-          : (r.seccion_titulos ?? {})
-        seccionMap.set(key, {
-          id: key,
-          numero: r.seccion_orden + 1,
-          titulo: titulos.es || key,
-          titulos,
-          preguntas: [],
-        })
-      }
-      // texto column is JSONB with all translations: {"es": "...", "fr": "...", ...}
+    const preguntas = rows.map(r => {
       const textos = typeof r.texto === 'string' ? JSON.parse(r.texto) : (r.texto ?? {})
-      seccionMap.get(key).preguntas.push({
-        id: r.campo,
-        texto: textos.es || '',
-        textos,
-      })
-    }
-    return { data: { secciones: [...seccionMap.values()] }, error: null }
+      return { id: r.campo, texto: textos.es || '', textos }
+    })
+    return { data: { secciones: [{ id: 'general', numero: 1, titulo: '', titulos: {}, preguntas }] }, error: null }
   } catch (err) {
     console.error('getPreguntas DB error:', err.message)
     return { data: null, error: { message: err.message }, status: 503 }
