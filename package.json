@@ -17,6 +17,7 @@
     "migrate": "cd backend && npm run migrate",
     "seed": "cd backend && npm run seed",
     "db:setup": "cd backend && npm run db:setup",
+    "db:setup-100": "cd backend && npm run db:setup-100",
     "db:seed-translations": "cd backend && npm run db:seed-translations",
     "db:seed-languages": "cd backend && npm run db:seed-languages",
     "heroku-postbuild": "npm install --prefix backend && npm run build"
