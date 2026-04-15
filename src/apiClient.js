@@ -105,7 +105,7 @@ export async function sendEmailDeclaracion({ declaracionId, email, mensaje }) {
 // ── Admin: Preguntas del formulario ───────────────────────────────────────
 
 export async function listPreguntasFormulario(options = {}) {
-  const { page, limit } = options?.query ?? {}
+  const { page, limit } = options.query ?? {}
   return request('GET', '/admin/preguntas-formulario', { query: { page, limit } })
 }
 
