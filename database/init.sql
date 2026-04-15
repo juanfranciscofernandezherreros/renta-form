@@ -325,6 +325,7 @@ CROSS JOIN (VALUES
   ('rentaPdfBtn', '📥 Descargar PDF de la renta'),
   ('rentaPdfBtnTitle', 'Descargar el PDF de la renta preparado por el gestor'),
   ('btnAdmin', '🛡️ Admin')
+
 ) AS k(clave, valor)
 WHERE i.code = 'es'
 ON CONFLICT (idioma_id, clave) DO NOTHING;
@@ -491,6 +492,7 @@ CROSS JOIN (VALUES
   ('rentaPdfBtn', '📥 Télécharger le PDF fiscal'),
   ('rentaPdfBtnTitle', 'Télécharger le PDF fiscal préparé par le gestionnaire'),
   ('btnAdmin', '🛡️ Admin')
+
 ) AS k(clave, valor)
 WHERE i.code = 'fr'
 ON CONFLICT (idioma_id, clave) DO NOTHING;
@@ -657,6 +659,7 @@ CROSS JOIN (VALUES
   ('rentaPdfBtn', '📥 Download income tax PDF'),
   ('rentaPdfBtnTitle', 'Download the income tax PDF prepared by the manager'),
   ('btnAdmin', '🛡️ Admin')
+
 ) AS k(clave, valor)
 WHERE i.code = 'en'
 ON CONFLICT (idioma_id, clave) DO NOTHING;
@@ -823,6 +826,7 @@ CROSS JOIN (VALUES
   ('rentaPdfBtn', '📥 Descarregar PDF de la renda'),
   ('rentaPdfBtnTitle', 'Descarregar el PDF de la renda preparat pel gestor'),
   ('btnAdmin', '🛡️ Admin')
+
 ) AS k(clave, valor)
 WHERE i.code = 'ca'
 ON CONFLICT (idioma_id, clave) DO NOTHING;

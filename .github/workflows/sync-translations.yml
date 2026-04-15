@@ -1,0 +1,47 @@
+name: Sync translations to SQL
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'translations/**'
+
+jobs:
+  sync-translations:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run translation sync script
+        id: sync
+        run: node scripts/sync-translations-to-sql.js
+
+      - name: Check for SQL changes
+        id: changes
+        run: |
+          if git diff --quiet database/init.sql; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push updated SQL
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add database/init.sql
+          git commit -m "chore: sync new translations to database/init.sql [skip ci]"
+          git push
