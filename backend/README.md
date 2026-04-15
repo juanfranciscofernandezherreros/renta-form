@@ -1,115 +1,133 @@
 # Renta Form – Backend
 
-Node.js/Express REST API that backs the Renta Form frontend.
+Node.js/Express REST API que da soporte al formulario Renta Form. Usa **PostgreSQL** como base de datos.
 
-## Quick start
+## Puesta en marcha rápida
 
-1. Create the PostgreSQL database:
+### 1. Crear la base de datos PostgreSQL
 
-   ```bash
-   psql -U postgres -c "CREATE DATABASE renta_form;"
-   ```
+```bash
+psql -U postgres -c "CREATE DATABASE renta_form;"
+```
 
-2. Copy `.env.example` to `.env` and set the Postgres credentials:
+### 2. Configurar la conexión
 
-   ```
-   PGHOST=localhost
-   PGPORT=5432
-   PGDATABASE=renta_form
-   PGUSER=postgres
-   PGPASSWORD=yourpassword
-   ```
+Copia `.env.example` a `.env` y ajusta las credenciales:
 
-3. Apply the schema and seed data:
+```env
+PROFILE=db
+PORT=3001
 
-   ```bash
-   cd backend
+# Opción A – URL completa (recomendado para Neon / Heroku)
+DATABASE_URL=postgresql://<usuario>:<contraseña>@<host>/<bbdd>?sslmode=require
 
-   # Apply schema migrations (creates all tables from database/init.sql)
-   npm run migrate
+# Opción B – variables individuales
+# PGHOST=localhost
+# PGPORT=5432
+# PGDATABASE=renta_form
+# PGUSER=postgres
+# PGPASSWORD=postgres
 
-   # Seed translations into the DB
-   npm run seed
+CORS_ORIGIN=http://localhost:5173
+```
 
-   # Or run both in one command
-   npm run db:setup
-   ```
+### 3. Inicializar la base de datos
 
-4. Start the server:
+```bash
+cd backend
 
-   ```bash
-   npm start
-   ```
+# Crea las tablas (database/init.sql) y siembra idiomas, preguntas y traducciones
+npm run migrate
 
-The server listens on `http://localhost:3001`.
+# Solo sembrar traducciones (idempotente)
+npm run seed
 
-## API base URL
+# Migración + seed en un comando
+npm run db:setup
+```
 
-All endpoints are prefixed with `/v1`.
+> `npm run migrate` aplica `database/init.sql` si las tablas no existen y siembra automáticamente las traducciones al final. `npm run seed` solo actualiza las traducciones sin tocar el esquema.
 
-| Method | Path | Description |
+### 4. Arrancar el servidor
+
+```bash
+npm start
+```
+
+El servidor escucha en `http://localhost:3001`.
+
+---
+
+## URL base de la API
+
+Todos los endpoints están prefijados con `/v1`.
+
+| Método | Ruta | Descripción |
 |--------|------|-------------|
 | GET | `/health` | Health check |
 | POST | `/v1/auth/login` | Login (dniNie + password) |
-| POST | `/v1/auth/verificar-codigo` | Verify intranet access code |
-| POST | `/v1/auth/change-password` | Change user password |
-| GET | `/v1/irpf/preguntas` | Questionnaire catalogue |
-| GET | `/v1/irpf/idiomas` | List active languages |
-| GET | `/v1/irpf/traducciones` | All translations grouped by language code |
-| GET | `/v1/irpf/declaraciones` | List declarations (paginated) |
-| POST | `/v1/irpf/declaraciones` | Submit a new declaration (multipart) |
-| GET | `/v1/irpf/declaraciones/all` | List all declarations (admin) |
-| GET | `/v1/irpf/declaraciones/:id` | Get declaration detail |
-| PATCH | `/v1/irpf/declaraciones/:id` | Update estado |
-| PUT | `/v1/irpf/declaraciones/:id` | Update all editable fields |
-| DELETE | `/v1/irpf/declaraciones/:id` | Delete declaration |
-| GET | `/v1/irpf/declaraciones/:id/preguntas` | Get assigned questions |
-| PUT | `/v1/irpf/declaraciones/:id/preguntas` | Upsert question assignments |
-| DELETE | `/v1/irpf/declaraciones/:id/preguntas/:preguntaId` | Remove assignment |
-| POST | `/v1/irpf/declaraciones/:id/email` | Send email for declaration |
-| GET | `/v1/irpf/consulta/:token` | Public token lookup |
-| GET | `/v1/admin/preguntas` | List additional questions |
-| POST | `/v1/admin/preguntas` | Create question |
-| GET | `/v1/admin/preguntas/:id` | Get question |
-| PUT | `/v1/admin/preguntas/:id` | Update question |
-| DELETE | `/v1/admin/preguntas/:id` | Delete question |
-| GET | `/v1/admin/secciones` | List sections |
-| POST | `/v1/admin/secciones` | Create section |
-| PUT | `/v1/admin/secciones/:id` | Update section |
-| DELETE | `/v1/admin/secciones/:id` | Delete section |
-| GET | `/v1/admin/secciones/:id/declaraciones` | Declarations in section |
-| GET | `/v1/admin/secciones/:id/preguntas` | Questions in section |
-| GET | `/v1/admin/users` | List users |
-| POST | `/v1/admin/users/assign` | Assign user account |
-| GET | `/v1/admin/users/:dniNie` | Get user |
-| PATCH | `/v1/admin/users/:dniNie/block` | Block/unblock user |
-| PATCH | `/v1/admin/users/:dniNie/report` | Report/unreport user |
-| DELETE | `/v1/admin/users/:dniNie` | Delete user |
-| POST | `/v1/admin/users/:dniNie/email` | Send email to user |
-| PUT | `/v1/admin/users/:dniNie/preguntas` | Assign questions to user |
-| PUT | `/v1/admin/users/:dniNie/secciones` | Assign sections to user |
-| GET | `/v1/admin/idiomas` | List languages (paginated) |
-| POST | `/v1/admin/idiomas` | Create language |
-| PUT | `/v1/admin/idiomas/:id` | Update language |
-| DELETE | `/v1/admin/idiomas/:id` | Delete language |
-| GET | `/v1/admin/idiomas/:id/content` | Get translations for a language |
-| PUT | `/v1/admin/idiomas/:id/content` | Update translations for a language |
-| GET | `/v1/admin/traducciones/faltantes` | Missing translation keys per language |
+| POST | `/v1/auth/verificar-codigo` | Verificar código de acceso a intranet |
+| POST | `/v1/auth/change-password` | Cambiar contraseña de usuario |
+| GET | `/v1/irpf/preguntas` | Catálogo de preguntas del formulario |
+| GET | `/v1/irpf/idiomas` | Listar idiomas activos |
+| GET | `/v1/irpf/traducciones` | Todas las traducciones agrupadas por código de idioma |
+| GET | `/v1/irpf/declaraciones` | Listar declaraciones (paginado) |
+| POST | `/v1/irpf/declaraciones` | Enviar nueva declaración (multipart) |
+| GET | `/v1/irpf/declaraciones/all` | Listar todas las declaraciones (admin) |
+| GET | `/v1/irpf/declaraciones/:id` | Detalle de una declaración |
+| PATCH | `/v1/irpf/declaraciones/:id` | Actualizar estado |
+| PUT | `/v1/irpf/declaraciones/:id` | Actualizar campos editables |
+| DELETE | `/v1/irpf/declaraciones/:id` | Eliminar declaración |
+| GET | `/v1/irpf/declaraciones/:id/preguntas` | Preguntas asignadas a la declaración |
+| PUT | `/v1/irpf/declaraciones/:id/preguntas` | Upsert de asignaciones de preguntas |
+| DELETE | `/v1/irpf/declaraciones/:id/preguntas/:preguntaId` | Eliminar asignación |
+| POST | `/v1/irpf/declaraciones/:id/email` | Enviar email de la declaración |
+| GET | `/v1/irpf/consulta/:token` | Consulta pública por token |
+| GET | `/v1/admin/preguntas` | Listar preguntas adicionales |
+| POST | `/v1/admin/preguntas` | Crear pregunta |
+| GET | `/v1/admin/preguntas/:id` | Obtener pregunta |
+| PUT | `/v1/admin/preguntas/:id` | Actualizar pregunta |
+| DELETE | `/v1/admin/preguntas/:id` | Eliminar pregunta |
+| GET | `/v1/admin/secciones` | Listar secciones |
+| POST | `/v1/admin/secciones` | Crear sección |
+| PUT | `/v1/admin/secciones/:id` | Actualizar sección |
+| DELETE | `/v1/admin/secciones/:id` | Eliminar sección |
+| GET | `/v1/admin/secciones/:id/declaraciones` | Declaraciones de la sección |
+| GET | `/v1/admin/secciones/:id/preguntas` | Preguntas de la sección |
+| GET | `/v1/admin/users` | Listar usuarios |
+| POST | `/v1/admin/users/assign` | Asignar cuenta de usuario |
+| GET | `/v1/admin/users/:dniNie` | Obtener usuario |
+| PATCH | `/v1/admin/users/:dniNie/block` | Bloquear/desbloquear usuario |
+| PATCH | `/v1/admin/users/:dniNie/report` | Denunciar/retirar denuncia |
+| DELETE | `/v1/admin/users/:dniNie` | Eliminar usuario |
+| POST | `/v1/admin/users/:dniNie/email` | Enviar email al usuario |
+| PUT | `/v1/admin/users/:dniNie/preguntas` | Asignar preguntas al usuario |
+| PUT | `/v1/admin/users/:dniNie/secciones` | Asignar secciones al usuario |
+| GET | `/v1/admin/idiomas` | Listar idiomas (paginado) |
+| POST | `/v1/admin/idiomas` | Crear idioma |
+| PUT | `/v1/admin/idiomas/:id` | Actualizar idioma |
+| DELETE | `/v1/admin/idiomas/:id` | Eliminar idioma |
+| GET | `/v1/admin/idiomas/:id/content` | Obtener traducciones de un idioma |
+| PUT | `/v1/admin/idiomas/:id/content` | Actualizar traducciones de un idioma |
+| GET | `/v1/admin/traducciones/faltantes` | Claves de traducción faltantes por idioma |
 
-## npm scripts
+---
 
-| Script | Description |
+## Scripts npm
+
+| Script | Descripción |
 |--------|-------------|
-| `npm start` | Start server (PostgreSQL, port 3001) |
-| `npm run dev` | Start server with `--watch` (auto-restart on file changes) |
-| `npm run migrate` | Apply schema migrations only (no server start) |
-| `npm run seed` | Seed translations into the DB (no server start) |
-| `npm run db:setup` | Run `migrate` + `seed` in sequence |
+| `npm start` | Arranca el servidor con PostgreSQL (puerto 3001) |
+| `npm run dev` | Arranca con `--watch` (reinicio automático al cambiar ficheros) |
+| `npm run migrate` | Aplica el esquema (`database/init.sql`) y siembra traducciones. No arranca el servidor. |
+| `npm run seed` | Siembra/actualiza traducciones en la BD. No arranca el servidor. |
+| `npm run db:setup` | Ejecuta `migrate` + `seed` en secuencia |
 
-## Development proxy
+---
 
-In development the Vite frontend proxies `/v1` → `http://localhost:3001/v1`.  
-Run both servers at the same time:
+## Proxy de desarrollo
+
+El frontend de Vite redirige `/v1` → `http://localhost:3001/v1`. Para desarrollar en local arranca ambos servidores:
 
 ```bash
 # Terminal 1 – backend (PostgreSQL)
@@ -119,15 +137,17 @@ cd backend && npm start
 cd .. && npm run dev
 ```
 
-## Internacionalisation (i18n)
+---
 
-Languages and translations are stored in the `idiomas` and `traducciones` DB tables.
+## Internacionalización (i18n)
 
-| Public endpoint | Description |
+Los idiomas y traducciones se almacenan en las tablas `idiomas` y `traducciones` de la BD.
+
+| Endpoint público | Descripción |
 |---|---|
-| `GET /v1/irpf/idiomas` | Returns the list of active languages (`[{ code, label }]`) |
-| `GET /v1/irpf/traducciones` | Returns all translations grouped by language code |
+| `GET /v1/irpf/idiomas` | Devuelve los idiomas activos (`[{ code, label }]`) |
+| `GET /v1/irpf/traducciones` | Devuelve todas las traducciones agrupadas por código de idioma |
 
-The frontend `LanguageContext` fetches both endpoints on startup. If the DB has no data it falls back to the static JSON files in `translations/`.
+El `LanguageContext` del frontend consume ambos endpoints al arrancar. Si la BD no tiene datos, hace fallback a los ficheros JSON estáticos en `translations/`.
 
-Use `GET /v1/admin/traducciones/faltantes` to audit which translation keys are missing for each language relative to the reference language (`es`).
+Usa `GET /v1/admin/traducciones/faltantes` para auditar qué claves de traducción faltan en cada idioma respecto al idioma de referencia (`es`).

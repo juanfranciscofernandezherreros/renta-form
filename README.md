@@ -1,6 +1,6 @@
 # Declaración de la Renta 2025 – IRPF
 
-Formulario de la Declaración de la Renta construido con **React + Vite**.
+Formulario de la Declaración de la Renta construido con **React + Vite** y un backend **Node.js/Express** con **PostgreSQL**.
 
 ## Características
 
@@ -9,6 +9,7 @@ Formulario de la Declaración de la Renta construido con **React + Vite**.
 - Las preguntas Sí/No se cargan dinámicamente desde el endpoint de preguntas al iniciar la aplicación.
 - Al pulsar **Enviar declaración** se hace un `POST` con todos los datos al endpoint de declaraciones.
 - Notificación visual (toast) con el resultado del envío.
+- Soporte multiidioma (ES, FR, CA, EN) con traducciones almacenadas en base de datos.
 
 ## Desarrollo
 
@@ -32,6 +33,7 @@ npm run preview
 
 - **Node.js ≥ 20** (`node -v` para comprobarlo)
 - **npm** (incluido con Node.js)
+- **PostgreSQL ≥ 14** accesible desde la máquina (local o remoto)
 
 ### 1. Instalar dependencias
 
@@ -72,14 +74,29 @@ CORS_ORIGIN=http://localhost:5173
 
 > **Neon:** usa la connection string que aparece en el panel de Neon como valor de `DATABASE_URL`.
 
-### 3. Arrancar el backend
+### 3. Crear el esquema e inicializar la base de datos
+
+Ejecuta las migraciones para crear las tablas (`database/init.sql`) y sembrar las traducciones:
 
 ```bash
-cd backend
-npm run start:db
+# Desde la raíz del proyecto
+npm run db:setup
 ```
 
-Al arrancar, el servidor aplica las migraciones automáticamente (`database/init.sql`) si las tablas todavía no existen.
+Esto aplica el esquema completo y siembra los datos iniciales (idiomas, preguntas e traducciones). También puedes ejecutar cada paso por separado:
+
+```bash
+npm run migrate   # solo crea/actualiza las tablas
+npm run seed      # solo siembra las traducciones
+```
+
+> **Nota:** si arrancas el servidor directamente con `npm run start:db`, las migraciones se aplican automáticamente al inicio si las tablas todavía no existen. `npm run db:setup` es útil cuando quieres aplicar el esquema sin arrancar el servidor.
+
+### 4. Arrancar el backend
+
+```bash
+npm run start:db
+```
 
 ```
 [server] Starting with profile: db
@@ -88,7 +105,7 @@ Al arrancar, el servidor aplica las migraciones automáticamente (`database/init
 [server] Listening on http://localhost:3001  (profile: db)
 ```
 
-### 4. Arrancar el frontend
+### 5. Arrancar el frontend
 
 En otra terminal, desde la raíz del proyecto:
 
@@ -98,7 +115,7 @@ npm run dev
 
 Vite arranca en **http://localhost:5173** y redirige automáticamente todas las peticiones `/v1/*` al backend (`localhost:3001`).
 
-### 5. Verificar que todo funciona
+### 6. Verificar que todo funciona
 
 ```bash
 curl http://localhost:3001/health
@@ -107,12 +124,15 @@ curl http://localhost:3001/health
 
 ### Resumen de comandos
 
-| Terminal | Directorio | Comando | Descripción |
-|----------|-----------|---------|-------------|
-| 1 | `backend/` | `npm install` | Instala dependencias del backend |
-| 1 | `backend/` | `npm run start:db` | Arranca el backend con PostgreSQL |
-| 2 | raíz | `npm install` | Instala dependencias del frontend |
-| 2 | raíz | `npm run dev` | Arranca el frontend (Vite dev server) |
+| Directorio | Comando | Descripción |
+|-----------|---------|-------------|
+| raíz | `npm install` | Instala dependencias del frontend |
+| raíz | `cd backend && npm install` | Instala dependencias del backend |
+| raíz | `npm run migrate` | Crea/actualiza las tablas (ejecuta `database/init.sql`) |
+| raíz | `npm run seed` | Siembra las traducciones en la BD |
+| raíz | `npm run db:setup` | Migración + seed en un solo comando |
+| raíz | `npm run start:db` | Arranca el backend con PostgreSQL (puerto 3001) |
+| raíz | `npm run dev` | Arranca el frontend (Vite dev server, puerto 5173) |
 
 ---
 
