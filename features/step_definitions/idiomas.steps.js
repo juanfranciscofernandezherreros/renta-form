@@ -61,8 +61,8 @@ const MOCK_TRADUCCIONES = {
     no: 'No',
     langLabel: 'Idioma',
     successTitle: 'Declaració enviada!',
-    section1: 'Dades d\'identificació',
-    instructionsTitle: 'Instruccions:',
+    section1: "Dades d'identificació",
+    instructionsTitle: "Instruccions:",
   },
   fr: {
     btnContinue: 'Continuer',
@@ -79,8 +79,8 @@ const MOCK_TRADUCCIONES = {
     no: 'Non',
     langLabel: 'Langue',
     successTitle: 'Déclaration envoyée !',
-    section1: 'Données d\'identification',
-    instructionsTitle: 'Instructions :',
+    section1: "Données d'identification",
+    instructionsTitle: "Instructions :",
   },
 }
 
@@ -109,7 +109,12 @@ async function clickLangButton(page, code) {
   const btn = page.locator(`.lang-flag-btn .lang-flag-code:text-is("${code.toUpperCase()}")`).first()
   await btn.waitFor({ state: 'visible', timeout: 10000 })
   await btn.click()
-  await page.waitForTimeout(400)
+  // Wait until React re-renders (active class moves to the new button)
+  await page.waitForFunction(
+    (code) => document.querySelector(`.lang-flag-btn.active .lang-flag-code`)?.textContent === code,
+    code.toUpperCase(),
+    { timeout: 5000 }
+  )
 }
 
 // ── Steps: navegación con mock ──────────────────────────────────────────────
@@ -121,14 +126,14 @@ Given('el usuario abre la pagina con traducciones simuladas', async function () 
   // Wait for translations to be applied (the lang-flag buttons appear once
   // the LanguageContext loads the mocked data)
   await this.page.waitForSelector('.lang-flag-btn', { timeout: 10000 })
-  await this.page.waitForTimeout(500)
+  // Wait until the Continuar button text is rendered (translations applied)
+  await this.page.waitForSelector('button.btn-primary', { timeout: 8000 })
 })
 
 Given('el usuario abre la pagina con traducciones vacías', async function () {
   await interceptTranslationAPIs(this.page, { idiomas: [], traducciones: {} })
   await this.grantIntranetAccess()
   await this.page.waitForSelector('input[name="nombre"]', { timeout: 20000 })
-  await this.page.waitForTimeout(300)
 })
 
 // ── Steps: selector de idioma visible ──────────────────────────────────────
@@ -190,28 +195,13 @@ Then('el botón de continuar muestra el texto en español', async function () {
 })
 
 Then('el formulario muestra etiquetas en francés', async function () {
-  // Wait for translations to be applied
-  await this.page.waitForTimeout(500)
-  // Check that at least one label contains a French translation (e.g. "Prénom")
-  const hasPrenom = await this.page.evaluate(() => {
-    return document.body.innerText.includes('Prénom')
-  })
-  if (!hasPrenom) {
-    throw new Error('No se encontró la etiqueta en francés "Prénom" en el formulario')
-  }
+  // Wait for "Prénom" label to appear after language switch
+  await this.page.getByText('Prénom', { exact: false }).waitFor({ state: 'visible', timeout: 8000 })
 })
 
 Then('los botones de respuesta muestran el texto en catalán', async function () {
-  // In Catalan, 'yes' = 'Sí' (same as Spanish), so we check field labels instead
-  // Wait for translations to be applied
-  await this.page.waitForTimeout(500)
-  // "Nom" should appear as a label in Catalan
-  const hasNom = await this.page.evaluate(() => {
-    return document.body.innerText.includes('Nom')
-  })
-  if (!hasNom) {
-    throw new Error('No se encontró la etiqueta en catalán "Nom" en el formulario')
-  }
+  // In Catalan, the name field label is "Nom" (vs "Nombre" in Spanish)
+  await this.page.getByText('Nom', { exact: false }).waitFor({ state: 'visible', timeout: 8000 })
 })
 
 Then('los elementos de interfaz son visibles aunque no haya traducciones cargadas', async function () {
@@ -281,19 +271,15 @@ When('el administrador navega a la pestaña de idiomas', async function () {
   const tab = this.page.locator('.admin-tabs button:has-text("Idiomas")').first()
   await tab.waitFor({ state: 'visible', timeout: 10000 })
   await tab.click()
-  await this.page.waitForTimeout(500)
+  // Wait for the idiomas section content to appear
+  await this.page.waitForSelector('.admin-toolbar, table, .info-box', { timeout: 10000 })
 })
 
 Then('la tabla de idiomas es visible', async function () {
   // Either a table or a loading indicator should be visible
   await this.page.waitForSelector('table, .info-box', { timeout: 10000 })
   // The heading for idiomas section should be present
-  const heading = await this.page.evaluate(() => {
-    return document.body.innerText.includes('Idiomas') || document.body.innerText.includes('idioma')
-  })
-  if (!heading) {
-    throw new Error('La sección de idiomas no es visible')
-  }
+  await this.page.getByText('Idiomas', { exact: false }).waitFor({ state: 'visible', timeout: 5000 })
 })
 
 Then('la tabla de idiomas muestra columnas de código y etiqueta', async function () {
@@ -328,7 +314,8 @@ When('el administrador crea un nuevo idioma con código {string} y etiqueta {str
   // Submit
   const saveBtn = this.page.locator('.admin-modal button.btn-primary, .modal button.btn-primary').first()
   await saveBtn.click()
-  await this.page.waitForTimeout(1000)
+  // Wait for the modal to close and the table to refresh
+  await this.page.waitForSelector('table', { timeout: 10000 })
 })
 
 Then('la tabla de idiomas muestra el idioma recién creado', async function () {
@@ -339,7 +326,7 @@ Then('la tabla de idiomas muestra el idioma recién creado', async function () {
   await this.page.waitForSelector('table', { timeout: 10000 })
   const tableText = await this.page.locator('table').innerText()
 
-  if (!tableText.toLowerCase().includes(code.toLowerCase()) && !tableText.toLowerCase().includes(label.toLowerCase())) {
+  if (!tableText.toLowerCase().includes(code.toLowerCase()) || !tableText.toLowerCase().includes(label.toLowerCase())) {
     throw new Error(`El idioma "${label}" (${code}) no aparece en la tabla tras crearlo`)
   }
 })
