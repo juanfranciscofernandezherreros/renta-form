@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { useAuth } from './AuthContext.jsx'
 import { useLanguage } from './LanguageContext.jsx'
 import {
@@ -669,7 +670,7 @@ export default function AdminPage({ onNavigate }) {
       </div>
 
       {/* Email modal */}
-      {emailModal && (
+      {emailModal && createPortal(
         <div className="admin-modal-overlay" onClick={() => setEmailModal(null)}>
           <div className="admin-modal" onClick={e => e.stopPropagation()}>
             <h2 className="admin-modal-title">📧 Enviar email</h2>
@@ -701,10 +702,10 @@ export default function AdminPage({ onNavigate }) {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
 
       {/* Delete confirmation modal */}
-      {confirmDelete && (
+      {confirmDelete && createPortal(
         <div className="admin-modal-overlay" onClick={() => setConfirmDelete(null)}>
           <div className="admin-modal" onClick={e => e.stopPropagation()}>
             <h2 className="admin-modal-title">⚠️ Confirmar eliminación</h2>
@@ -721,10 +722,10 @@ export default function AdminPage({ onNavigate }) {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
 
       {/* Edit declaration modal */}
-      {editModal && (
+      {editModal && createPortal(
         <div className="admin-modal-overlay" onClick={() => setEditModal(null)}>
           <div className="admin-modal" style={{ maxWidth: 640 }} onClick={e => e.stopPropagation()}>
             <h2 className="admin-modal-title">✏️ Editar declaración</h2>
@@ -789,10 +790,10 @@ export default function AdminPage({ onNavigate }) {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
 
       {/* Assign user account modal */}
-      {assignModal && (
+      {assignModal && createPortal(
         <div className="admin-modal-overlay" onClick={() => setAssignModal(null)}>
           <div className="admin-modal" style={{ maxWidth: 480 }} onClick={e => e.stopPropagation()}>
             <h2 className="admin-modal-title">👤 Asignar perfil de usuario</h2>
@@ -844,7 +845,7 @@ export default function AdminPage({ onNavigate }) {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
 
       <Footer />
 

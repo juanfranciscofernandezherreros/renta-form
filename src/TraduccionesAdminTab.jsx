@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import {
   listIdiomasAdmin,
   getIdiomaContent,
@@ -141,7 +142,7 @@ export default function TraduccionesAdminTab({ showToast }) {
       )}
 
       {/* Absolutely positioned content panel */}
-      {panelOpen && selected && (
+      {panelOpen && selected && createPortal(
         <div
           ref={panelRef}
           className="traduccion-panel"
@@ -281,7 +282,7 @@ export default function TraduccionesAdminTab({ showToast }) {
             </>
           )}
         </div>
-      )}
+      , document.body)}
     </div>
   )
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import {
   listPreguntasFormulario,
   createPreguntaFormulario,
@@ -177,7 +178,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
       />
 
       {/* Create / Edit modal */}
-      {modal && (
+      {modal && createPortal(
         <div className="admin-modal-overlay" onClick={closeModal}>
           <div className="admin-modal" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
             <h2 className="admin-modal-title">
@@ -217,10 +218,10 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
 
       {/* Delete confirmation */}
-      {confirmDelete && (
+      {confirmDelete && createPortal(
         <div className="admin-modal-overlay" onClick={() => setConfirmDelete(null)}>
           <div className="admin-modal" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
             <h2 className="admin-modal-title">🗑️ Eliminar pregunta</h2>
@@ -243,7 +244,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </div>
   )
 }
