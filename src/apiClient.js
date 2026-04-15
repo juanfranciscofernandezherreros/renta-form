@@ -198,6 +198,25 @@ export async function updateIdiomaContent({ path: { id } = {}, body } = {}) {
   return request('PUT', `/admin/idiomas/${encodeURIComponent(id)}/content`, { body })
 }
 
+// ── Admin: Traducciones CRUD ─────────────────────────────────────────────────
+
+export async function listTraduccionesAdmin(options = {}) {
+  const { query } = options
+  return request('GET', '/admin/traducciones', { query })
+}
+
+export async function createTraduccionAdmin({ body } = {}) {
+  return request('POST', '/admin/traducciones', { body })
+}
+
+export async function updateTraduccionAdmin({ path: { id } = {}, body } = {}) {
+  return request('PUT', `/admin/traducciones/${encodeURIComponent(id)}`, { body })
+}
+
+export async function deleteTraduccionAdmin({ path: { id } = {} } = {}) {
+  return request('DELETE', `/admin/traducciones/${encodeURIComponent(id)}`)
+}
+
 // ── PDF upload (stored as part of declaración) ─────────────────────────────
 // We update the declaración with the rentaPdf field so the data persists
 // across page reloads via the DB.

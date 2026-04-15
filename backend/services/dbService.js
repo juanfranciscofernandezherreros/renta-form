@@ -630,6 +630,97 @@ async function updateIdiomaContent(id, { content }) {
   return getIdiomaContent(id)
 }
 
+// ── Admin: Traducciones CRUD ─────────────────────────────────────────────────
+
+async function listTraduccionesAdmin({ page = 1, limit = 20, idiomaId, clave } = {}) {
+  const offset = (page - 1) * limit
+  const conditions = []
+  const values = []
+  let idx = 1
+  if (idiomaId) {
+    conditions.push(`t.idioma_id = $${idx}`)
+    values.push(idiomaId)
+    idx++
+  }
+  if (clave && clave.trim()) {
+    conditions.push(`t.clave ILIKE $${idx}`)
+    values.push(`%${clave.trim()}%`)
+    idx++
+  }
+  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
+  const countRes = await pool.query(
+    `SELECT COUNT(*) FROM traducciones t ${where}`,
+    values
+  )
+  const total = parseInt(countRes.rows[0].count, 10)
+  const rows = await pool.query(
+    `SELECT t.id, t.idioma_id, i.code AS idioma_code, i.label AS idioma_label, t.clave, t.valor
+     FROM traducciones t
+     JOIN idiomas i ON i.id = t.idioma_id
+     ${where}
+     ORDER BY i.code, t.clave
+     LIMIT $${idx} OFFSET $${idx + 1}`,
+    [...values, limit, offset]
+  )
+  return { data: { data: rows.rows, total, page, limit }, error: null }
+}
+
+async function createTraduccionAdmin({ idioma_id, clave, valor }) {
+  if (!idioma_id) return { data: null, error: { message: 'idioma_id es obligatorio' } }
+  if (!clave || !clave.trim()) return { data: null, error: { message: 'La clave es obligatoria' } }
+  const existing = await pool.query(
+    'SELECT id FROM idiomas WHERE id = $1',
+    [idioma_id]
+  )
+  if (!existing.rows.length) return { data: null, error: { message: 'Idioma no encontrado' }, status: 404 }
+  try {
+    const res = await pool.query(
+      `INSERT INTO traducciones (idioma_id, clave, valor) VALUES ($1, $2, $3)
+       RETURNING id, idioma_id, clave, valor`,
+      [idioma_id, clave.trim(), valor ?? '']
+    )
+    return { data: res.rows[0], error: null, status: 201 }
+  } catch (err) {
+    if (err.code === '23505') {
+      return { data: null, error: { message: 'Ya existe una traducción con esa clave para ese idioma' }, status: 409 }
+    }
+    throw err
+  }
+}
+
+async function updateTraduccionAdmin(id, { clave, valor }) {
+  if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
+  const existing = await pool.query('SELECT id FROM traducciones WHERE id = $1', [id])
+  if (!existing.rows.length) return { data: null, error: { message: 'Traducción no encontrada' }, status: 404 }
+  const updates = []
+  const values = []
+  let idx = 1
+  if (clave !== undefined) { updates.push(`clave = $${idx}`); values.push(clave.trim()); idx++ }
+  if (valor !== undefined) { updates.push(`valor = $${idx}`); values.push(valor); idx++ }
+  if (!updates.length) return { data: null, error: { message: 'No hay campos para actualizar' } }
+  values.push(id)
+  try {
+    const res = await pool.query(
+      `UPDATE traducciones SET ${updates.join(', ')} WHERE id = $${idx} RETURNING id, idioma_id, clave, valor`,
+      values
+    )
+    return { data: res.rows[0], error: null }
+  } catch (err) {
+    if (err.code === '23505') {
+      return { data: null, error: { message: 'Ya existe una traducción con esa clave para ese idioma' }, status: 409 }
+    }
+    throw err
+  }
+}
+
+async function deleteTraduccionAdmin(id) {
+  if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
+  const existing = await pool.query('SELECT id FROM traducciones WHERE id = $1', [id])
+  if (!existing.rows.length) return { data: null, error: { message: 'Traducción no encontrada' }, status: 404 }
+  await pool.query('DELETE FROM traducciones WHERE id = $1', [id])
+  return { data: null, error: null, status: 204 }
+}
+
 // ── Exports ────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -664,4 +755,8 @@ module.exports = {
   deleteIdiomaAdmin,
   getIdiomaContent,
   updateIdiomaContent,
+  listTraduccionesAdmin,
+  createTraduccionAdmin,
+  updateTraduccionAdmin,
+  deleteTraduccionAdmin,
 }

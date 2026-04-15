@@ -122,5 +122,35 @@ module.exports = function adminRoutes(svc) {
     send(res, result)
   })
 
+  // ── Traducciones CRUD ────────────────────────────────────────────────────
+
+  router.get('/traducciones', async (req, res) => {
+    const { idiomaId, clave, page, limit } = req.query
+    const result = await svc.listTraduccionesAdmin({
+      idiomaId: idiomaId || undefined,
+      clave: clave || undefined,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 20,
+    })
+    send(res, result)
+  })
+
+  router.post('/traducciones', async (req, res) => {
+    const result = await svc.createTraduccionAdmin(req.body ?? {})
+    if (result.status === 201) return res.status(201).json(result.data)
+    send(res, result)
+  })
+
+  router.put('/traducciones/:id', async (req, res) => {
+    const result = await svc.updateTraduccionAdmin(req.params.id, req.body ?? {})
+    send(res, result)
+  })
+
+  router.delete('/traducciones/:id', async (req, res) => {
+    const result = await svc.deleteTraduccionAdmin(req.params.id)
+    if (result.status === 204) return res.status(204).end()
+    send(res, result)
+  })
+
   return router
 }
