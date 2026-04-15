@@ -608,22 +608,34 @@ async function updateIdiomaContent(id, { content }) {
   const idioma = await pool.query('SELECT id, code FROM idiomas WHERE id = $1', [id])
   if (!idioma.rows.length) return { data: null, error: { message: 'Idioma no encontrado' }, status: 404 }
 
-  const entries = Object.entries(content)
-  if (entries.length) {
-    const values = []
-    const placeholders = []
-    let idx = 1
-    for (const [clave, valor] of entries) {
-      placeholders.push(`($${idx}, $${idx + 1}, $${idx + 2})`)
-      values.push(id, clave, String(valor))
-      idx += 3
+  // Full replacement inside a transaction: delete existing translations then re-insert.
+  // This ensures keys removed on the client are also removed from the database,
+  // and the operation is atomic — a failed INSERT cannot leave the table empty.
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    await client.query('DELETE FROM traducciones WHERE idioma_id = $1', [id])
+    const entries = Object.entries(content)
+    if (entries.length) {
+      const values = []
+      const placeholders = []
+      let idx = 1
+      for (const [clave, valor] of entries) {
+        placeholders.push(`($${idx}, $${idx + 1}, $${idx + 2})`)
+        values.push(id, clave, String(valor))
+        idx += 3
+      }
+      await client.query(
+        `INSERT INTO traducciones (idioma_id, clave, valor) VALUES ${placeholders.join(', ')}`,
+        values
+      )
     }
-    await pool.query(
-      `INSERT INTO traducciones (idioma_id, clave, valor)
-       VALUES ${placeholders.join(', ')}
-       ON CONFLICT (idioma_id, clave) DO UPDATE SET valor = EXCLUDED.valor`,
-      values
-    )
+    await client.query('COMMIT')
+  } catch (err) {
+    await client.query('ROLLBACK')
+    throw err
+  } finally {
+    client.release()
   }
 
   // Return the full content after update
