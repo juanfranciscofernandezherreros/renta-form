@@ -41,7 +41,7 @@ export function LanguageProvider({ children }) {
     fetchLanguageData().then((data) => {
       if (!cancelled) applyData(data)
     }).catch((err) => {
-      console.warn('Failed to load translations from DB, using static fallback:', err)
+      console.warn('Failed to load translations from DB:', err)
     })
     return () => { cancelled = true }
   }, [applyData])
@@ -81,3 +81,4 @@ export function LanguageProvider({ children }) {
 export function useLanguage() {
   return useContext(LanguageContext)
 }
+
