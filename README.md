@@ -261,14 +261,20 @@ Envía todos los campos del formulario como `multipart/form-data`. Los campos de
 
 ## Tests E2E con Cucumber + Playwright
 
-Los tests E2E navegan por toda la aplicación y generan **screenshots** de cada pantalla en `screenshots/`.
+Los tests E2E navegan por toda la aplicación y generan **screenshots** de cada pantalla en `screenshots/`. Hay tres ficheros de funcionalidades:
+
+| Feature | Descripción |
+|---|---|
+| `features/form.feature` | Flujo completo del formulario, validaciones y envío |
+| `features/idiomas.feature` | Selector de idioma, traducciones, API y gestión admin |
+| `features/preguntas.feature` | Preguntas condicionales, progreso y edición admin |
 
 ### Requisitos
 
 Antes de ejecutar los tests, arranca el backend y el servidor de desarrollo:
 
 ```bash
-# Terminal 1 – Backend (PostgreSQL)
+# Terminal 1 – Backend
 cd backend && npm install && npm start
 
 # Terminal 2 – Frontend dev (incluye proxy /v1 → localhost:3001)
@@ -281,11 +287,10 @@ npm run dev
 npm test
 ```
 
-Los screenshots se guardan en `screenshots/` con nombres descriptivos:
+Los screenshots del flujo principal del formulario se guardan en `screenshots/` con nombres descriptivos:
 
 | Screenshot | Descripción |
 |---|---|
-| `00_pantalla_intranet.png` | Pantalla de acceso a la intranet |
 | `01_pagina_inicio.png` | Página principal – paso 1 (Identificación) |
 | `02_validacion_campos_vacios.png` | Validación con campos vacíos |
 | `03_datos_identificacion_rellenos.png` | Formulario de identificación relleno |
@@ -295,10 +300,12 @@ Los screenshots se guardan en `screenshots/` con nombres descriptivos:
 | `07_familia_respondida.png` | Preguntas familiares respondidas |
 | `08_paso_ingresos.png` | Paso 4 – Ingresos extraordinarios |
 | `09_ingresos_respondidos.png` | Ingresos respondidos |
-| `10_paso_documentos.png` | Paso 5 – Documentación adjunta |
-| `11_comentarios_rellenos.png` | Comentarios finales rellenos |
-| `12_formulario_enviado_exito.png` | Confirmación de envío exitoso |
+| `10_formulario_enviado_exito.png` | Confirmación de envío exitoso |
+| `11_primer_envio_exito.png` | Primer envío exitoso (escenario duplicado) |
+| `12_envio_duplicado_error.png` | Error por declaración duplicada (mismo DNI/NIE) |
 | `13_pantalla_login.png` | Pantalla de login de usuario |
 | `14_pantalla_consulta.png` | Pantalla de consulta por token |
+
+Los tests de idiomas generan screenshots adicionales en el mismo directorio (`idiomas_01_*.png` … `idiomas_12_*.png`).
 
 > **Nota**: se usa `npm run dev` (no `npm run preview`) para que el proxy de Vite reenvíe las peticiones `/v1` al backend en el puerto 3001.

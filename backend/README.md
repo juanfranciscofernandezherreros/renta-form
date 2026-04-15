@@ -24,7 +24,11 @@ Node.js/Express REST API that backs the Renta Form frontend.
 3. Start the server:
 
    ```bash
+   # Mock profile (no DB required, useful for local development without PostgreSQL)
    npm start
+
+   # PostgreSQL profile
+   npm run start:db
    ```
 
 The server listens on `http://localhost:3001`.
@@ -39,7 +43,9 @@ All endpoints are prefixed with `/v1`.
 | POST | `/v1/auth/login` | Login (dniNie + password) |
 | POST | `/v1/auth/verificar-codigo` | Verify intranet access code |
 | POST | `/v1/auth/change-password` | Change user password |
-| GET | `/v1/irpf/preguntas` | Static questionnaire catalogue |
+| GET | `/v1/irpf/preguntas` | Questionnaire catalogue |
+| GET | `/v1/irpf/idiomas` | List active languages |
+| GET | `/v1/irpf/traducciones` | All translations grouped by language code |
 | GET | `/v1/irpf/declaraciones` | List declarations (paginated) |
 | POST | `/v1/irpf/declaraciones` | Submit a new declaration (multipart) |
 | GET | `/v1/irpf/declaraciones/all` | List all declarations (admin) |
@@ -72,23 +78,36 @@ All endpoints are prefixed with `/v1`.
 | POST | `/v1/admin/users/:dniNie/email` | Send email to user |
 | PUT | `/v1/admin/users/:dniNie/preguntas` | Assign questions to user |
 | PUT | `/v1/admin/users/:dniNie/secciones` | Assign sections to user |
-| GET | `/v1/admin/idiomas` | List languages |
+| GET | `/v1/admin/idiomas` | List languages (paginated) |
 | POST | `/v1/admin/idiomas` | Create language |
 | PUT | `/v1/admin/idiomas/:id` | Update language |
 | DELETE | `/v1/admin/idiomas/:id` | Delete language |
-| GET | `/v1/admin/idiomas/:id/content` | Get translations |
-| PUT | `/v1/admin/idiomas/:id/content` | Update translations |
+| GET | `/v1/admin/idiomas/:id/content` | Get translations for a language |
+| PUT | `/v1/admin/idiomas/:id/content` | Update translations for a language |
+| GET | `/v1/admin/traducciones/faltantes` | Missing translation keys per language |
 
 ## Development proxy
 
 In development the Vite frontend proxies `/v1` → `http://localhost:3001/v1`.  
-Set `VITE_DEMO_MODE=false` (or `DEMO_MODE=false` in `src/constants.js`) and run
-both servers at the same time:
+Run both servers at the same time:
 
 ```bash
-# Terminal 1 – backend
-cd backend && npm start
+# Terminal 1 – backend (PostgreSQL)
+cd backend && npm run start:db
 
 # Terminal 2 – frontend
 cd .. && npm run dev
 ```
+
+## Internacionalisation (i18n)
+
+Languages and translations are stored in the `idiomas` and `traducciones` DB tables.
+
+| Public endpoint | Description |
+|---|---|
+| `GET /v1/irpf/idiomas` | Returns the list of active languages (`[{ code, label }]`) |
+| `GET /v1/irpf/traducciones` | Returns all translations grouped by language code |
+
+The frontend `LanguageContext` fetches both endpoints on startup. If the DB has no data it falls back to the static JSON files in `translations/`.
+
+Use `GET /v1/admin/traducciones/faltantes` to audit which translation keys are missing for each language relative to the reference language (`es`).

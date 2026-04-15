@@ -63,33 +63,44 @@ renta-form/
 │   └── openapi.yaml        # Especificación OpenAPI 3.0 de la API
 ├── public/
 │   └── openapi.yaml        # Copia pública para Swagger UI
-├── database/               # (Reservado para datos persistidos)
+├── database/               # Scripts SQL de base de datos
+├── translations/           # Traducciones estáticas de respaldo (JSON)
+│   ├── es.json             # Español
+│   ├── ca.json             # Catalán
+│   ├── en.json             # Inglés
+│   └── fr.json             # Francés
+├── features/               # Tests E2E con Cucumber + Playwright
+│   ├── form.feature        # Escenarios del formulario principal
+│   ├── idiomas.feature     # Escenarios de idiomas y traducciones
+│   ├── preguntas.feature   # Escenarios de preguntas condicionales y admin
+│   ├── step_definitions/   # Implementación de pasos Cucumber
+│   └── support/            # Hooks, world y utilidades de test
 ├── src/
 │   ├── main.jsx            # Punto de entrada React
 │   ├── App.jsx             # Formulario principal (cuestionario IRPF)
 │   ├── Router.jsx          # Enrutador hash-based
 │   ├── App.css / index.css # Estilos globales
 │   ├── constants.js        # Constantes (URLs de API)
-│   ├── i18n.js             # Traducciones (es, fr, en, ca)
+│   ├── apiClient.js        # Cliente HTTP centralizado para el backend
+│   ├── i18nUtils.js        # Utilidades de internacionalización (translateYN)
 │   ├── pdfUtils.js         # Utilidades para generar PDFs con jsPDF
 │   │
 │   ├── AuthContext.jsx     # Contexto de autenticación
-│   ├── LanguageContext.jsx # Contexto de idioma
+│   ├── LanguageContext.jsx # Contexto de idioma (carga desde DB + fallback estático)
 │   │
 │   ├── LoginPage.jsx       # Página de login de usuario
 │   ├── ProfilePage.jsx     # Perfil de usuario y sus declaraciones
 │   ├── AdminLoginPage.jsx  # Login del panel de administración
-│   ├── AdminPage.jsx       # Panel de administración principal
-│   ├── IntranetLoginPage.jsx  # Puerta de entrada a la intranet
+│   ├── AdminPage.jsx       # Panel de administración principal (5 pestañas)
 │   ├── TokenConsultaPage.jsx  # Consulta de declaración por token
 │   ├── ApiDocs.jsx         # Visualizador Swagger UI
-│   ├── Footer.jsx          # Pie de página con "Cómo funciona" y contacto
+│   ├── Footer.jsx          # Pie de página con aviso legal
 │   ├── Pagination.jsx      # Componente reutilizable de paginación
 │   │
-│   ├── PreguntasAdminTab.jsx      # Tab admin: gestión de preguntas
-│   ├── SeccionesAdminTab.jsx      # Tab admin: gestión de secciones
-│   ├── UsuariosAdminTab.jsx       # Tab admin: gestión de usuarios
-│   ├── DeclaracionPreguntasPanel.jsx # Panel de preguntas adicionales por declaración
+│   ├── PreguntasFormularioAdminTab.jsx  # Tab admin: preguntas del formulario
+│   ├── UsuariosAdminTab.jsx             # Tab admin: gestión de usuarios
+│   ├── IdiomasAdminTab.jsx              # Tab admin: CRUD de idiomas y sus traducciones
+│   ├── TraduccionesAdminTab.jsx         # Tab admin: edición de traducciones por idioma
 │   │
 │   └── api/                # Código generado automáticamente desde OpenAPI
 │       ├── client.gen.ts
@@ -110,7 +121,6 @@ main.jsx
   └── AuthProvider (AuthContext)
         └── LanguageProvider (LanguageContext)
               └── Router.jsx  ← lee window.location.hash
-                    ├── IntranetLoginPage  (si !intranetAccess)
                     ├── App.jsx            (#/ o vacío)
                     ├── LoginPage          (#/login)
                     ├── ProfilePage        (#/perfil)
@@ -152,26 +162,18 @@ La navegación es hash-based, gestionada por `Router.jsx`:
 
 | Ruta | Componente | Acceso |
 |---|---|---|
-| `#/` (raíz) | `App.jsx` — Cuestionario IRPF | Requiere código de intranet |
-| `#/login` | `LoginPage.jsx` | Requiere código de intranet |
+| `#/` (raíz) | `App.jsx` — Cuestionario IRPF | Público |
+| `#/login` | `LoginPage.jsx` | Público |
 | `#/perfil` | `ProfilePage.jsx` | Usuario autenticado |
 | `#/admin` | `AdminPage.jsx` | Usuario con rol `admin` |
-| `#/consulta` | `TokenConsultaPage.jsx` | Requiere código de intranet |
-| `#/api-docs` | `ApiDocs.jsx` | Requiere código de intranet |
-
-> **Nota:** Todas las rutas están protegidas por la pantalla `IntranetLoginPage`, que se muestra si el usuario no ha introducido el código de intranet en la sesión actual.
+| `#/consulta` | `TokenConsultaPage.jsx` | Público |
+| `#/api-docs` | `ApiDocs.jsx` | Público |
 
 ---
 
 ## 7. Componentes y Páginas
 
-### 7.1 `IntranetLoginPage.jsx` — Puerta de la Intranet
-
-Primera pantalla que ve cualquier visitante. Solicita un **código de acceso** de un solo uso para la sesión. En modo demo, el código es `intranet2025`. Al validarse, se guarda en `sessionStorage` y se concede acceso vía `AuthContext.grantIntranetAccess()`.
-
----
-
-### 7.2 `App.jsx` — Cuestionario IRPF (formulario principal)
+### 7.1 `App.jsx` — Cuestionario IRPF (formulario principal)
 
 Es el componente más extenso de la aplicación. Gestiona:
 
@@ -192,13 +194,13 @@ Es el componente más extenso de la aplicación. Gestiona:
 
 ---
 
-### 7.3 `LoginPage.jsx` — Acceso de Usuario
+### 7.2 `LoginPage.jsx` — Acceso de Usuario
 
 Permite al contribuyente identificarse con su **DNI/NIE** y **contraseña** para acceder a su perfil. Incluye validación de formato de DNI/NIE con expresión regular.
 
 ---
 
-### 7.4 `ProfilePage.jsx` — Perfil del Usuario
+### 7.3 `ProfilePage.jsx` — Perfil del Usuario
 
 Muestra todas las declaraciones enviadas por el usuario autenticado. Para cada declaración:
 
@@ -219,15 +221,15 @@ Muestra todas las declaraciones enviadas por el usuario autenticado. Para cada d
 
 ---
 
-### 7.5 `AdminLoginPage.jsx` — Login de Administrador
+### 7.4 `AdminLoginPage.jsx` — Login de Administrador
 
-Pantalla de acceso para el panel de administración. Acepta un nombre de usuario y contraseña. Verifica que el rol sea `admin`. En modo demo: usuario `admin`, contraseña `admin`.
+Pantalla de acceso para el panel de administración. Acepta un nombre de usuario y contraseña. Verifica que el rol sea `admin`. Credenciales por defecto: usuario `ADMIN`, contraseña `admin1234`.
 
 ---
 
-### 7.6 `AdminPage.jsx` — Panel de Administración
+### 7.5 `AdminPage.jsx` — Panel de Administración
 
-Panel central para la gestión interna. Organizado en **cuatro pestañas**:
+Panel central para la gestión interna. Organizado en **cinco pestañas**:
 
 #### Pestaña: Declaraciones
 - Lista paginada de todas las declaraciones registradas.
@@ -237,60 +239,53 @@ Panel central para la gestión interna. Organizado en **cuatro pestañas**:
 - Eliminación de declaraciones.
 - Envío de email simulado al contribuyente.
 - Descarga de PDF de cada declaración.
-- Panel de preguntas adicionales por declaración (`DeclaracionPreguntasPanel`).
 - Asignación de declaración a cuenta de usuario.
 
-#### Pestaña: Preguntas (`PreguntasAdminTab`)
-- CRUD completo de preguntas adicionales personalizadas.
-- Tipos de respuesta soportados: Sí/No, texto libre, número, fecha, importe, porcentaje, texto largo.
-- Asociación de preguntas a secciones.
-- Activación/desactivación de preguntas.
-
-#### Pestaña: Secciones (`SeccionesAdminTab`)
-- CRUD completo de secciones del cuestionario.
-- Vista del número de declaraciones y preguntas por sección.
-- Ordenación y activación de secciones.
+#### Pestaña: Preguntas (`PreguntasFormularioAdminTab`)
+- Tabla completa de las preguntas que aparecen en el formulario del cuestionario.
+- Edición del texto de cada pregunta (soporte multilingüe: `textos` JSONB).
+- Muestra el campo técnico (`campo`) y el orden de cada pregunta.
 
 #### Pestaña: Usuarios (`UsuariosAdminTab`)
 - Lista de todos los usuarios registrados.
 - Acciones: bloquear/desbloquear, reportar, eliminar, enviar email.
-- Asignación de preguntas y secciones personalizadas por usuario.
 - Vista de declaraciones de cada usuario.
+
+#### Pestaña: Idiomas (`IdiomasAdminTab`)
+- CRUD completo de idiomas disponibles en la plataforma.
+- Activación/desactivación de idiomas.
+- Editor de traducciones por idioma (abre un panel lateral con todos los pares clave→valor).
+- Al guardar cambios, recarga las traducciones en todos los clientes activos.
+
+#### Pestaña: Traducciones (`TraduccionesAdminTab`)
+- Vista unificada de todas las traducciones agrupadas por idioma.
+- Muestra un resumen de claves faltantes respecto al idioma de referencia (`es`).
+- Permite añadir nuevas claves de traducción o editar las existentes.
+- Enlaza con el endpoint `/v1/admin/traducciones/faltantes` para detectar claves incompletas.
 
 ---
 
-### 7.7 `TokenConsultaPage.jsx` — Consulta por Token
+### 7.6 `TokenConsultaPage.jsx` — Consulta por Token
 
 Permite consultar el estado de una declaración sin necesidad de autenticarse, usando el **token** generado al enviar el formulario. Muestra un historial de consultas almacenado en `localStorage` y permite descargar el PDF de la declaración.
 
 ---
 
-### 7.8 `ApiDocs.jsx` — Documentación de la API
+### 7.7 `ApiDocs.jsx` — Documentación de la API
 
 Integración de **Swagger UI** que renderiza la especificación OpenAPI desde `/openapi.yaml`. Cargado de forma lazy para no penalizar el tiempo de carga inicial.
 
 ---
 
-### 7.9 `Footer.jsx` — Pie de Página
+### 7.8 `Footer.jsx` — Pie de Página
 
-Componente avanzado que incluye:
-
-- Sección desplegable **"Cómo funciona"** con 5 pasos explicativos.
-- Formulario de **contacto** con validación (nombre, email, asunto, mensaje). Simulado en modo demo.
-- Enlace a la documentación de la API (si `showApiDocs = true`).
-- Aviso legal y enlace a la Agencia Tributaria.
+Componente que incluye el aviso legal y enlace a la Agencia Tributaria.
 
 ---
 
-### 7.10 `Pagination.jsx` — Paginación
+### 7.9 `Pagination.jsx` — Paginación
 
 Componente reutilizable con botones de primera/anterior/siguiente/última página y puntos suspensivos para rangos largos.
-
----
-
-### 7.11 `DeclaracionPreguntasPanel.jsx` — Preguntas Adicionales por Declaración
-
-Panel dentro del admin que permite asignar preguntas adicionales específicas a una declaración concreta y registrar sus respuestas.
 
 ---
 
@@ -316,13 +311,23 @@ Provee el estado de autenticación a toda la aplicación:
 
 ### `LanguageContext.jsx`
 
-Provee soporte multilingüe:
+Provee soporte multilingüe con carga dinámica desde la base de datos:
 
 | Valor / Función | Tipo | Descripción |
 |---|---|---|
 | `lang` | `string` | Idioma activo (`'es'`, `'fr'`, `'en'`, `'ca'`) |
 | `setLang(code)` | función | Cambia el idioma activo |
 | `t(key)` | función | Devuelve el texto traducido para la clave dada |
+| `reloadTranslations()` | función | Recarga las traducciones desde el backend |
+| `availableLanguages` | `array` | Lista de idiomas disponibles `{ code, label }` |
+
+**Cadena de resolución de `t(key)`:**
+1. Traducciones cargadas desde la DB para el idioma activo.
+2. Fallback al JSON estático de `translations/{lang}.json`.
+3. Fallback al JSON estático español (`translations/es.json`).
+4. Si nada coincide, devuelve la propia `key`.
+
+**Archivos de traducción estática (respaldo):** `translations/es.json`, `translations/ca.json`, `translations/en.json`, `translations/fr.json` — cada fichero contiene 100 claves.
 
 ---
 
@@ -379,6 +384,42 @@ Detalle completo de una declaración.
 #### `PATCH /irpf/declaraciones/{id}`
 Actualiza el estado de una declaración.
 
+#### Endpoints de Idiomas y Traducciones (públicos)
+
+##### `GET /irpf/idiomas`
+Devuelve la lista de idiomas activos disponibles en la plataforma.
+
+**Respuesta exitosa (200):**
+```json
+[
+  { "code": "es", "label": "Español" },
+  { "code": "ca", "label": "Català" },
+  { "code": "en", "label": "English" },
+  { "code": "fr", "label": "Français" }
+]
+```
+
+##### `GET /irpf/traducciones`
+Devuelve todas las traducciones agrupadas por código de idioma.
+
+**Respuesta exitosa (200):**
+```json
+{
+  "es": { "btnContinue": "Continuar", "btnSubmit": "📤 Enviar cuestionario", "yes": "Sí", "no": "No" },
+  "en": { "btnContinue": "Continue", "btnSubmit": "Send declaration", "yes": "Yes", "no": "No" }
+}
+```
+
+#### Endpoints de Administración de Traducciones
+
+- `GET /admin/traducciones/faltantes` — Devuelve las claves requeridas y un resumen de las que faltan por idioma.
+- `GET /admin/idiomas` — Lista paginada de idiomas (admin).
+- `POST /admin/idiomas` — Crea un nuevo idioma.
+- `PUT /admin/idiomas/{id}` — Actualiza un idioma.
+- `DELETE /admin/idiomas/{id}` — Elimina un idioma.
+- `GET /admin/idiomas/{id}/content` — Obtiene las traducciones de un idioma.
+- `PUT /admin/idiomas/{id}/content` — Actualiza las traducciones de un idioma.
+
 #### Endpoints de Administración
 - `GET/POST /admin/preguntas` — Gestión de preguntas adicionales.
 - `GET/PUT/DELETE /admin/preguntas/{id}` — CRUD individual de preguntas.
@@ -396,7 +437,23 @@ Actualiza el estado de una declaración.
 
 ## 10. Internacionalización (i18n)
 
-El fichero `src/i18n.js` contiene todas las cadenas de texto de la interfaz organizadas por idioma:
+La aplicación implementa un sistema de traducción **híbrido**: las traducciones se cargan dinámicamente desde la base de datos y se complementan con ficheros JSON estáticos de respaldo.
+
+### Arquitectura
+
+```
+LanguageContext.jsx
+  ├── Carga dinámica: GET /v1/irpf/idiomas + GET /v1/irpf/traducciones
+  └── Fallback estático: translations/{es,ca,en,fr}.json
+```
+
+Al iniciar la aplicación, `LanguageContext` realiza dos llamadas en paralelo al backend para obtener:
+1. Los **idiomas disponibles** (`/v1/irpf/idiomas`).
+2. Todas las **traducciones** agrupadas por idioma (`/v1/irpf/traducciones`).
+
+Si la API falla o no devuelve datos, se usan automáticamente los ficheros JSON estáticos de `translations/`.
+
+### Idiomas soportados
 
 | Código | Idioma |
 |---|---|
@@ -405,7 +462,36 @@ El fichero `src/i18n.js` contiene todas las cadenas de texto de la interfaz orga
 | `en` | Inglés |
 | `ca` | Catalán |
 
-Las preguntas del cuestionario también tienen traducción completa (campo `textos`), lo que permite que el formulario se muestre íntegramente en el idioma seleccionado por el usuario. El idioma se puede cambiar en cualquier momento desde el selector en la cabecera.
+El administrador puede añadir o desactivar idiomas desde el panel de administración (pestaña **Idiomas**).
+
+### Claves de traducción
+
+Existen **100 claves** de traducción que cubren todos los textos de la interfaz. Entre las más importantes:
+
+| Clave | Ejemplo (es) |
+|---|---|
+| `btnContinue` | `Continuar` |
+| `btnSubmit` | `📤 Enviar cuestionario` |
+| `btnBack` | `Volver` |
+| `yes` / `no` | `Sí` / `No` |
+| `fieldNombre` | `Nombre` |
+| `fieldDniNie` | `Número de DNI / NIE` |
+| `successTitle` | `¡Cuestionario enviado correctamente!` |
+| `estadoRecibido` … `estadoArchivado` | Estados del expediente |
+
+### Función `t(key)` y utilidades
+
+El hook `useLanguage()` expone la función `t(key)`, que resuelve la traducción siguiendo la cadena descrita en la sección anterior.
+
+El módulo `src/i18nUtils.js` proporciona la función `translateYN(value, t)`, que convierte los valores `'si'`/`'no'` usando `t('yes')` y `t('no')`.
+
+### Gestión de traducciones por el administrador
+
+Desde el panel de administración (**Idiomas** y **Traducciones**) es posible:
+- Crear nuevos idiomas con su lista completa de traducciones.
+- Editar las traducciones de cualquier idioma clave a clave.
+- Detectar claves faltantes respecto al idioma de referencia (`es`) mediante el endpoint `/v1/admin/traducciones/faltantes`.
+- Los cambios se aplican en tiempo real: al guardar se llama a `reloadTranslations()`, que actualiza el contexto de idioma en todos los componentes activos.
 
 ---
 
@@ -459,6 +545,9 @@ npm install
 # Iniciar servidor de desarrollo (http://localhost:5173)
 npm run dev
 
+# Ejecutar los tests E2E con Cucumber + Playwright
+npm test
+
 # Generar cliente TypeScript desde OpenAPI
 npm run generate
 
@@ -479,6 +568,31 @@ npm run lint
 
 - **Node.js** ≥ 20.0.0
 - **npm** (incluido con Node.js)
+
+### Tests E2E — Cucumber + Playwright
+
+Los tests E2E están organizados en tres ficheros de funcionalidades:
+
+| Feature | Descripción |
+|---|---|
+| `features/form.feature` | Flujo completo del formulario, validaciones, envío y pantallas de login/consulta |
+| `features/idiomas.feature` | Selector de idioma, cambio de idioma, traducciones aplicadas, API de idiomas, pestaña de admin |
+| `features/preguntas.feature` | Preguntas condicionales, barra de progreso, validación, edición de preguntas desde admin |
+
+**Requisitos previos para ejecutar los tests:**
+
+```bash
+# Terminal 1 – Backend
+cd backend && npm install && npm start
+
+# Terminal 2 – Frontend (con proxy /v1 → localhost:3001)
+npm run dev
+
+# Terminal 3 – Tests
+npm test
+```
+
+Los screenshots se guardan en `screenshots/` con nombres descriptivos.
 
 ---
 
