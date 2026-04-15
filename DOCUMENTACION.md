@@ -223,7 +223,9 @@ Muestra todas las declaraciones enviadas por el usuario autenticado. Para cada d
 
 ### 7.4 `AdminLoginPage.jsx` — Login de Administrador
 
-Pantalla de acceso para el panel de administración. Acepta un nombre de usuario y contraseña. Verifica que el rol sea `admin`. Credenciales por defecto: usuario `ADMIN`, contraseña `admin1234`.
+Pantalla de acceso para el panel de administración. Acepta un nombre de usuario y contraseña. Verifica que el rol sea `admin`. Credenciales por defecto para desarrollo/demo: usuario `ADMIN`, contraseña `admin1234`.
+
+> **⚠️ Producción:** cambia las credenciales del administrador antes de desplegar en un entorno real.
 
 ---
 

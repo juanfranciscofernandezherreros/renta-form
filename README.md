@@ -274,7 +274,7 @@ Los tests E2E navegan por toda la aplicación y generan **screenshots** de cada 
 Antes de ejecutar los tests, arranca el backend y el servidor de desarrollo:
 
 ```bash
-# Terminal 1 – Backend
+# Terminal 1 – Backend (mock, sin base de datos)
 cd backend && npm install && npm start
 
 # Terminal 2 – Frontend dev (incluye proxy /v1 → localhost:3001)
