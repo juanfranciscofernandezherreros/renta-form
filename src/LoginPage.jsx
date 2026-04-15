@@ -56,7 +56,7 @@ export default function LoginPage({ onNavigate }) {
     <>
       <header>
         <div className="header-inner">
-          <div className="logo">NH Gestión Integral</div>
+          <div className="logo">{t('logoText')}</div>
           <nav className="header-nav">
             <div className="lang-flags-top" role="group" aria-label={t('langLabel')}>
               {availableLanguages.map(l => (
