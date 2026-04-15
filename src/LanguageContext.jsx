@@ -49,13 +49,8 @@ export function LanguageProvider({ children }) {
   const t = useCallback(
     (key) => {
       const langTranslations = translations[lang]
-      if (langTranslations && langTranslations[key] !== undefined) {
+      if (langTranslations && langTranslations[key]) {
         return langTranslations[key]
-      }
-      // Fallback to Spanish, then the key itself
-      const esTranslations = translations.es
-      if (esTranslations && esTranslations[key] !== undefined) {
-        return esTranslations[key]
       }
       return key
     },
