@@ -38,6 +38,16 @@ async function migrate() {
     } else {
       console.log('[migrate] idiomas table already exists, skipping.')
     }
+
+    // Add missing columns to preguntas (idempotent – IF NOT EXISTS)
+    await client.query(`
+      ALTER TABLE preguntas
+        ADD COLUMN IF NOT EXISTS seccion         VARCHAR(50)  NOT NULL DEFAULT 'general',
+        ADD COLUMN IF NOT EXISTS seccion_orden   INTEGER      NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS seccion_titulos JSONB        NOT NULL DEFAULT '{}',
+        ADD COLUMN IF NOT EXISTS actualizada_en  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    `)
+    console.log('[migrate] preguntas columns ensured.')
   } finally {
     client.release()
   }
