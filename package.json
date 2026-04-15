@@ -12,6 +12,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "start": "serve -s dist",
+    "run:admin": "vite --open /#/admin",
     "start:backend": "cd backend && npm start",
     "start:db": "cd backend && npm run start:db",
     "migrate": "cd backend && npm run migrate",
