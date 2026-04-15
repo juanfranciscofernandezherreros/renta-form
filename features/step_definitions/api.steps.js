@@ -2,22 +2,18 @@ import { Given, When, Then } from '@cucumber/cucumber'
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-/** Replace {key} placeholders in a URL with values from this.savedValues. */
-function interpolate(url, saved = {}) {
+/** Replace {key} placeholders in a URL using values from savedValues.
+ *  Throws if a placeholder key is not found (strict mode for URLs). */
+function interpolateUrl(url, saved = {}) {
   return url.replace(/\{(\w+)\}/g, (_, key) => {
     if (saved[key] === undefined) throw new Error(`Saved value "${key}" not found. Available: ${Object.keys(saved).join(', ')}`)
     return saved[key]
   })
 }
 
-/** Parse a DocString as JSON, ignoring leading/trailing whitespace and a leading "json" marker. */
-function parseDocstring(raw) {
-  const cleaned = raw.trim().replace(/^json\s*/i, '')
-  return JSON.parse(cleaned)
-}
-
-/** Replace {key} placeholders in a string only when the key exists in saved. */
-function interpolateDocstring(str, saved = {}) {
+/** Replace {key} placeholders in a string using values from savedValues.
+ *  Unknown placeholders are kept as-is (lenient mode for docstrings / assertions). */
+function interpolateLenient(str, saved = {}) {
   return str.replace(/\{(\w+)\}/g, (match, key) => (saved[key] !== undefined ? saved[key] : match))
 }
 
@@ -29,7 +25,7 @@ function getField(obj, path) {
 // ── Request steps ──────────────────────────────────────────────────────────
 
 When('hago GET a {string}', async function (url) {
-  const finalUrl = interpolate(url, this.savedValues)
+  const finalUrl = interpolateUrl(url, this.savedValues)
   const resp = await this.apiContext.get(finalUrl)
   let body
   try { body = await resp.json() } catch { body = null }
@@ -37,7 +33,7 @@ When('hago GET a {string}', async function (url) {
 })
 
 When('hago POST a {string} sin body', async function (url) {
-  const finalUrl = interpolate(url, this.savedValues)
+  const finalUrl = interpolateUrl(url, this.savedValues)
   const resp = await this.apiContext.post(finalUrl)
   let body
   try { body = await resp.json() } catch { body = null }
@@ -45,8 +41,8 @@ When('hago POST a {string} sin body', async function (url) {
 })
 
 When('hago POST a {string} con body:', async function (url, docstring) {
-  const finalUrl = interpolate(url, this.savedValues)
-  const data = parseDocstring(interpolateDocstring(docstring, this.savedValues))
+  const finalUrl = interpolateUrl(url, this.savedValues)
+  const data = JSON.parse(interpolateLenient(docstring, this.savedValues))
   const resp = await this.apiContext.post(finalUrl, { data })
   let body
   try { body = await resp.json() } catch { body = null }
@@ -54,8 +50,8 @@ When('hago POST a {string} con body:', async function (url, docstring) {
 })
 
 When('hago PUT a {string} con body:', async function (url, docstring) {
-  const finalUrl = interpolate(url, this.savedValues)
-  const data = parseDocstring(interpolateDocstring(docstring, this.savedValues))
+  const finalUrl = interpolateUrl(url, this.savedValues)
+  const data = JSON.parse(interpolateLenient(docstring, this.savedValues))
   const resp = await this.apiContext.put(finalUrl, { data })
   let body
   try { body = await resp.json() } catch { body = null }
@@ -63,8 +59,8 @@ When('hago PUT a {string} con body:', async function (url, docstring) {
 })
 
 When('hago PATCH a {string} con body:', async function (url, docstring) {
-  const finalUrl = interpolate(url, this.savedValues)
-  const data = parseDocstring(interpolateDocstring(docstring, this.savedValues))
+  const finalUrl = interpolateUrl(url, this.savedValues)
+  const data = JSON.parse(interpolateLenient(docstring, this.savedValues))
   const resp = await this.apiContext.patch(finalUrl, { data })
   let body
   try { body = await resp.json() } catch { body = null }
@@ -72,7 +68,7 @@ When('hago PATCH a {string} con body:', async function (url, docstring) {
 })
 
 When('hago DELETE a {string}', async function (url) {
-  const finalUrl = interpolate(url, this.savedValues)
+  const finalUrl = interpolateUrl(url, this.savedValues)
   const resp = await this.apiContext.delete(finalUrl)
   let body
   try { body = await resp.json() } catch { body = null }
@@ -112,7 +108,7 @@ Then('la respuesta contiene el campo {string}', function (fieldPath) {
 })
 
 Then('el campo {string} de la respuesta es {string}', function (fieldPath, expected) {
-  const resolvedExpected = interpolateDocstring(expected, this.savedValues)
+  const resolvedExpected = interpolateLenient(expected, this.savedValues)
   const value = getField(this.lastApiResponse.body, fieldPath)
   if (String(value) !== String(resolvedExpected)) {
     throw new Error(`Campo "${fieldPath}": se esperaba "${resolvedExpected}" pero se recibió "${value}"`)

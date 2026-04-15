@@ -17,6 +17,8 @@ const PORT = parseInt(process.env.TEST_PORT || '3099', 10)
 
 // ── Pre-compute bcrypt hashes at startup (low rounds = fast for tests) ──────
 
+// Intentionally low bcrypt rounds – this is a test-only server and security
+// strength is not required here.  NEVER use rounds < 10 in production.
 const ROUNDS = 1
 const HASH_user = bcrypt.hashSync('password123', ROUNDS)
 const HASH_admin = bcrypt.hashSync('admin123', ROUNDS)
@@ -61,7 +63,7 @@ function resetState() {
 
   preguntas = [
     { id: '1', campo: 'viviendaAlquiler', texto: '¿Vive de alquiler?', tipo: 'sino', actualizadaEn: null },
-    { id: '2', campo: 'alquilerMenos35', texto: '¿El alquiler es inferior a 35 años?', tipo: 'sino', actualizadaEn: null },
+    { id: '2', campo: 'alquilerMenos35', texto: '¿El inquilino tiene menos de 35 años?', tipo: 'sino', actualizadaEn: null },
     { id: '3', campo: 'viviendaPropiedad', texto: '¿Tiene vivienda en propiedad?', tipo: 'sino', actualizadaEn: null },
   ]
 
