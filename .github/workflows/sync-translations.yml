@@ -1,29 +1,25 @@
-name: Sync Translations to SQL
+name: Sync translations to SQL
 
-# Triggers on every push to master (which includes merged pull requests).
 on:
   push:
     branches:
       - master
-
-permissions:
-  contents: write   # needed to commit the migration file back to the repo
+    paths:
+      - 'translations/**'
 
 jobs:
   sync-translations:
-    name: Detect new translation keys and generate SQL migration
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
-      # ── 1. Checkout the full repository ─────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # Fetch full history so git can push the migration commit back
           fetch-depth: 0
 
-      # ── 2. Setup Node.js (no extra dependencies needed) ─────────────────────
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
