@@ -106,7 +106,15 @@ async function getPreguntas() {
        ORDER BY orden`
     )
     const preguntas = rows.map(r => {
-      const textos = typeof r.texto === 'string' ? JSON.parse(r.texto) : (r.texto ?? {})
+      let textos
+      if (r.texto === null || r.texto === undefined) {
+        textos = {}
+      } else if (typeof r.texto === 'object') {
+        textos = r.texto
+      } else {
+        // Plain string stored in JSONB column – treat as Spanish text
+        textos = { es: String(r.texto) }
+      }
       return { id: r.campo, texto: textos.es || '', textos }
     })
     return { data: { secciones: [{ id: 'general', numero: 1, titulo: '', titulos: {}, preguntas }] }, error: null }
@@ -118,12 +126,22 @@ async function getPreguntas() {
 
 // ── Admin: preguntas ─────────────────────────────────────────────────────
 
+/** Wrap a plain text string as a JSONB-compatible i18n object for the `es` locale. */
+function buildTextoJsonb(texto) {
+  return JSON.stringify({ es: texto.trim() })
+}
+
 function rowToPreguntaFormulario(r) {
   // texto is JSONB – extract Spanish text for display, or stringify if needed
   const textoRaw = r.texto
-  let textoDisplay = textoRaw
-  if (textoRaw && typeof textoRaw === 'object') {
+  let textoDisplay
+  if (textoRaw === null || textoRaw === undefined) {
+    textoDisplay = ''
+  } else if (typeof textoRaw === 'object') {
     textoDisplay = textoRaw.es || JSON.stringify(textoRaw)
+  } else {
+    // Plain string stored in JSONB column
+    textoDisplay = String(textoRaw)
   }
   return {
     id: r.id,
@@ -134,12 +152,17 @@ function rowToPreguntaFormulario(r) {
 }
 
 async function listPreguntasFormulario() {
-  const { rows } = await pool.query(
-    `SELECT id, texto, actualizada_en
-     FROM preguntas
-     ORDER BY orden`
-  )
-  return { data: rows.map(rowToPreguntaFormulario), error: null }
+  try {
+    const { rows } = await pool.query(
+      `SELECT id, texto, actualizada_en
+       FROM preguntas
+       ORDER BY orden`
+    )
+    return { data: rows.map(rowToPreguntaFormulario), error: null }
+  } catch (err) {
+    console.error('listPreguntasFormulario error:', err.message)
+    return { data: null, error: { message: err.message }, status: 500 }
+  }
 }
 
 async function updatePreguntaFormulario(id, { texto }) {
@@ -147,39 +170,54 @@ async function updatePreguntaFormulario(id, { texto }) {
   if (texto === undefined) return { data: null, error: { message: 'No hay cambios que guardar' } }
   if (!String(texto).trim()) return { data: null, error: { message: 'El texto no puede estar vacío' } }
 
-  const { rowCount } = await pool.query(
-    `UPDATE preguntas SET texto = $1, actualizada_en = NOW() WHERE id = $2`,
-    [texto.trim(), id]
-  )
-  if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
+  try {
+    const textoJson = buildTextoJsonb(texto)
+    const { rowCount } = await pool.query(
+      `UPDATE preguntas
+         SET texto = COALESCE(texto, '{}'::jsonb) || $1::jsonb,
+             actualizada_en = NOW()
+       WHERE id = $2`,
+      [textoJson, id]
+    )
+    if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
 
-  const { rows } = await pool.query(
-    `SELECT id, texto, actualizada_en FROM preguntas WHERE id = $1`,
-    [id]
-  )
-  return { data: rowToPreguntaFormulario(rows[0]), error: null }
+    const { rows } = await pool.query(
+      `SELECT id, texto, actualizada_en FROM preguntas WHERE id = $1`,
+      [id]
+    )
+    return { data: rowToPreguntaFormulario(rows[0]), error: null }
+  } catch (err) {
+    console.error('updatePreguntaFormulario error:', err.message)
+    return { data: null, error: { message: err.message }, status: 500 }
+  }
 }
 
 async function createPreguntaFormulario({ texto }) {
   if (!texto || !String(texto).trim()) return { data: null, error: { message: 'El texto es obligatorio' } }
 
-  const { rows } = await pool.query(
-    `INSERT INTO preguntas (texto) VALUES ($1) RETURNING id`,
-    [texto.trim()]
-  )
-  if (!rows.length) return { data: null, error: { message: 'No se pudo crear la pregunta' } }
+  try {
+    const textoJson = buildTextoJsonb(texto)
+    const { rows } = await pool.query(
+      `INSERT INTO preguntas (texto) VALUES ($1::jsonb) RETURNING id`,
+      [textoJson]
+    )
+    if (!rows.length) return { data: null, error: { message: 'No se pudo crear la pregunta' } }
 
-  // Use the UUID as the internal campo key so the public form can reference it
-  await pool.query(
-    `UPDATE preguntas SET campo = id::text WHERE id = $1 AND (campo IS NULL OR campo = '')`,
-    [rows[0].id]
-  ).catch(err => console.error('Warning: could not auto-set campo for new question:', err.message))
+    // Use the UUID as the internal campo key so the public form can reference it
+    await pool.query(
+      `UPDATE preguntas SET campo = id::text WHERE id = $1 AND (campo IS NULL OR campo = '')`,
+      [rows[0].id]
+    ).catch(err => console.error('Warning: could not auto-set campo for new question:', err.message))
 
-  const { rows: full } = await pool.query(
-    `SELECT id, texto, actualizada_en FROM preguntas WHERE id = $1`,
-    [rows[0].id]
-  )
-  return { data: rowToPreguntaFormulario(full[0]), error: null, status: 201 }
+    const { rows: full } = await pool.query(
+      `SELECT id, texto, actualizada_en FROM preguntas WHERE id = $1`,
+      [rows[0].id]
+    )
+    return { data: rowToPreguntaFormulario(full[0]), error: null, status: 201 }
+  } catch (err) {
+    console.error('createPreguntaFormulario error:', err.message)
+    return { data: null, error: { message: err.message }, status: 500 }
+  }
 }
 
 async function deletePreguntaFormulario(id) {
