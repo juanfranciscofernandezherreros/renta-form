@@ -87,6 +87,13 @@ module.exports = function irpfRoutes(svc) {
     send(res, result)
   })
 
+  // POST /v1/irpf/declaraciones/:id/email
+  router.post('/declaraciones/:id/email', async (req, res) => {
+    const { email, mensaje } = req.body ?? {}
+    const result = await svc.sendEmailDeclaracion({ declaracionId: req.params.id, email, mensaje })
+    send(res, result)
+  })
+
   // GET /v1/irpf/consulta/:token  (public – no auth)
   router.get('/consulta/:token', async (req, res) => {
     const result = await svc.getDeclaracionByToken(req.params.token)
