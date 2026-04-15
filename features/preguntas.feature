@@ -1,4 +1,3 @@
-# language: es
 Feature: Preguntas del formulario de declaración de la Renta
 
   # ── Comportamiento de preguntas condicionales ──────────────────────────────
