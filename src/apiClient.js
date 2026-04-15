@@ -128,8 +128,8 @@ export async function deletePreguntaFormulario(options) {
 // ── Admin: Usuarios ────────────────────────────────────────────────────────
 
 export async function listUsersAdmin(options) {
-  const { bloqueado, denunciado, page, limit } = options?.query ?? {}
-  return request('GET', '/admin/users', { query: { bloqueado, denunciado, page, limit } })
+  const { bloqueado, denunciado, search, page, limit } = options?.query ?? {}
+  return request('GET', '/admin/users', { query: { bloqueado, denunciado, search, page, limit } })
 }
 
 export async function assignUserAccount({ dniNie, password, declaracionId }) {

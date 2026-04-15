@@ -41,10 +41,11 @@ module.exports = function adminRoutes(svc) {
   // ── Usuarios ─────────────────────────────────────────────────────────────
 
   router.get('/users', async (req, res) => {
-    const { bloqueado, denunciado, page, limit } = req.query
+    const { bloqueado, denunciado, search, page, limit } = req.query
     const result = await svc.listUsersAdmin({
       bloqueado: bloqueado !== undefined ? bloqueado === 'true' : undefined,
       denunciado: denunciado !== undefined ? denunciado === 'true' : undefined,
+      search: search ? String(search).trim() : undefined,
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 10,
     })

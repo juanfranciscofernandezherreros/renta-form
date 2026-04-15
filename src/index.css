@@ -652,6 +652,7 @@ footer.footer-main {
 .badge-orange { background: #ffe8d0; color: #8a3010; }
 .badge-green  { background: #d4f5e8; color: #004d38; }
 .badge-gray   { background: #f3f0ff; color: #5a3a8a; }
+.badge-red    { background: #fee2e2; color: #991b1b; }
 
 /* ── Respuestas table */
 .respuestas-table {
