@@ -110,7 +110,20 @@ CREATE TABLE IF NOT EXISTS traducciones (
 
 CREATE INDEX IF NOT EXISTS idx_traducciones_idioma ON traducciones (idioma_id);
 
--- 8. Triggers
+-- 8. Seed: Usuario administrador por defecto (admin / admin)
+INSERT INTO usuarios (dni_nie, nombre, apellidos, email, telefono, role, password_hash)
+VALUES (
+    'admin',
+    'Admin',
+    'Sistema',
+    'admin@example.com',
+    '',
+    'admin',
+    crypt('admin', gen_salt('bf', 10))
+)
+ON CONFLICT (dni_nie) DO NOTHING;
+
+-- 9. Triggers
 CREATE OR REPLACE TRIGGER trg_declaraciones_actualizado_en
     BEFORE UPDATE ON declaraciones FOR EACH ROW EXECUTE FUNCTION fn_set_actualizado_en();
 
