@@ -12,9 +12,9 @@
 // Environment variables (same as the rest of the backend):
 //   DATABASE_URL  – full connection string (Heroku / Neon)
 //   PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD – individual PG vars
-//   ADMIN_DNI     – DNI/NIE for the admin user  (default: ADMIN001A)
+//   ADMIN_DNI     – DNI/NIE for the admin user  (default: admin)
 //   ADMIN_EMAIL   – email for the admin user     (default: admin@example.com)
-//   ADMIN_PASSWORD – plain-text password          (default: admin123)
+//   ADMIN_PASSWORD – plain-text password          (default: admin)
 // ---------------------------------------------------------------------------
 
 const bcrypt = require('bcrypt')
@@ -22,12 +22,12 @@ const pool = require('./pool')
 
 const SALT_ROUNDS = 10
 
-const DNI_NIE  = process.env.ADMIN_DNI      || 'ADMIN001A'
+const DNI_NIE  = process.env.ADMIN_DNI      || 'admin'
 const NOMBRE   = 'Admin'
 const APELLIDOS = 'Sistema'
 const EMAIL    = process.env.ADMIN_EMAIL    || 'admin@example.com'
 const TELEFONO = ''
-const PASSWORD = process.env.ADMIN_PASSWORD || 'admin123'
+const PASSWORD = process.env.ADMIN_PASSWORD || 'admin'
 
 async function seedAdmin() {
   const client = await pool.connect()
