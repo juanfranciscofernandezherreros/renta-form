@@ -122,10 +122,18 @@ Given('el usuario responde No a todas las preguntas de familia', async function 
   await answerNQuestions(this.page, 'no', 4)
 })
 
+Given('el usuario responde Si a todas las preguntas de familia', async function () {
+  await answerNQuestions(this.page, 'si', 5)
+})
+
 // ── Respuestas de ingresos ──
 // Always 2 questions
 Given('el usuario responde No a todas las preguntas de ingresos', async function () {
   await answerNQuestions(this.page, 'no', 2)
+})
+
+Given('el usuario responde Si a todas las preguntas de ingresos', async function () {
+  await answerNQuestions(this.page, 'si', 2)
 })
 
 Given('el usuario envia el formulario', async function () {
@@ -169,5 +177,24 @@ Then('se toma un screenshot {string}', async function (name) {
   await this.page.waitForTimeout(400)
   const path = await this.screenshot(name)
   console.log(`  Screenshot guardado: ${path}`)
+})
+
+When('el usuario hace clic en Volver', async function () {
+  const btn = this.page.locator('button:has-text("Volver")').first()
+  await btn.waitFor({ state: 'visible', timeout: 10000 })
+  await btn.click()
+  await this.page.waitForTimeout(500)
+})
+
+Then('se muestra el formulario de identificacion', async function () {
+  await this.page.waitForSelector('input[name="nombre"]', { timeout: 10000 })
+})
+
+Then('se muestran errores de validacion en los campos obligatorios', async function () {
+  await this.page.waitForSelector('.field-error, .is-invalid', { timeout: 10000 })
+})
+
+Then('se muestra la pantalla de exito', async function () {
+  await this.page.waitForSelector('.success-panel', { timeout: 20000 })
 })
 
