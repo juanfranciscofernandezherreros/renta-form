@@ -22,7 +22,7 @@ const pool = require('./pool')
 
 const SALT_ROUNDS = 10
 
-const DNI_NIE  = process.env.ADMIN_DNI      || 'admin'
+const DNI_NIE  = (process.env.ADMIN_DNI || 'admin').toUpperCase()
 const NOMBRE   = 'Admin'
 const APELLIDOS = 'Sistema'
 const EMAIL    = process.env.ADMIN_EMAIL    || 'admin@example.com'
