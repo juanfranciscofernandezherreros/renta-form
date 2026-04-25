@@ -37,9 +37,12 @@ async function migrate() {
         DROP COLUMN IF EXISTS seccion_titulos
     `)
 
-    // Fix case mismatch: 'mayores65aCargo' (lowercase a) → 'mayores65ACargo' (uppercase A)
+    // Remove campo column (replaced by static ORDEN_TO_CAMPO mapping in code)
+    await client.query(`ALTER TABLE preguntas DROP COLUMN IF EXISTS campo`)
+
+    // Ensure orden is unique so seeding can use ON CONFLICT (orden)
     await client.query(`
-      UPDATE preguntas SET campo = 'mayores65ACargo' WHERE campo = 'mayores65aCargo'
+      ALTER TABLE preguntas ADD CONSTRAINT IF NOT EXISTS uq_preguntas_orden UNIQUE (orden)
     `)
 
     // Create idiomas/traducciones tables if they were not in the original schema

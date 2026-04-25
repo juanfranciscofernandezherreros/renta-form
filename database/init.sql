@@ -52,10 +52,10 @@ CREATE TABLE IF NOT EXISTS usuarios (
 -- 4. Tabla: Preguntas (Traducciones en JSONB)
 CREATE TABLE IF NOT EXISTS preguntas (
     id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    campo          VARCHAR(100) NOT NULL UNIQUE,
     texto          JSONB        NOT NULL DEFAULT '{}', -- Estructura: {"es": "", "fr": "", "ca": "", "en": ""}
     orden          INTEGER      NOT NULL DEFAULT 0,
-    actualizada_en TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    actualizada_en TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    CONSTRAINT uq_preguntas_orden UNIQUE (orden)
 );
 
 -- 5. Tabla: Declaraciones
@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS declaraciones (
     email                     VARCHAR(254)      NOT NULL,
     telefono                  VARCHAR(20)       NOT NULL,
 
-    -- Respuestas (mapeadas con preguntas.campo)
+    -- Respuestas (columnas fijas de la declaración)
     vivienda_alquiler         respuesta_yn      NOT NULL,
     alquiler_menos_35         respuesta_yn,
     vivienda_propiedad        respuesta_yn      NOT NULL,
