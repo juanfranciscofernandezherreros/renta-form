@@ -159,7 +159,9 @@ export default function App({ editData, onEditDataConsumed }) {
   }, [editData, onEditDataConsumed])
 
   useEffect(() => {
-    getPreguntas()
+    setLoadingPreguntas(true)
+    setErrorPreguntas(null)
+    getPreguntas(lang)
       .then(({ data, error }) => {
         if (error) throw new Error(error.message ?? 'Error desconocido')
         setSecciones(data?.secciones ?? [])
@@ -169,7 +171,7 @@ export default function App({ editData, onEditDataConsumed }) {
         setErrorPreguntas(err.message)
         setLoadingPreguntas(false)
       })
-  }, [])
+  }, [lang])
 
   const handleChange = e => {
     const { name, value, type } = e.target
