@@ -175,48 +175,63 @@ function rowToUser(row) {
 // ── Auth ───────────────────────────────────────────────────────────────────
 
 async function loginAdmin({ username, password }) {
-  const normalised = (username ?? '').trim().toUpperCase()
-  const { rows } = await pool.query(
-    'SELECT password_hash, role, bloqueado FROM usuarios WHERE UPPER(dni_nie) = $1',
-    [normalised]
-  )
-  if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
-  const user = rows[0]
-  if (user.role !== 'admin') return { data: null, error: { message: 'No tienes permisos de administrador' } }
-  if (user.bloqueado) return { data: null, error: { message: 'USER_BLOCKED' } }
-  if (!(await verifyPassword(password, user.password_hash))) {
-    return { data: null, error: { message: 'Contraseña incorrecta' } }
+  try {
+    const normalised = (username ?? '').trim().toUpperCase()
+    const { rows } = await pool.query(
+      'SELECT password_hash, role, bloqueado FROM usuarios WHERE UPPER(dni_nie) = $1',
+      [normalised]
+    )
+    if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
+    const user = rows[0]
+    if (user.role !== 'admin') return { data: null, error: { message: 'No tienes permisos de administrador' } }
+    if (user.bloqueado) return { data: null, error: { message: 'USER_BLOCKED' } }
+    if (!(await verifyPassword(password, user.password_hash))) {
+      return { data: null, error: { message: 'Contraseña incorrecta' } }
+    }
+    return { data: { username: normalised, role: user.role }, error: null }
+  } catch (err) {
+    console.error('loginAdmin DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
   }
-  return { data: { username: normalised, role: user.role }, error: null }
 }
 
 async function loginUser({ dniNie, password }) {
-  const normalised = (dniNie ?? '').trim().toUpperCase()
-  const { rows } = await pool.query(
-    'SELECT password_hash, role, bloqueado FROM usuarios WHERE UPPER(dni_nie) = $1',
-    [normalised]
-  )
-  if (!rows.length) return { data: null, error: { message: 'DNI/NIE no encontrado' } }
-  const user = rows[0]
-  if (user.bloqueado) return { data: null, error: { message: 'USER_BLOCKED' } }
-  if (!(await verifyPassword(password, user.password_hash))) {
-    return { data: null, error: { message: 'Contraseña incorrecta' } }
+  try {
+    const normalised = (dniNie ?? '').trim().toUpperCase()
+    const { rows } = await pool.query(
+      'SELECT password_hash, role, bloqueado FROM usuarios WHERE UPPER(dni_nie) = $1',
+      [normalised]
+    )
+    if (!rows.length) return { data: null, error: { message: 'DNI/NIE no encontrado' } }
+    const user = rows[0]
+    if (user.bloqueado) return { data: null, error: { message: 'USER_BLOCKED' } }
+    if (!(await verifyPassword(password, user.password_hash))) {
+      return { data: null, error: { message: 'Contraseña incorrecta' } }
+    }
+    return { data: { dniNie: normalised, role: user.role }, error: null }
+  } catch (err) {
+    console.error('loginUser DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
   }
-  return { data: { dniNie: normalised, role: user.role }, error: null }
 }
 
 async function changePassword({ dniNie, oldPassword, newPassword }) {
-  const { rows } = await pool.query(
-    'SELECT password_hash FROM usuarios WHERE dni_nie = $1',
-    [dniNie]
-  )
-  if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
-  if (!(await verifyPassword(oldPassword, rows[0].password_hash))) {
-    return { data: null, error: { message: 'La contraseña actual es incorrecta' } }
+  try {
+    const { rows } = await pool.query(
+      'SELECT password_hash FROM usuarios WHERE dni_nie = $1',
+      [dniNie]
+    )
+    if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
+    if (!(await verifyPassword(oldPassword, rows[0].password_hash))) {
+      return { data: null, error: { message: 'La contraseña actual es incorrecta' } }
+    }
+    const hashed = await hashPassword(newPassword)
+    await pool.query('UPDATE usuarios SET password_hash = $1 WHERE dni_nie = $2', [hashed, dniNie])
+    return { data: { success: true }, error: null }
+  } catch (err) {
+    console.error('changePassword DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
   }
-  const hashed = await hashPassword(newPassword)
-  await pool.query('UPDATE usuarios SET password_hash = $1 WHERE dni_nie = $2', [hashed, dniNie])
-  return { data: { success: true }, error: null }
 }
 
 // ── IRPF preguntas (loaded from DB) ──────────────────────────────────────
@@ -409,42 +424,52 @@ async function deletePreguntaFormulario(id) {
 // ── Declaraciones ──────────────────────────────────────────────────────────
 
 async function listDeclaraciones({ dniNie, estado, page = 1, limit = 10 }) {
-  const conditions = []
-  const params = []
-  if (dniNie) { conditions.push(`dni_nie = $${params.length + 1}`); params.push(dniNie) }
-  if (estado) { conditions.push(`estado = $${params.length + 1}`); params.push(estado) }
-  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
-  const countRes = await pool.query(`SELECT COUNT(*) FROM declaraciones ${where}`, params)
-  const total = parseInt(countRes.rows[0].count, 10)
-  const offset = (page - 1) * limit
-  params.push(limit, offset)
-  const { rows } = await pool.query(
-    `SELECT * FROM declaraciones ${where} ORDER BY creado_en DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
-    params
-  )
-  const declaraciones = rows.map(rowToDeclaracion)
-  return { data: { data: declaraciones, total, page, limit }, error: null }
+  try {
+    const conditions = []
+    const params = []
+    if (dniNie) { conditions.push(`dni_nie = $${params.length + 1}`); params.push(dniNie) }
+    if (estado) { conditions.push(`estado = $${params.length + 1}`); params.push(estado) }
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
+    const countRes = await pool.query(`SELECT COUNT(*) FROM declaraciones ${where}`, params)
+    const total = parseInt(countRes.rows[0].count, 10)
+    const offset = (page - 1) * limit
+    params.push(limit, offset)
+    const { rows } = await pool.query(
+      `SELECT * FROM declaraciones ${where} ORDER BY creado_en DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    )
+    const declaraciones = rows.map(rowToDeclaracion)
+    return { data: { data: declaraciones, total, page, limit }, error: null }
+  } catch (err) {
+    console.error('listDeclaraciones DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
+  }
 }
 
 async function listDeclaracionesAll({ dniNie, estado, page = 1, limit = 20 }) {
-  const conditions = []
-  const params = []
-  if (dniNie) {
-    conditions.push(`dni_nie ILIKE $${params.length + 1}`)
-    params.push(`%${dniNie}%`)
+  try {
+    const conditions = []
+    const params = []
+    if (dniNie) {
+      conditions.push(`dni_nie ILIKE $${params.length + 1}`)
+      params.push(`%${dniNie}%`)
+    }
+    if (estado) { conditions.push(`estado = $${params.length + 1}`); params.push(estado) }
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
+    const countRes = await pool.query(`SELECT COUNT(*) FROM declaraciones ${where}`, params)
+    const total = parseInt(countRes.rows[0].count, 10)
+    const offset = (page - 1) * limit
+    params.push(limit, offset)
+    const { rows } = await pool.query(
+      `SELECT * FROM declaraciones ${where} ORDER BY creado_en DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    )
+    const declaraciones = rows.map(rowToDeclaracion)
+    return { data: { data: declaraciones, total, page, limit }, error: null }
+  } catch (err) {
+    console.error('listDeclaracionesAll DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
   }
-  if (estado) { conditions.push(`estado = $${params.length + 1}`); params.push(estado) }
-  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
-  const countRes = await pool.query(`SELECT COUNT(*) FROM declaraciones ${where}`, params)
-  const total = parseInt(countRes.rows[0].count, 10)
-  const offset = (page - 1) * limit
-  params.push(limit, offset)
-  const { rows } = await pool.query(
-    `SELECT * FROM declaraciones ${where} ORDER BY creado_en DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
-    params
-  )
-  const declaraciones = rows.map(rowToDeclaracion)
-  return { data: { data: declaraciones, total, page, limit }, error: null }
 }
 
 async function createDeclaracion(body) {
@@ -480,7 +505,8 @@ async function createDeclaracion(body) {
     if (err.code === '23505' && err.constraint === 'uq_declaraciones_dni_nie') {
       return { data: null, error: { message: 'Ya existe una declaración con este DNI/NIE' }, status: 409 }
     }
-    throw err
+    console.error('createDeclaracion DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
   }
   const row = rows[0]
   const declaracionId = row.id
@@ -489,27 +515,42 @@ async function createDeclaracion(body) {
 }
 
 async function getDeclaracion(id) {
-  const { rows } = await pool.query('SELECT * FROM declaraciones WHERE id = $1', [id])
-  if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
-  const dec = rowToDeclaracion(rows[0])
-  return { data: dec, error: null }
+  try {
+    const { rows } = await pool.query('SELECT * FROM declaraciones WHERE id = $1', [id])
+    if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
+    const dec = rowToDeclaracion(rows[0])
+    return { data: dec, error: null }
+  } catch (err) {
+    console.error('getDeclaracion DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
+  }
 }
 
 async function getDeclaracionByToken(token) {
   if (!token) return { data: null, error: { message: 'Token requerido' } }
-  const { rows } = await pool.query('SELECT * FROM declaraciones WHERE id = $1', [token.trim()])
-  if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
-  const dec = rowToDeclaracion(rows[0])
-  return { data: dec, error: null }
+  try {
+    const { rows } = await pool.query('SELECT * FROM declaraciones WHERE id = $1', [token.trim()])
+    if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
+    const dec = rowToDeclaracion(rows[0])
+    return { data: dec, error: null }
+  } catch (err) {
+    console.error('getDeclaracionByToken DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
+  }
 }
 
 async function updateEstadoDeclaracion(id, estado) {
-  const { rows } = await pool.query(
-    'UPDATE declaraciones SET estado = $1 WHERE id = $2 RETURNING *',
-    [estado, id]
-  )
-  if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
-  return { data: rowToDeclaracion(rows[0]), error: null }
+  try {
+    const { rows } = await pool.query(
+      'UPDATE declaraciones SET estado = $1 WHERE id = $2 RETURNING *',
+      [estado, id]
+    )
+    if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
+    return { data: rowToDeclaracion(rows[0]), error: null }
+  } catch (err) {
+    console.error('updateEstadoDeclaracion DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
+  }
 }
 
 async function updateDeclaracion(id, body) {
@@ -542,25 +583,35 @@ async function updateDeclaracion(id, body) {
     }
   }
 
-  if (setClauses.length) {
-    params.push(id)
-    const { rows } = await pool.query(
-      `UPDATE declaraciones SET ${setClauses.join(', ')} WHERE id = $${params.length} RETURNING *`,
-      params
-    )
-    if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
-    return { data: rowToDeclaracion(rows[0]), error: null }
-  } else {
-    const { rows } = await pool.query('SELECT * FROM declaraciones WHERE id = $1', [id])
-    if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
-    return { data: rowToDeclaracion(rows[0]), error: null }
+  try {
+    if (setClauses.length) {
+      params.push(id)
+      const { rows } = await pool.query(
+        `UPDATE declaraciones SET ${setClauses.join(', ')} WHERE id = $${params.length} RETURNING *`,
+        params
+      )
+      if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
+      return { data: rowToDeclaracion(rows[0]), error: null }
+    } else {
+      const { rows } = await pool.query('SELECT * FROM declaraciones WHERE id = $1', [id])
+      if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
+      return { data: rowToDeclaracion(rows[0]), error: null }
+    }
+  } catch (err) {
+    console.error('updateDeclaracion DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
   }
 }
 
 async function deleteDeclaracion(id) {
-  const { rowCount } = await pool.query('DELETE FROM declaraciones WHERE id = $1', [id])
-  if (!rowCount) return { data: null, error: { message: 'Declaración no encontrada' } }
-  return { data: { success: true }, error: null }
+  try {
+    const { rowCount } = await pool.query('DELETE FROM declaraciones WHERE id = $1', [id])
+    if (!rowCount) return { data: null, error: { message: 'Declaración no encontrada' } }
+    return { data: { success: true }, error: null }
+  } catch (err) {
+    console.error('deleteDeclaracion DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
+  }
 }
 
 // ── Admin: Secciones ───────────────────────────────────────────────────────
@@ -570,107 +621,147 @@ async function deleteDeclaracion(id) {
 // ── Admin: Usuarios ────────────────────────────────────────────────────────
 
 async function listUsersAdmin({ bloqueado, denunciado, search, page = 1, limit = 10 }) {
-  const conditions = []
-  const params = []
-  if (bloqueado !== undefined) { conditions.push(`bloqueado = $${params.length + 1}`); params.push(bloqueado) }
-  if (denunciado !== undefined) { conditions.push(`denunciado = $${params.length + 1}`); params.push(denunciado) }
-  if (search) {
-    const escaped = search.replace(/[%_\\]/g, '\\$&')
-    const like = `%${escaped}%`
-    conditions.push(`(nombre ILIKE $${params.length + 1} OR apellidos ILIKE $${params.length + 2} OR email ILIKE $${params.length + 3} OR dni_nie ILIKE $${params.length + 4})`)
-    params.push(like, like, like, like)
+  try {
+    const conditions = []
+    const params = []
+    if (bloqueado !== undefined) { conditions.push(`bloqueado = $${params.length + 1}`); params.push(bloqueado) }
+    if (denunciado !== undefined) { conditions.push(`denunciado = $${params.length + 1}`); params.push(denunciado) }
+    if (search) {
+      const escaped = search.replace(/[%_\\]/g, '\\$&')
+      const like = `%${escaped}%`
+      conditions.push(`(nombre ILIKE $${params.length + 1} OR apellidos ILIKE $${params.length + 2} OR email ILIKE $${params.length + 3} OR dni_nie ILIKE $${params.length + 4})`)
+      params.push(like, like, like, like)
+    }
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
+    const countRes = await pool.query(`SELECT COUNT(*) FROM usuarios ${where}`, params)
+    const total = parseInt(countRes.rows[0].count, 10)
+    const offset = (page - 1) * limit
+    params.push(limit, offset)
+    const { rows } = await pool.query(
+      `SELECT * FROM usuarios ${where} ORDER BY creado_en DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    )
+    return { data: { data: rows.map(rowToUser), total, page, limit }, error: null }
+  } catch (err) {
+    console.error('listUsersAdmin DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
   }
-  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
-  const countRes = await pool.query(`SELECT COUNT(*) FROM usuarios ${where}`, params)
-  const total = parseInt(countRes.rows[0].count, 10)
-  const offset = (page - 1) * limit
-  params.push(limit, offset)
-  const { rows } = await pool.query(
-    `SELECT * FROM usuarios ${where} ORDER BY creado_en DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
-    params
-  )
-  return { data: { data: rows.map(rowToUser), total, page, limit }, error: null }
 }
 
 async function blockUser(dniNie, bloqueado) {
-  const { rowCount } = await pool.query(
-    'UPDATE usuarios SET bloqueado = $1 WHERE dni_nie = $2',
-    [!!bloqueado, dniNie]
-  )
-  if (!rowCount) return { data: null, error: { message: 'Usuario no encontrado' } }
-  return { data: { success: true }, error: null }
+  try {
+    const { rowCount } = await pool.query(
+      'UPDATE usuarios SET bloqueado = $1 WHERE dni_nie = $2',
+      [!!bloqueado, dniNie]
+    )
+    if (!rowCount) return { data: null, error: { message: 'Usuario no encontrado' } }
+    return { data: { success: true }, error: null }
+  } catch (err) {
+    console.error('blockUser DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
+  }
 }
 
 async function reportUser(dniNie, denunciado) {
-  const { rowCount } = await pool.query(
-    'UPDATE usuarios SET denunciado = $1 WHERE dni_nie = $2',
-    [!!denunciado, dniNie]
-  )
-  if (!rowCount) return { data: null, error: { message: 'Usuario no encontrado' } }
-  return { data: { success: true }, error: null }
+  try {
+    const { rowCount } = await pool.query(
+      'UPDATE usuarios SET denunciado = $1 WHERE dni_nie = $2',
+      [!!denunciado, dniNie]
+    )
+    if (!rowCount) return { data: null, error: { message: 'Usuario no encontrado' } }
+    return { data: { success: true }, error: null }
+  } catch (err) {
+    console.error('reportUser DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
+  }
 }
 
 async function deleteUser(dniNie) {
-  const { rows } = await pool.query('SELECT role FROM usuarios WHERE dni_nie = $1', [dniNie])
-  if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
-  if (rows[0].role === 'admin') {
-    return { data: null, error: { message: 'No se pueden eliminar usuarios administradores' }, status: 403 }
+  try {
+    const { rows } = await pool.query('SELECT role FROM usuarios WHERE dni_nie = $1', [dniNie])
+    if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
+    if (rows[0].role === 'admin') {
+      return { data: null, error: { message: 'No se pueden eliminar usuarios administradores' }, status: 403 }
+    }
+    await pool.query('DELETE FROM declaraciones WHERE dni_nie = $1', [dniNie])
+    await pool.query('DELETE FROM usuarios WHERE dni_nie = $1', [dniNie])
+    return { data: { success: true }, error: null }
+  } catch (err) {
+    console.error('deleteUser DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
   }
-  await pool.query('DELETE FROM declaraciones WHERE dni_nie = $1', [dniNie])
-  await pool.query('DELETE FROM usuarios WHERE dni_nie = $1', [dniNie])
-  return { data: { success: true }, error: null }
 }
 
 async function assignUserAccount({ dniNie, password, declaracionId }) {
   if (!dniNie || !password) {
     return { data: null, error: { message: 'DNI/NIE y contraseña son obligatorios' } }
   }
-  const decCheck = await pool.query('SELECT nombre, apellidos, email, telefono FROM declaraciones WHERE id = $1', [declaracionId])
-  if (!decCheck.rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
-  const dec = decCheck.rows[0]
-  const existing = await pool.query('SELECT dni_nie FROM usuarios WHERE dni_nie = $1', [dniNie])
-  const isNew = !existing.rows.length
-  const hashed = await hashPassword(password)
-  if (isNew) {
-    await pool.query(
-      `INSERT INTO usuarios (dni_nie, nombre, apellidos, email, telefono, role, password_hash)
-       VALUES ($1, $2, $3, $4, $5, 'user', $6)`,
-      [dniNie, dec.nombre, dec.apellidos, dec.email, dec.telefono ?? '', hashed]
-    )
-  } else {
-    await pool.query('UPDATE usuarios SET password_hash = $1 WHERE dni_nie = $2', [hashed, dniNie])
+  try {
+    const decCheck = await pool.query('SELECT nombre, apellidos, email, telefono FROM declaraciones WHERE id = $1', [declaracionId])
+    if (!decCheck.rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
+    const dec = decCheck.rows[0]
+    const existing = await pool.query('SELECT dni_nie FROM usuarios WHERE dni_nie = $1', [dniNie])
+    const isNew = !existing.rows.length
+    const hashed = await hashPassword(password)
+    if (isNew) {
+      await pool.query(
+        `INSERT INTO usuarios (dni_nie, nombre, apellidos, email, telefono, role, password_hash)
+         VALUES ($1, $2, $3, $4, $5, 'user', $6)`,
+        [dniNie, dec.nombre, dec.apellidos, dec.email, dec.telefono ?? '', hashed]
+      )
+    } else {
+      await pool.query('UPDATE usuarios SET password_hash = $1 WHERE dni_nie = $2', [hashed, dniNie])
+    }
+    return { data: { created: isNew, dniNie }, error: null }
+  } catch (err) {
+    console.error('assignUserAccount DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
   }
-  return { data: { created: isNew, dniNie }, error: null }
 }
 
 async function getUserByDniNie(dniNie) {
-  const { rows } = await pool.query('SELECT * FROM usuarios WHERE dni_nie = $1', [dniNie])
-  return { data: rows.length ? rowToUser(rows[0]) : null, error: null }
+  try {
+    const { rows } = await pool.query('SELECT * FROM usuarios WHERE dni_nie = $1', [dniNie])
+    return { data: rows.length ? rowToUser(rows[0]) : null, error: null }
+  } catch (err) {
+    console.error('getUserByDniNie DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
+  }
 }
 
 // ── Public: Idiomas & Traducciones ─────────────────────────────────────────
 
 async function getIdiomas() {
-  const { rows } = await pool.query(
-    `SELECT code, label FROM idiomas WHERE activo = TRUE ORDER BY code`
-  )
-  return { data: rows, error: null }
+  try {
+    const { rows } = await pool.query(
+      `SELECT code, label FROM idiomas WHERE activo = TRUE ORDER BY code`
+    )
+    return { data: rows, error: null }
+  } catch (err) {
+    console.error('getIdiomas DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
+  }
 }
 
 async function getTraducciones() {
-  const { rows } = await pool.query(
-    `SELECT i.code, t.clave, t.valor
-     FROM traducciones t
-     JOIN idiomas i ON i.id = t.idioma_id
-     WHERE i.activo = TRUE
-     ORDER BY i.code, t.clave`
-  )
-  const result = {}
-  for (const r of rows) {
-    if (!result[r.code]) result[r.code] = {}
-    result[r.code][r.clave] = r.valor
+  try {
+    const { rows } = await pool.query(
+      `SELECT i.code, t.clave, t.valor
+       FROM traducciones t
+       JOIN idiomas i ON i.id = t.idioma_id
+       WHERE i.activo = TRUE
+       ORDER BY i.code, t.clave`
+    )
+    const result = {}
+    for (const r of rows) {
+      if (!result[r.code]) result[r.code] = {}
+      result[r.code][r.clave] = r.valor
+    }
+    return { data: result, error: null }
+  } catch (err) {
+    console.error('getTraducciones DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
   }
-  return { data: result, error: null }
 }
 
 // ── Admin: Idiomas CRUD ───────────────────────────────────────────────────
@@ -687,22 +778,27 @@ function rowToIdioma(r) {
 }
 
 async function listIdiomasAdmin({ activo, page = 1, limit = 20 } = {}) {
-  const conditions = []
-  const params = []
-  if (activo !== undefined) {
-    conditions.push(`activo = $${params.length + 1}`)
-    params.push(activo)
+  try {
+    const conditions = []
+    const params = []
+    if (activo !== undefined) {
+      conditions.push(`activo = $${params.length + 1}`)
+      params.push(activo)
+    }
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
+    const countRes = await pool.query(`SELECT COUNT(*) FROM idiomas ${where}`, params)
+    const total = parseInt(countRes.rows[0].count, 10)
+    const offset = (page - 1) * limit
+    params.push(limit, offset)
+    const { rows } = await pool.query(
+      `SELECT * FROM idiomas ${where} ORDER BY code LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      params
+    )
+    return { data: { data: rows.map(rowToIdioma), total, page, limit }, error: null }
+  } catch (err) {
+    console.error('listIdiomasAdmin DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
   }
-  const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
-  const countRes = await pool.query(`SELECT COUNT(*) FROM idiomas ${where}`, params)
-  const total = parseInt(countRes.rows[0].count, 10)
-  const offset = (page - 1) * limit
-  params.push(limit, offset)
-  const { rows } = await pool.query(
-    `SELECT * FROM idiomas ${where} ORDER BY code LIMIT $${params.length - 1} OFFSET $${params.length}`,
-    params
-  )
-  return { data: { data: rows.map(rowToIdioma), total, page, limit }, error: null }
 }
 
 async function createIdiomaAdmin({ code, label, activo }) {
@@ -718,7 +814,8 @@ async function createIdiomaAdmin({ code, label, activo }) {
     if (err.code === '23505') {
       return { data: null, error: { message: 'Ya existe un idioma con ese código' }, status: 409 }
     }
-    throw err
+    console.error('createIdiomaAdmin DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
   }
 }
 
@@ -735,101 +832,198 @@ async function updateIdiomaAdmin(id, { label, activo }) {
     setClauses.push(`activo = $${params.length}`)
   }
   if (!setClauses.length) return { data: null, error: { message: 'No hay cambios que guardar' } }
-  params.push(id)
-  const { rows } = await pool.query(
-    `UPDATE idiomas SET ${setClauses.join(', ')} WHERE id = $${params.length} RETURNING *`,
-    params
-  )
-  if (!rows.length) return { data: null, error: { message: 'Idioma no encontrado' } }
-  return { data: rowToIdioma(rows[0]), error: null }
+  try {
+    params.push(id)
+    const { rows } = await pool.query(
+      `UPDATE idiomas SET ${setClauses.join(', ')} WHERE id = $${params.length} RETURNING *`,
+      params
+    )
+    if (!rows.length) return { data: null, error: { message: 'Idioma no encontrado' } }
+    return { data: rowToIdioma(rows[0]), error: null }
+  } catch (err) {
+    console.error('updateIdiomaAdmin DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
+  }
 }
 
 async function deleteIdiomaAdmin(id) {
   if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
-  // Prevent deleting the default language (es)
-  const check = await pool.query('SELECT code FROM idiomas WHERE id = $1', [id])
-  if (!check.rows.length) return { data: null, error: { message: 'Idioma no encontrado' }, status: 404 }
-  if (check.rows[0].code === 'es') {
-    return { data: null, error: { message: 'No se puede eliminar el idioma por defecto' }, status: 400 }
+  try {
+    // Prevent deleting the default language (es)
+    const check = await pool.query('SELECT code FROM idiomas WHERE id = $1', [id])
+    if (!check.rows.length) return { data: null, error: { message: 'Idioma no encontrado' }, status: 404 }
+    if (check.rows[0].code === 'es') {
+      return { data: null, error: { message: 'No se puede eliminar el idioma por defecto' }, status: 400 }
+    }
+    await pool.query('DELETE FROM idiomas WHERE id = $1', [id])
+    return { data: null, error: null, status: 204 }
+  } catch (err) {
+    console.error('deleteIdiomaAdmin DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
   }
-  await pool.query('DELETE FROM idiomas WHERE id = $1', [id])
-  return { data: null, error: null, status: 204 }
 }
 
 async function getIdiomaContent(id) {
-  const idioma = await pool.query('SELECT id, code FROM idiomas WHERE id = $1', [id])
-  if (!idioma.rows.length) return { data: null, error: { message: 'Idioma no encontrado' }, status: 404 }
-  const { rows } = await pool.query(
-    `SELECT clave, valor FROM traducciones WHERE idioma_id = $1 ORDER BY clave`,
-    [id]
-  )
-  const content = {}
-  for (const r of rows) content[r.clave] = r.valor
-  return { data: { code: idioma.rows[0].code, content }, error: null }
+  try {
+    const idioma = await pool.query('SELECT id, code FROM idiomas WHERE id = $1', [id])
+    if (!idioma.rows.length) return { data: null, error: { message: 'Idioma no encontrado' }, status: 404 }
+    const { rows } = await pool.query(
+      `SELECT clave, valor FROM traducciones WHERE idioma_id = $1 ORDER BY clave`,
+      [id]
+    )
+    const content = {}
+    for (const r of rows) content[r.clave] = r.valor
+    return { data: { code: idioma.rows[0].code, content }, error: null }
+  } catch (err) {
+    console.error('getIdiomaContent DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
+  }
 }
 
 async function updateIdiomaContent(id, { content }) {
   if (!content || typeof content !== 'object') {
     return { data: null, error: { message: 'El contenido es obligatorio' } }
   }
-  const idioma = await pool.query('SELECT id, code FROM idiomas WHERE id = $1', [id])
-  if (!idioma.rows.length) return { data: null, error: { message: 'Idioma no encontrado' }, status: 404 }
-
-  // Full replacement inside a transaction: delete existing translations then re-insert.
-  // This ensures keys removed on the client are also removed from the database,
-  // and the operation is atomic — a failed INSERT cannot leave the table empty.
-  const client = await pool.connect()
   try {
-    await client.query('BEGIN')
-    await client.query('DELETE FROM traducciones WHERE idioma_id = $1', [id])
-    const entries = Object.entries(content)
-    if (entries.length) {
-      const values = []
-      const placeholders = []
-      let idx = 1
-      for (const [clave, valor] of entries) {
-        placeholders.push(`($${idx}, $${idx + 1}, $${idx + 2})`)
-        values.push(id, clave, String(valor))
-        idx += 3
-      }
-      await client.query(
-        `INSERT INTO traducciones (idioma_id, clave, valor) VALUES ${placeholders.join(', ')}`,
-        values
-      )
-    }
-    await client.query('COMMIT')
-  } catch (err) {
-    await client.query('ROLLBACK')
-    throw err
-  } finally {
-    client.release()
-  }
+    const idioma = await pool.query('SELECT id, code FROM idiomas WHERE id = $1', [id])
+    if (!idioma.rows.length) return { data: null, error: { message: 'Idioma no encontrado' }, status: 404 }
 
-  // Return the full content after update
-  return getIdiomaContent(id)
+    // Full replacement inside a transaction: delete existing translations then re-insert.
+    // This ensures keys removed on the client are also removed from the database,
+    // and the operation is atomic — a failed INSERT cannot leave the table empty.
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
+      await client.query('DELETE FROM traducciones WHERE idioma_id = $1', [id])
+      const entries = Object.entries(content)
+      if (entries.length) {
+        const values = []
+        const placeholders = []
+        let idx = 1
+        for (const [clave, valor] of entries) {
+          placeholders.push(`($${idx}, $${idx + 1}, $${idx + 2})`)
+          values.push(id, clave, String(valor))
+          idx += 3
+        }
+        await client.query(
+          `INSERT INTO traducciones (idioma_id, clave, valor) VALUES ${placeholders.join(', ')}`,
+          values
+        )
+      }
+      await client.query('COMMIT')
+    } catch (txErr) {
+      await client.query('ROLLBACK')
+      throw txErr
+    } finally {
+      client.release()
+    }
+
+    // Return the full content after update
+    return getIdiomaContent(id)
+  } catch (err) {
+    console.error('updateIdiomaContent DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
+  }
 }
 
 // ── Admin: Traducciones faltantes ─────────────────────────────────────────
 
 async function getMissingTranslations(ref = 'static') {
-  // Normalise the reference code
-  const refCode = String(ref || 'static').trim().toLowerCase()
+  try {
+    // Normalise the reference code
+    const refCode = String(ref || 'static').trim().toLowerCase()
 
-  // ── Static mode: compare every active language against the canonical key
-  //    list extracted from the frontend source.  No base language required.
-  if (refCode === 'static') {
-    const allLangsRes = await pool.query(
-      `SELECT code, id FROM idiomas WHERE activo = TRUE ORDER BY code`
+    // ── Static mode: compare every active language against the canonical key
+    //    list extracted from the frontend source.  No base language required.
+    if (refCode === 'static') {
+      const allLangsRes = await pool.query(
+        `SELECT code, id FROM idiomas WHERE activo = TRUE ORDER BY code`
+      )
+
+      const faltantes = {}
+      for (const { code, id } of allLangsRes.rows) {
+        const existingRes = await pool.query(
+          `SELECT clave FROM traducciones WHERE idioma_id = $1`,
+          [id]
+        )
+        const existing = new Set(existingRes.rows.map(r => r.clave))
+        faltantes[code] = ALL_REQUIRED_KEYS.filter(k => !existing.has(k))
+      }
+
+      const resumen = Object.entries(faltantes).map(([idioma, claves]) => ({
+        idioma,
+        total_faltantes: claves.length,
+      }))
+
+      return {
+        data: {
+          referencia: 'static',
+          total_claves: ALL_REQUIRED_KEYS.length,
+          claves_requeridas: ALL_REQUIRED_KEYS,
+          faltantes,
+          resumen,
+        },
+        error: null,
+      }
+    }
+
+    // ── Reference-language mode: use a DB language as the key source ──────────
+
+    // Check if the reference language exists and is active
+    const refCheck = await pool.query(
+      `SELECT id FROM idiomas WHERE code = $1 AND activo = TRUE`,
+      [refCode]
+    )
+
+    // When the reference language does not exist fall back to static mode so
+    // callers always get a useful response.
+    if (!refCheck.rows.length) {
+      return getMissingTranslations('static')
+    }
+
+    const refId = refCheck.rows[0].id
+
+    // Total keys in the reference language
+    const totalRes = await pool.query(
+      `SELECT COUNT(*) AS cnt FROM traducciones WHERE idioma_id = $1`,
+      [refId]
+    )
+    const totalClaves = parseInt(totalRes.rows[0].cnt, 10)
+
+    // Determine the effective reference key set: DB keys, or fallback to
+    // ALL_REQUIRED_KEYS when the reference language has no translations yet.
+    let refKeys
+    if (totalClaves === 0) {
+      refKeys = ALL_REQUIRED_KEYS
+    } else {
+      const refKeysRes = await pool.query(
+        `SELECT clave FROM traducciones WHERE idioma_id = $1 ORDER BY clave`,
+        [refId]
+      )
+      // Merge DB keys with static keys so newly added frontend keys are always reported
+      const dbKeys = new Set(refKeysRes.rows.map(r => r.clave))
+      const merged = new Set([...dbKeys, ...ALL_REQUIRED_KEYS])
+      refKeys = [...merged].sort()
+    }
+
+    // All other active languages (to include ones with 0 missing keys in the result)
+    const otherLangsRes = await pool.query(
+      `SELECT code, id FROM idiomas WHERE activo = TRUE AND code != $1 ORDER BY code`,
+      [refCode]
     )
 
     const faltantes = {}
-    for (const { code, id } of allLangsRes.rows) {
-      const existingRes = await pool.query(
-        `SELECT clave FROM traducciones WHERE idioma_id = $1`,
-        [id]
-      )
-      const existing = new Set(existingRes.rows.map(r => r.clave))
-      faltantes[code] = ALL_REQUIRED_KEYS.filter(k => !existing.has(k))
+    for (const { code } of otherLangsRes.rows) faltantes[code] = []
+
+    if (otherLangsRes.rows.length > 0) {
+      for (const { code, id } of otherLangsRes.rows) {
+        const existingRes = await pool.query(
+          `SELECT clave FROM traducciones WHERE idioma_id = $1`,
+          [id]
+        )
+        const existing = new Set(existingRes.rows.map(r => r.clave))
+        faltantes[code] = refKeys.filter(k => !existing.has(k))
+      }
     }
 
     const resumen = Object.entries(faltantes).map(([idioma, claves]) => ({
@@ -839,89 +1033,17 @@ async function getMissingTranslations(ref = 'static') {
 
     return {
       data: {
-        referencia: 'static',
-        total_claves: ALL_REQUIRED_KEYS.length,
+        referencia: refCode,
+        total_claves: refKeys.length,
         claves_requeridas: ALL_REQUIRED_KEYS,
         faltantes,
         resumen,
       },
       error: null,
     }
-  }
-
-  // ── Reference-language mode: use a DB language as the key source ──────────
-
-  // Check if the reference language exists and is active
-  const refCheck = await pool.query(
-    `SELECT id FROM idiomas WHERE code = $1 AND activo = TRUE`,
-    [refCode]
-  )
-
-  // When the reference language does not exist fall back to static mode so
-  // callers always get a useful response.
-  if (!refCheck.rows.length) {
-    return getMissingTranslations('static')
-  }
-
-  const refId = refCheck.rows[0].id
-
-  // Total keys in the reference language
-  const totalRes = await pool.query(
-    `SELECT COUNT(*) AS cnt FROM traducciones WHERE idioma_id = $1`,
-    [refId]
-  )
-  const totalClaves = parseInt(totalRes.rows[0].cnt, 10)
-
-  // Determine the effective reference key set: DB keys, or fallback to
-  // ALL_REQUIRED_KEYS when the reference language has no translations yet.
-  let refKeys
-  if (totalClaves === 0) {
-    refKeys = ALL_REQUIRED_KEYS
-  } else {
-    const refKeysRes = await pool.query(
-      `SELECT clave FROM traducciones WHERE idioma_id = $1 ORDER BY clave`,
-      [refId]
-    )
-    // Merge DB keys with static keys so newly added frontend keys are always reported
-    const dbKeys = new Set(refKeysRes.rows.map(r => r.clave))
-    const merged = new Set([...dbKeys, ...ALL_REQUIRED_KEYS])
-    refKeys = [...merged].sort()
-  }
-
-  // All other active languages (to include ones with 0 missing keys in the result)
-  const otherLangsRes = await pool.query(
-    `SELECT code, id FROM idiomas WHERE activo = TRUE AND code != $1 ORDER BY code`,
-    [refCode]
-  )
-
-  const faltantes = {}
-  for (const { code } of otherLangsRes.rows) faltantes[code] = []
-
-  if (otherLangsRes.rows.length > 0) {
-    for (const { code, id } of otherLangsRes.rows) {
-      const existingRes = await pool.query(
-        `SELECT clave FROM traducciones WHERE idioma_id = $1`,
-        [id]
-      )
-      const existing = new Set(existingRes.rows.map(r => r.clave))
-      faltantes[code] = refKeys.filter(k => !existing.has(k))
-    }
-  }
-
-  const resumen = Object.entries(faltantes).map(([idioma, claves]) => ({
-    idioma,
-    total_faltantes: claves.length,
-  }))
-
-  return {
-    data: {
-      referencia: refCode,
-      total_claves: refKeys.length,
-      claves_requeridas: ALL_REQUIRED_KEYS,
-      faltantes,
-      resumen,
-    },
-    error: null,
+  } catch (err) {
+    console.error('getMissingTranslations DB error:', err.message)
+    return { data: null, error: { message: err.message }, status: 503 }
   }
 }
 
