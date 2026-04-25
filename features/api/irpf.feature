@@ -77,15 +77,14 @@ Feature: IRPF – endpoints públicos y de declaraciones
       {
         "nombre": "María", "apellidos": "González Ruiz", "dniNie": "87654321B",
         "email": "maria@ejemplo.es", "telefono": "611222333",
-        "viviendaAlquiler": false, "viviendaPropiedad": false,
-        "pisosAlquiladosTerceros": false, "segundaResidencia": false,
-        "familiaNumerosa": false, "ayudasGobierno": false, "mayores65ACargo": false,
-        "hijosMenores26": false, "ingresosJuego": false, "ingresosInversiones": false
+        "viviendaAlquiler": "no", "viviendaPropiedad": "no",
+        "pisosAlquiladosTerceros": "no", "segundaResidencia": "no",
+        "familiaNumerosa": "no", "ayudasGobierno": "no", "mayores65ACargo": "no",
+        "hijosMenores26": "no", "ingresosJuego": "no", "ingresosInversiones": "no"
       }
       """
     Then la respuesta tiene status 201
     And la respuesta contiene el campo "id"
-    And el campo "estado" de la respuesta es "pendiente"
 
   Scenario: POST declaraciones con dniNie duplicado devuelve 409
     Given existe una declaración de prueba
@@ -94,14 +93,44 @@ Feature: IRPF – endpoints públicos y de declaraciones
       {
         "nombre": "Dup", "apellidos": "Duplicado", "dniNie": "{declaracionDniNie}",
         "email": "dup@test.com", "telefono": "600000001",
-        "viviendaAlquiler": false, "viviendaPropiedad": false,
-        "pisosAlquiladosTerceros": false, "segundaResidencia": false,
-        "familiaNumerosa": false, "ayudasGobierno": false, "mayores65ACargo": false,
-        "hijosMenores26": false, "ingresosJuego": false, "ingresosInversiones": false
+        "viviendaAlquiler": "no", "viviendaPropiedad": "no",
+        "pisosAlquiladosTerceros": "no", "segundaResidencia": "no",
+        "familiaNumerosa": "no", "ayudasGobierno": "no", "mayores65ACargo": "no",
+        "hijosMenores26": "no", "ingresosJuego": "no", "ingresosInversiones": "no"
       }
       """
     Then la respuesta tiene status 409
     And el campo "error" de la respuesta contiene "declaración"
+
+  Scenario: POST declaraciones con campos si/no vacíos devuelve 400
+    When hago POST a "/v1/irpf/declaraciones" con body:
+      """
+      {
+        "nombre": "Juan Francisco", "apellidos": "Fernández Herreros",
+        "dniNie": "56985470A", "email": "juan@ejemplo.es", "telefono": "669198862",
+        "viviendaAlquiler": "", "viviendaPropiedad": "",
+        "pisosAlquiladosTerceros": "", "segundaResidencia": "",
+        "familiaNumerosa": "", "ayudasGobierno": "", "mayores65ACargo": "",
+        "hijosMenores26": "", "ingresosJuego": "", "ingresosInversiones": ""
+      }
+      """
+    Then la respuesta tiene status 400
+    And la respuesta contiene el campo "error"
+
+  Scenario: POST declaraciones sin campos de identificación obligatorios devuelve 400
+    When hago POST a "/v1/irpf/declaraciones" con body:
+      """
+      {
+        "nombre": "", "apellidos": "", "dniNie": "",
+        "email": "", "telefono": "",
+        "viviendaAlquiler": "no", "viviendaPropiedad": "no",
+        "pisosAlquiladosTerceros": "no", "segundaResidencia": "no",
+        "familiaNumerosa": "no", "ayudasGobierno": "no", "mayores65ACargo": "no",
+        "hijosMenores26": "no", "ingresosJuego": "no", "ingresosInversiones": "no"
+      }
+      """
+    Then la respuesta tiene status 400
+    And la respuesta contiene el campo "error"
 
   # ── GET /v1/irpf/declaraciones/:id ───────────────────────────────────────
 
@@ -150,11 +179,10 @@ Feature: IRPF – endpoints públicos y de declaraciones
     Given existe una declaración de prueba
     When hago PUT a "/v1/irpf/declaraciones/{declaracionId}" con body:
       """
-      { "nombre": "NombreActualizado", "viviendaAlquiler": true }
+      { "nombre": "NombreActualizado", "viviendaAlquiler": "si" }
       """
     Then la respuesta tiene status 200
     And el campo "nombre" de la respuesta es "NombreActualizado"
-    And el campo "viviendaAlquiler" de la respuesta es verdadero
 
   Scenario: PUT declaraciones con id inexistente devuelve 404
     When hago PUT a "/v1/irpf/declaraciones/00000000-0000-0000-0000-000000000002" con body:

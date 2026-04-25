@@ -171,10 +171,10 @@ Given('existe una declaración de prueba', async function () {
   const resp = await this.apiContext.post('/v1/irpf/declaraciones', {
     data: {
       nombre: 'Test', apellidos: 'Prueba', dniNie, email: 'prueba@test.com',
-      telefono: '600000000', viviendaAlquiler: false, viviendaPropiedad: false,
-      pisosAlquiladosTerceros: false, segundaResidencia: false, familiaNumerosa: false,
-      ayudasGobierno: false, mayores65ACargo: false, hijosMenores26: false,
-      ingresosJuego: false, ingresosInversiones: false,
+      telefono: '600000000', viviendaAlquiler: 'no', viviendaPropiedad: 'no',
+      pisosAlquiladosTerceros: 'no', segundaResidencia: 'no', familiaNumerosa: 'no',
+      ayudasGobierno: 'no', mayores65ACargo: 'no', hijosMenores26: 'no',
+      ingresosJuego: 'no', ingresosInversiones: 'no',
     },
   })
   const body = await resp.json()
