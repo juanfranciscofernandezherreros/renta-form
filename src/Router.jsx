@@ -34,7 +34,7 @@ export default function Router() {
     )
   }
 
-  if (hash === '#/admin') {
+  if (hash === '#/backend_admin') {
     if (!user || user.role !== 'admin') {
       return <AdminLoginPage />
     }
