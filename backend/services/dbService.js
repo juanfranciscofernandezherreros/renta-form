@@ -351,7 +351,7 @@ async function createPreguntaFormulario({ campo, texto, textos }) {
   }
   const campoTrimmed = String(campo).trim()
   if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(campoTrimmed)) {
-    return { data: null, error: { message: 'El campo sólo puede contener letras, números y guiones bajos, y debe empezar por letra' } }
+    return { data: null, error: { message: 'El campo solo puede contener letras, números y guiones bajos, y debe empezar por letra' } }
   }
 
   // Accept either a full `textos` map or a legacy plain `texto` string (ES).
