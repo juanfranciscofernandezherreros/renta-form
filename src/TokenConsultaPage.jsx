@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { getDeclaracionByToken, getPreguntas } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
 import { generateDeclaracionPDF, downloadRentaPdf } from './pdfUtils.js'
-import Footer from './Footer.jsx'
+
 
 const TOKENS_STORAGE_KEY = 'renta_form_tokens'
 
@@ -269,7 +269,6 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion, initi
         </div>
       )}
 
-      <Footer />
-    </>
+      </>
   )
 }

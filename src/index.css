@@ -400,45 +400,6 @@ header .header-text p  { font-size: 0.85rem; opacity: .88; margin-top: 3px; font
 }
 .form-error-dismiss:hover { opacity: .7; }
 
-/* ── Footer ── */
-footer.footer-main {
-  max-width: 920px;
-  margin: 24px auto 0;
-  position: relative;
-  z-index: 1;
-}
-
-.footer-inner {
-  background: rgba(255,255,255,.1);
-  backdrop-filter: blur(12px);
-  border: 1.5px solid rgba(255,255,255,.2);
-  border-radius: 16px;
-  padding: 24px 32px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  text-align: center;
-}
-
-.footer-brand-name {
-  font-size: 1.05rem;
-  font-weight: 900;
-  color: #fff;
-  background: rgba(255,255,255,.15);
-  border: 1.5px solid rgba(255,255,255,.3);
-  border-radius: 10px;
-  padding: 5px 14px;
-  letter-spacing: .5px;
-  display: inline-block;
-}
-
-.footer-disclaimer {
-  font-size: .78rem;
-  color: rgba(255,255,255,.62);
-  line-height: 1.5;
-  max-width: 540px;
-}
 
 /* ── Language flags in header nav */
 .lang-flags-top {
@@ -1308,14 +1269,6 @@ footer.footer-main {
     border-radius: 0;
   }
 
-  .footer-inner {
-    border-radius: 0;
-    padding: 20px 16px;
-  }
-
-  .footer-brand-name {
-    border-radius: 0;
-  }
 
   .info-box,
   .info-box-error,

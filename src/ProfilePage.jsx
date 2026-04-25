@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useAuth } from './AuthContext.jsx'
 import { listDeclaraciones, changePassword, getPreguntas } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
-import Footer from './Footer.jsx'
+
 import { generateDeclaracionPDF, downloadRentaPdf } from './pdfUtils.js'
 import { translateYN } from './i18nUtils.js'
 
@@ -336,7 +336,6 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
       </div>
       )}
 
-      <Footer showApiDocs />
-    </>
+      </>
   )
 }

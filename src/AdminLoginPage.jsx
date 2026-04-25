@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useAuth } from './AuthContext.jsx'
 import { loginUser } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
-import Footer from './Footer.jsx'
+
 
 export default function AdminLoginPage() {
   const { login } = useAuth()
@@ -101,7 +101,6 @@ export default function AdminLoginPage() {
         </form>
       </div>
 
-      <Footer />
-    </>
+
   )
 }
