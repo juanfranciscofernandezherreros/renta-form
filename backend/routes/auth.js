@@ -23,6 +23,16 @@ function send(res, result) {
 }
 
 module.exports = function authRoutes(svc) {
+  // POST /v1/auth/admin-login
+  router.post('/admin-login', authLimiter, async (req, res) => {
+    const { username, password } = req.body ?? {}
+    if (!username || !password) {
+      return res.status(400).json({ error: 'username y password son obligatorios' })
+    }
+    const result = await svc.loginAdmin({ username, password })
+    send(res, result)
+  })
+
   // POST /v1/auth/login
   router.post('/login', authLimiter, async (req, res) => {
     const { dniNie, password } = req.body ?? {}

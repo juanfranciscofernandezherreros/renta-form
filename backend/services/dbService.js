@@ -174,6 +174,22 @@ function rowToUser(row) {
 
 // ── Auth ───────────────────────────────────────────────────────────────────
 
+async function loginAdmin({ username, password }) {
+  const normalised = (username ?? '').trim().toUpperCase()
+  const { rows } = await pool.query(
+    'SELECT password_hash, role, bloqueado FROM usuarios WHERE UPPER(dni_nie) = $1',
+    [normalised]
+  )
+  if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
+  const user = rows[0]
+  if (user.role !== 'admin') return { data: null, error: { message: 'No tienes permisos de administrador' } }
+  if (user.bloqueado) return { data: null, error: { message: 'USER_BLOCKED' } }
+  if (!(await verifyPassword(password, user.password_hash))) {
+    return { data: null, error: { message: 'Contraseña incorrecta' } }
+  }
+  return { data: { username: normalised, role: user.role }, error: null }
+}
+
 async function loginUser({ dniNie, password }) {
   const normalised = (dniNie ?? '').trim().toUpperCase()
   const { rows } = await pool.query(
@@ -908,6 +924,7 @@ async function getMissingTranslations(ref = 'static') {
 // ── Exports ────────────────────────────────────────────────────────────────
 
 module.exports = {
+  loginAdmin,
   loginUser,
   changePassword,
   getPreguntas,

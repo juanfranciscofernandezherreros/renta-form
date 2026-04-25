@@ -41,6 +41,10 @@ export async function loginUser({ dniNie, password }) {
   return request('POST', '/auth/login', { body: { dniNie, password } })
 }
 
+export async function loginAdmin({ username, password }) {
+  return request('POST', '/auth/admin-login', { body: { username, password } })
+}
+
 export async function changePassword({ dniNie, oldPassword, newPassword }) {
   return request('POST', '/auth/change-password', { body: { dniNie, oldPassword, newPassword } })
 }
