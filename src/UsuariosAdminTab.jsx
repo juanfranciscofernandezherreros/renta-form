@@ -59,7 +59,8 @@ async function downloadUserDeclaracionPdf(dniNie, t, preguntasSecciones) {
   // Build dynamic question sections from DB (same structure as AdminPage)
   const dynamicSections = (preguntasSecciones ?? []).map(sec => {
     const labels = {}
-    const campos = (sec.preguntas ?? []).map(p => { labels[p.id] = p.texto; return p.id })
+    ;(sec.preguntas ?? []).forEach(p => { labels[p.id] = p.texto })
+    const campos = (sec.preguntas ?? []).map(p => p.id)
     return { titulo: sec.titulo, campos, labels }
   })
 
@@ -68,6 +69,9 @@ async function downloadUserDeclaracionPdf(dniNie, t, preguntasSecciones) {
     ...dynamicSections,
     { titulo: t('section5'), campos: [] },
   ]
+
+  const getLabel = (sec, c) => (sec.labels && sec.labels[c]) ? sec.labels[c] : c
+  const getYN = v => v === 'si' ? t('yes') : v === 'no' ? t('no') : v
 
   const rows = allSections.flatMap(sec => {
     if (sec.campos.length === 0) {
@@ -83,12 +87,10 @@ async function downloadUserDeclaracionPdf(dniNie, t, preguntasSecciones) {
       .map(c => [c, dec[c]])
       .filter(([, v]) => v !== undefined && v !== null && v !== '')
     if (!camposVisibles.length) return []
-    const label = c => (sec.labels && sec.labels[c]) ? sec.labels[c] : c
-    const yn = v => v === 'si' ? t('yes') : v === 'no' ? t('no') : v
     return [
       `<tr><td colspan="2" class="sec-header">${escHtml(sec.titulo)}</td></tr>`,
       ...camposVisibles.map(
-        ([c, v]) => `<tr><td class="lbl">${escHtml(label(c))}</td><td class="val">${escHtml(yn(v))}</td></tr>`
+        ([c, v]) => `<tr><td class="lbl">${escHtml(getLabel(sec, c))}</td><td class="val">${escHtml(getYN(v))}</td></tr>`
       ),
     ]
   }).join('')
