@@ -36,17 +36,23 @@ CORS_ORIGIN=http://localhost:5173
 ```bash
 cd backend
 
-# Crea las tablas (database/init.sql) y siembra idiomas, preguntas y traducciones
+# Crea las tablas (database/init.sql)
 npm run migrate
 
 # Solo sembrar traducciones (idempotente)
 npm run seed
 
+# Solo sembrar preguntas (idempotente)
+npm run db:seed-questions
+
+# Solo sembrar usuarios (incluye un admin)
+npm run db:seed-users
+
 # Migración + seed en un comando
 npm run db:setup
 ```
 
-> `npm run migrate` aplica `database/init.sql` si las tablas no existen y siembra automáticamente las traducciones al final. `npm run seed` solo actualiza las traducciones sin tocar el esquema.
+> `npm run migrate` aplica `database/init.sql` si las tablas no existen. `npm run seed` solo actualiza idiomas y traducciones sin tocar el esquema.
 
 ### 4. Arrancar el servidor
 
@@ -119,9 +125,11 @@ Todos los endpoints están prefijados con `/v1`.
 |--------|-------------|
 | `npm start` | Arranca el servidor con PostgreSQL (puerto 3001) |
 | `npm run dev` | Arranca con `--watch` (reinicio automático al cambiar ficheros) |
-| `npm run migrate` | Aplica el esquema (`database/init.sql`) y siembra traducciones. No arranca el servidor. |
+| `npm run migrate` | Aplica el esquema (`database/init.sql`). No arranca el servidor. |
 | `npm run seed` | Siembra/actualiza traducciones en la BD. No arranca el servidor. |
 | `npm run db:setup` | Ejecuta `migrate` + `seed` en secuencia |
+| `npm run db:seed-questions` | Siembra las preguntas del formulario |
+| `npm run db:seed-users` | Siembra usuarios de prueba (incluye un admin) |
 
 ---
 

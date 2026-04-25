@@ -10,11 +10,15 @@
     "start:db": "PROFILE=db node server.js",
     "migrate": "node db/migrate.js",
     "seed": "node db/seedTraducciones.js",
-    "db:setup": "node db/migrate.js && node db/seedTraducciones.js",
+    "db:setup": "node db/migrate.js && node db/seedTraducciones.js && node db/seedPreguntas.js",
+    "db:setup-all": "node db/migrate.js && node db/seedTraducciones.js && node db/seedPreguntas.js && node db/seedUsuarios.js",
     "db:setup-100": "node db/migrate.js && node db/seedTraducciones.js && node db/seed100.js",
     "db:seed-translations": "node db/seedTraducciones.js",
     "db:seed-languages": "node db/seedLanguages.js",
-    "db:seed-100": "node db/seed100.js"
+    "db:seed-100": "node db/seed100.js",
+    "db:seed-questions": "node db/seedPreguntas.js",
+    "db:seed-users": "node db/seedUsuarios.js",
+    "seed:admin": "node db/seedAdmin.js"
   },
   "engines": {
     "node": ">=20.0.0"

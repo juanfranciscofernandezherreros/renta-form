@@ -3,6 +3,8 @@
 const fs = require('fs')
 const path = require('path')
 const pool = require('./pool')
+const seedTraducciones = require('./seedTraducciones')
+const seedPreguntas = require('./seedPreguntas')
 
 const INIT_SQL = path.join(__dirname, '../../database/init.sql')
 
@@ -19,12 +21,14 @@ async function tableExists(client, tableName) {
 
 async function migrate() {
   const client = await pool.connect()
+  let isNewInstall = false
   try {
     // Run init.sql only if core tables are not yet created
     if (!(await tableExists(client, 'declaraciones'))) {
       console.log('[migrate] Running init.sql ...')
       await client.query(fs.readFileSync(INIT_SQL, 'utf8'))
       console.log('[migrate] init.sql applied.')
+      isNewInstall = true
     } else {
       console.log('[migrate] Tables already exist, skipping init.sql.')
     }
@@ -61,6 +65,14 @@ async function migrate() {
 
   } finally {
     client.release()
+  }
+
+  // On a fresh install, seed mandatory reference data so the app is usable immediately
+  if (isNewInstall) {
+    console.log('[migrate] New install detected – seeding translations and questions...')
+    await seedTraducciones()
+    await seedPreguntas()
+    console.log('[migrate] Initial seed complete.')
   }
 }
 

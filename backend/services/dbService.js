@@ -205,7 +205,7 @@ async function changePassword({ dniNie, oldPassword, newPassword }) {
 
 // ── IRPF preguntas (loaded from DB) ──────────────────────────────────────
 
-async function getPreguntas() {
+async function getPreguntas(lang) {
   try {
     const { rows } = await pool.query(
       `SELECT campo, texto, orden
@@ -222,7 +222,9 @@ async function getPreguntas() {
         // Plain string stored in JSONB column – treat as Spanish text
         textos = { es: String(r.texto) }
       }
-      return { id: r.campo, texto: textos.es || '', textos }
+      // Use the requested language, fall back to 'es', then any available value
+      const texto = (lang && textos[lang]) || textos.es || Object.values(textos)[0] || ''
+      return { id: r.campo, texto, textos }
     })
     return { data: { secciones: [{ id: 'general', numero: 1, titulo: '', titulos: {}, preguntas }] }, error: null }
   } catch (err) {
@@ -233,27 +235,28 @@ async function getPreguntas() {
 
 // ── Admin: preguntas ─────────────────────────────────────────────────────
 
-/** Wrap a plain text string as a JSONB-compatible i18n object for the `es` locale. */
-function buildTextoJsonb(texto) {
-  return JSON.stringify({ es: texto.trim() })
-}
 
 function rowToPreguntaFormulario(r) {
   // texto is JSONB – extract Spanish text for display, or stringify if needed
   const textoRaw = r.texto
+  let textos
   let textoDisplay
   if (textoRaw === null || textoRaw === undefined) {
+    textos = {}
     textoDisplay = ''
   } else if (typeof textoRaw === 'object') {
-    textoDisplay = textoRaw.es || JSON.stringify(textoRaw)
+    textos = textoRaw
+    textoDisplay = textoRaw.es || Object.values(textoRaw)[0] || ''
   } else {
     // Plain string stored in JSONB column
+    textos = { es: String(textoRaw) }
     textoDisplay = String(textoRaw)
   }
   return {
     id: r.id,
     campo: r.campo,
     texto: textoDisplay,
+    textos,
     tipo: 'sino',
     actualizadaEn: r.actualizada_en,
   }
@@ -278,24 +281,44 @@ async function listPreguntasFormulario({ page = 1, limit = 10 } = {}) {
   }
 }
 
-async function updatePreguntaFormulario(id, { texto }) {
+async function updatePreguntaFormulario(id, { texto, textos }) {
   if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
-  if (texto === undefined) return { data: null, error: { message: 'No hay cambios que guardar' } }
-  if (!String(texto).trim()) return { data: null, error: { message: 'El texto no puede estar vacío' } }
+
+  // Build the i18n object to merge.  Accept either a full `textos` map or a
+  // legacy plain `texto` string (treated as the Spanish translation).
+  let mergeObj
+  if (textos !== undefined) {
+    if (typeof textos !== 'object' || Array.isArray(textos)) {
+      return { data: null, error: { message: 'textos debe ser un objeto con claves de idioma' } }
+    }
+    const sanitised = {}
+    for (const [lang, val] of Object.entries(textos)) {
+      const key = lang.trim().toLowerCase()
+      if (key) sanitised[key] = String(val)
+    }
+    if (!Object.keys(sanitised).length) {
+      return { data: null, error: { message: 'textos no puede estar vacío' } }
+    }
+    mergeObj = sanitised
+  } else if (texto !== undefined) {
+    if (!String(texto).trim()) return { data: null, error: { message: 'El texto no puede estar vacío' } }
+    mergeObj = { es: String(texto).trim() }
+  } else {
+    return { data: null, error: { message: 'No hay cambios que guardar' } }
+  }
 
   try {
-    const textoJson = buildTextoJsonb(texto)
     const { rowCount } = await pool.query(
       `UPDATE preguntas
          SET texto = COALESCE(texto, '{}'::jsonb) || $1::jsonb,
              actualizada_en = NOW()
        WHERE id = $2`,
-      [textoJson, id]
+      [JSON.stringify(mergeObj), id]
     )
     if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
 
     const { rows } = await pool.query(
-      `SELECT id, texto, actualizada_en FROM preguntas WHERE id = $1`,
+      `SELECT id, campo, texto, actualizada_en FROM preguntas WHERE id = $1`,
       [id]
     )
     return { data: rowToPreguntaFormulario(rows[0]), error: null }
@@ -305,11 +328,31 @@ async function updatePreguntaFormulario(id, { texto }) {
   }
 }
 
-async function createPreguntaFormulario({ texto }) {
-  if (!texto || !String(texto).trim()) return { data: null, error: { message: 'El texto es obligatorio' } }
+async function createPreguntaFormulario({ texto, textos }) {
+  // Accept either a full `textos` map or a legacy plain `texto` string (ES).
+  let textoObj
+  if (textos !== undefined) {
+    if (typeof textos !== 'object' || Array.isArray(textos)) {
+      return { data: null, error: { message: 'textos debe ser un objeto con claves de idioma' } }
+    }
+    const sanitised = {}
+    for (const [lang, val] of Object.entries(textos)) {
+      const key = lang.trim().toLowerCase()
+      if (key) sanitised[key] = String(val)
+    }
+    if (!Object.keys(sanitised).length) {
+      return { data: null, error: { message: 'textos no puede estar vacío' } }
+    }
+    textoObj = sanitised
+  } else if (texto) {
+    if (!String(texto).trim()) return { data: null, error: { message: 'El texto es obligatorio' } }
+    textoObj = { es: String(texto).trim() }
+  } else {
+    return { data: null, error: { message: 'El texto es obligatorio' } }
+  }
 
   try {
-    const textoJson = buildTextoJsonb(texto)
+    const textoJson = JSON.stringify(textoObj)
     // Generate the UUID first and use it for both id and campo in a single INSERT,
     // avoiding the CTE pattern where the outer UPDATE cannot see rows inserted by the CTE.
     const { rows } = await pool.query(
@@ -322,7 +365,7 @@ async function createPreguntaFormulario({ texto }) {
     if (!rows.length) return { data: null, error: { message: 'No se pudo crear la pregunta' } }
 
     const { rows: full } = await pool.query(
-      `SELECT id, texto, actualizada_en FROM preguntas WHERE id = $1`,
+      `SELECT id, campo, texto, actualizada_en FROM preguntas WHERE id = $1`,
       [rows[0].id]
     )
     return { data: rowToPreguntaFormulario(full[0]), error: null, status: 201 }

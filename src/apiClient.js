@@ -47,8 +47,8 @@ export async function changePassword({ dniNie, oldPassword, newPassword }) {
 
 // ── IRPF preguntas ─────────────────────────────────────────────────────────
 
-export async function getPreguntas() {
-  return request('GET', '/irpf/preguntas')
+export async function getPreguntas(lang) {
+  return request('GET', '/irpf/preguntas', { query: { lang } })
 }
 
 // ── Declaraciones ──────────────────────────────────────────────────────────

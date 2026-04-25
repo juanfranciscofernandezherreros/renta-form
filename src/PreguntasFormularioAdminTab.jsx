@@ -5,11 +5,18 @@ import {
   createPreguntaFormulario,
   updatePreguntaFormulario,
   deletePreguntaFormulario,
+  getIdiomas,
 } from './apiClient.js'
 import Pagination from './Pagination.jsx'
 
-const EMPTY_FORM = { texto: '' }
+const DEFAULT_LANGS = [{ code: 'es', label: 'Español' }]
 const PAGE_LIMIT = 10
+
+function makeEmptyForm(langs) {
+  const textos = {}
+  for (const { code } of langs) textos[code] = ''
+  return { textos }
+}
 
 function formatFecha(iso) {
   if (!iso) return '—'
@@ -24,12 +31,31 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
   const [page, setPage] = useState(1)
   const [modal, setModal] = useState(null) // null | 'create' | 'edit'
   const [editando, setEditando] = useState(null)
-  const [form, setForm] = useState(EMPTY_FORM)
+  const [langs, setLangs] = useState(DEFAULT_LANGS)
+  const [form, setForm] = useState(() => makeEmptyForm(DEFAULT_LANGS))
   const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
 
   const refresh = useCallback(() => setRefreshKey(k => k + 1), [])
+
+  // Load active languages once
+  useEffect(() => {
+    getIdiomas()
+      .then(({ data, error: apiErr }) => {
+        if (apiErr) {
+          showToast('No se pudieron cargar los idiomas; se mostrará solo Español', 'error')
+          return
+        }
+        if (Array.isArray(data) && data.length) {
+          setLangs(data)
+          setForm(makeEmptyForm(data))
+        }
+      })
+      .catch(() => {
+        showToast('No se pudieron cargar los idiomas; se mostrará solo Español', 'error')
+      })
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -48,39 +74,50 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
   }, [page, refreshKey])
 
   const openCreate = () => {
-    setForm(EMPTY_FORM)
+    setForm(makeEmptyForm(langs))
     setEditando(null)
     setModal('create')
   }
 
   const openEdit = (pregunta) => {
-    setForm({ texto: pregunta.texto })
+    const textos = {}
+    for (const { code } of langs) {
+      textos[code] = pregunta.textos?.[code] ?? ''
+    }
+    setForm({ textos })
     setEditando(pregunta)
     setModal('edit')
   }
 
-  const closeModal = () => { setModal(null); setEditando(null); setForm(EMPTY_FORM) }
+  const closeModal = () => { setModal(null); setEditando(null); setForm(makeEmptyForm(langs)) }
 
-  const handleFormChange = e => {
-    const { name, value } = e.target
-    setForm(prev => ({ ...prev, [name]: value }))
+  const handleLangChange = (code, value) => {
+    setForm(prev => ({ ...prev, textos: { ...prev.textos, [code]: value } }))
   }
 
   const handleSave = async () => {
-    if (!form.texto.trim()) {
-      showToast('El texto de la pregunta no puede estar vacío', 'error')
+    const esText = (form.textos.es || '').trim()
+    if (!esText) {
+      showToast('El texto en español (ES) no puede estar vacío', 'error')
       return
     }
+    // Build textos with trimmed non-empty values; always include ES
+    const textos = {}
+    for (const [code, val] of Object.entries(form.textos)) {
+      const trimmed = (val || '').trim()
+      if (trimmed) textos[code] = trimmed
+    }
+
     setSaving(true)
     try {
       if (modal === 'create') {
-        const { error: apiErr } = await createPreguntaFormulario({ body: { texto: form.texto.trim() } })
+        const { error: apiErr } = await createPreguntaFormulario({ body: { textos } })
         if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
         showToast('Pregunta creada correctamente')
       } else {
         const { error: apiErr } = await updatePreguntaFormulario({
           path: { id: editando.id },
-          body: { texto: form.texto.trim() },
+          body: { textos },
         })
         if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
         showToast('Pregunta actualizada correctamente')
@@ -128,9 +165,10 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
           <table className="preguntas-table">
             <thead>
               <tr>
-                <th style={{ minWidth: 240 }}>Pregunta</th>
+                <th style={{ minWidth: 240 }}>Pregunta (ES)</th>
                 <th style={{ whiteSpace: 'nowrap', fontFamily: 'monospace' }}>Campo</th>
                 <th style={{ whiteSpace: 'nowrap' }}>Tipo</th>
+                <th style={{ whiteSpace: 'nowrap' }}>Idiomas</th>
                 <th style={{ whiteSpace: 'nowrap' }}>Última modificación</th>
                 <th style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Acciones</th>
               </tr>
@@ -143,6 +181,14 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
                   </td>
                   <td style={{ whiteSpace: 'nowrap', fontFamily: 'monospace', fontSize: '.85em', color: '#555' }}>{p.campo}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>Sí / No</td>
+                  <td style={{ whiteSpace: 'nowrap', fontSize: '.85em', color: '#555' }}>
+                    {p.textos
+                      ? Object.keys(p.textos)
+                          .filter(k => p.textos[k])
+                          .map(code => langs.find(l => l.code === code)?.label || code)
+                          .join(', ')
+                      : '—'}
+                  </td>
                   <td style={{ whiteSpace: 'nowrap' }}>{formatFecha(p.actualizadaEn)}</td>
                   <td>
                     <div className="pregunta-actions">
@@ -180,23 +226,26 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
       {/* Create / Edit modal */}
       {modal && createPortal(
         <div className="admin-modal-overlay" onClick={closeModal}>
-          <div className="admin-modal" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
+          <div className="admin-modal" style={{ maxWidth: 600 }} onClick={e => e.stopPropagation()}>
             <h2 className="admin-modal-title">
               {modal === 'create' ? '➕ Nueva pregunta del formulario' : '✏️ Editar pregunta del formulario'}
             </h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 16 }}>
-              <div>
-                <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>Texto de la pregunta *</label>
-                <textarea
-                  name="texto"
-                  value={form.texto}
-                  onChange={handleFormChange}
-                  rows={3}
-                  style={{ width: '100%', boxSizing: 'border-box' }}
-                  placeholder="Escribe aquí la pregunta…"
-                />
-              </div>
+              {langs.map(({ code, label }) => (
+                <div key={code}>
+                  <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>
+                    {label} ({code.toUpperCase()}){code === 'es' ? ' *' : ''}
+                  </label>
+                  <textarea
+                    value={form.textos[code] ?? ''}
+                    onChange={e => handleLangChange(code, e.target.value)}
+                    rows={3}
+                    style={{ width: '100%', boxSizing: 'border-box' }}
+                    placeholder={`Texto de la pregunta en ${label}…`}
+                  />
+                </div>
+              ))}
               <div>
                 <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>Tipo de respuesta</label>
                 <input
