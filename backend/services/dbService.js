@@ -293,7 +293,8 @@ async function updatePreguntaFormulario(id, { texto, textos }) {
     }
     const sanitised = {}
     for (const [lang, val] of Object.entries(textos)) {
-      sanitised[lang.trim().toLowerCase()] = String(val)
+      const key = lang.trim().toLowerCase()
+      if (key) sanitised[key] = String(val)
     }
     if (!Object.keys(sanitised).length) {
       return { data: null, error: { message: 'textos no puede estar vacío' } }
@@ -336,7 +337,8 @@ async function createPreguntaFormulario({ texto, textos }) {
     }
     const sanitised = {}
     for (const [lang, val] of Object.entries(textos)) {
-      sanitised[lang.trim().toLowerCase()] = String(val)
+      const key = lang.trim().toLowerCase()
+      if (key) sanitised[key] = String(val)
     }
     if (!Object.keys(sanitised).length) {
       return { data: null, error: { message: 'textos no puede estar vacío' } }

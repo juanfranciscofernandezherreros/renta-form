@@ -42,13 +42,19 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
   // Load active languages once
   useEffect(() => {
     getIdiomas()
-      .then(({ data }) => {
+      .then(({ data, error: apiErr }) => {
+        if (apiErr) {
+          showToast('No se pudieron cargar los idiomas; se mostrará solo Español', 'error')
+          return
+        }
         if (Array.isArray(data) && data.length) {
           setLangs(data)
           setForm(makeEmptyForm(data))
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        showToast('No se pudieron cargar los idiomas; se mostrará solo Español', 'error')
+      })
   }, [])
 
   useEffect(() => {
@@ -76,7 +82,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
   const openEdit = (pregunta) => {
     const textos = {}
     for (const { code } of langs) {
-      textos[code] = pregunta.textos?.[code] ?? pregunta.texto ?? ''
+      textos[code] = pregunta.textos?.[code] ?? ''
     }
     setForm({ textos })
     setEditando(pregunta)
@@ -176,7 +182,12 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
                   <td style={{ whiteSpace: 'nowrap', fontFamily: 'monospace', fontSize: '.85em', color: '#555' }}>{p.campo}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>Sí / No</td>
                   <td style={{ whiteSpace: 'nowrap', fontSize: '.85em', color: '#555' }}>
-                    {p.textos ? Object.keys(p.textos).filter(k => p.textos[k]).join(', ') : '—'}
+                    {p.textos
+                      ? Object.keys(p.textos)
+                          .filter(k => p.textos[k])
+                          .map(code => langs.find(l => l.code === code)?.label || code)
+                          .join(', ')
+                      : '—'}
                   </td>
                   <td style={{ whiteSpace: 'nowrap' }}>{formatFecha(p.actualizadaEn)}</td>
                   <td>
