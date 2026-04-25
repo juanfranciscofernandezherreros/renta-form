@@ -14,8 +14,8 @@ function send(res, result) {
 
 module.exports = function irpfRoutes(svc) {
   // GET /v1/irpf/preguntas
-  router.get('/preguntas', async (_req, res) => {
-    const result = await svc.getPreguntas()
+  router.get('/preguntas', async (req, res) => {
+    const result = await svc.getPreguntas(req.query.lang || null)
     send(res, result)
   })
 
