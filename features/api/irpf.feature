@@ -13,6 +13,12 @@ Feature: IRPF – endpoints públicos y de declaraciones
     Then la respuesta tiene status 200
     And la respuesta contiene el campo "secciones"
 
+  Scenario: GET preguntas con tabla vacía devuelve estructura válida sin errores
+    Given no hay preguntas en el sistema
+    When hago GET a "/v1/irpf/preguntas"
+    Then la respuesta tiene status 200
+    And la respuesta contiene el campo "secciones"
+
   # ── GET /v1/irpf/idiomas ──────────────────────────────────────────────────
 
   Scenario: GET idiomas devuelve un array con los idiomas activos

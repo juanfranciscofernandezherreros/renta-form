@@ -184,6 +184,10 @@ Given('existe una declaración de prueba', async function () {
   this.savedValues.declaracionDniNie = dniNie
 })
 
+Given('no hay preguntas en el sistema', async function () {
+  await this.apiContext.post('/test/empty-preguntas')
+})
+
 Given('existe un idioma de prueba con código {string} y etiqueta {string}', async function (code, label) {
   const resp = await this.apiContext.post('/v1/admin/idiomas', { data: { code, label } })
   const body = await resp.json()
