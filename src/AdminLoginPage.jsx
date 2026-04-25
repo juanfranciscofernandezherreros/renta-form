@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from './AuthContext.jsx'
-import { loginUser } from './apiClient.js'
+import { loginAdmin } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
 
 
@@ -36,8 +36,7 @@ export default function AdminLoginPage() {
       return
     }
     setLoading(true)
-    const dniNie = form.username.trim().toUpperCase()
-    const { data, error } = await loginUser({ dniNie, password: form.password })
+    const { data, error } = await loginAdmin({ username: form.username.trim(), password: form.password })
     setLoading(false)
     if (error) {
       setErrors({ global: error.message })
@@ -47,7 +46,7 @@ export default function AdminLoginPage() {
       setErrors({ global: 'No tienes permisos de administrador' })
       return
     }
-    login({ dniNie: data.dniNie, role: data.role })
+    login({ dniNie: data.username, role: data.role })
   }
 
   return (
