@@ -77,3 +77,35 @@ Feature: Rellenar el formulario de declaración de la Renta
   Scenario: Pantalla de consulta por token
     Given el usuario navega a la pantalla de consulta
     Then se toma un screenshot "14_pantalla_consulta"
+
+  Scenario: Validacion - campos de identificacion con errores visibles
+    Given el usuario abre la pagina principal
+    When el usuario hace clic en Siguiente sin rellenar nada
+    Then se muestran errores de validacion en los campos obligatorios
+    Then se toma un screenshot "15_errores_validacion_campos"
+
+  Scenario: Navegacion atras desde el paso 2
+    Given el usuario abre la pagina principal
+    Given el usuario rellena los datos de identificacion
+    Given el usuario avanza al siguiente paso
+    When el usuario hace clic en Volver
+    Then se muestra el formulario de identificacion
+    Then se toma un screenshot "16_volver_paso_identificacion"
+
+  Scenario: Paso 2 - Vivienda con respuestas Si (preguntas condicionales)
+    Given el usuario abre la pagina principal
+    Given el usuario rellena los datos de identificacion
+    Given el usuario avanza al siguiente paso
+    When el usuario responde Si a todas las preguntas de vivienda
+    Then se toma un screenshot "17_vivienda_si_condicionales"
+
+  Scenario: Envio completo con respuestas Si (preguntas condicionales activas)
+    Given el usuario abre la pagina principal
+    Given el usuario rellena los datos de identificacion con DNI "88888888T"
+    Given el usuario avanza al siguiente paso
+    Given el usuario responde Si a todas las preguntas de vivienda
+    Given el usuario responde Si a todas las preguntas de familia
+    Given el usuario responde Si a todas las preguntas de ingresos
+    When el usuario envia el formulario
+    Then se muestra la pantalla de exito
+    Then se toma un screenshot "18_envio_si_completo"

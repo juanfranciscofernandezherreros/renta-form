@@ -194,8 +194,6 @@ export default function App({ editData, onEditDataConsumed }) {
       setForm(INITIAL_STATE)
       setEditId(null)
       setSubmitted(false)
-      setSubmissionToken(null)
-      setTokenCopied(false)
       setCurrentStep(0)
       setStepDirection('forward')
       setFieldErrors({})
