@@ -4,10 +4,17 @@ const { Pool } = require('pg')
 const config = require('../config')
 
 // When DATABASE_URL is set (Heroku, Neon, etc.) use it as a connection string.
-// SSL is enabled for cloud-hosted databases; certificate validation is kept on
-// unless PG_SSL_REJECT_UNAUTHORIZED=false is explicitly set (e.g. for local dev
-// with a self-signed cert).
-const sslRejectUnauthorized = process.env.PG_SSL_REJECT_UNAUTHORIZED !== 'false'
+// Heroku Postgres uses self-signed certificates, so certificate validation must
+// be disabled there.  The DYNO env var is set on every Heroku dyno; when it is
+// present we default rejectUnauthorized to false.  Override explicitly with
+// PG_SSL_REJECT_UNAUTHORIZED=true|false.
+let sslRejectUnauthorized
+if (process.env.PG_SSL_REJECT_UNAUTHORIZED != null && process.env.PG_SSL_REJECT_UNAUTHORIZED !== '') {
+  sslRejectUnauthorized = process.env.PG_SSL_REJECT_UNAUTHORIZED !== 'false'
+} else {
+  // false on Heroku (DYNO is set), true everywhere else
+  sslRejectUnauthorized = !process.env.DYNO
+}
 
 const poolConfig = config.pg.connectionString
   ? {
