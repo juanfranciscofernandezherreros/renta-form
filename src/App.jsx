@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import './App.css'
 import { getPreguntas, createDeclaracion, updateDeclaracion } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
-import Footer from './Footer.jsx'
+
 
 const INITIAL_STATE = {
   // 1. Datos de identificación
@@ -584,9 +584,8 @@ export default function App({ editData, onEditDataConsumed }) {
         )}
       </div>
 
-      <Footer showApiDocs />
 
-      {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
+ && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
 
       {/* Confetti on submission */}
       {confettiPieces.map(p => (

@@ -409,28 +409,6 @@
       display: block;
     }
 
-    /* ─── Footer ─────────────────────────────────────────────────── */
-    footer {
-      background: var(--blue-900);
-      color: rgba(255,255,255,0.65);
-      text-align: center;
-      padding: 18px 16px;
-      font-size: 0.78rem;
-      line-height: 1.6;
-    }
-
-    footer a {
-      color: rgba(255,255,255,0.85);
-      text-decoration: none;
-    }
-
-    footer a:hover {
-      text-decoration: underline;
-    }
-
-    footer strong {
-      color: var(--white);
-    }
   </style>
 </head>
 <body>
@@ -519,12 +497,6 @@
     </div>
   </main>
 
-  <!-- ─── Footer ──────────────────────────────────────────────────── -->
-  <footer>
-    <strong>NH Gestión Integral</strong> &nbsp;·&nbsp;
-    <span id="footer-text">Cuestionario de Renta &copy; 2024</span>
-    &nbsp;·&nbsp; Todos los derechos reservados
-  </footer>
 
   <script>
     /* ================================================================
@@ -542,7 +514,6 @@
         errorRequired:  'Por favor, responda a todas las preguntas antes de enviar.',
         successTitle:   '¡Cuestionario enviado!',
         successDesc:    'Hemos recibido sus respuestas. Nuestro equipo las revisará y se pondrá en contacto con usted en breve.',
-        footerText:     'Cuestionario de Renta © 2024',
         loadError:      'No se pudieron cargar las preguntas. Inténtelo de nuevo más tarde.',
         questionLabel:  'Pregunta',
       },
@@ -557,7 +528,6 @@
         errorRequired:  'Please answer all questions before submitting.',
         successTitle:   'Questionnaire submitted!',
         successDesc:    'We have received your answers. Our team will review them and contact you shortly.',
-        footerText:     'Income Tax Questionnaire © 2024',
         loadError:      'Could not load the questions. Please try again later.',
         questionLabel:  'Question',
       },
@@ -572,7 +542,6 @@
         errorRequired:  'Si us plau, responeu a totes les preguntes abans d\'enviar.',
         successTitle:   'Questionari enviat!',
         successDesc:    'Hem rebut les vostres respostes. El nostre equip les revisarà i es posarà en contacte amb vosaltres aviat.',
-        footerText:     'Questionari de Renda © 2024',
         loadError:      'No s\'han pogut carregar les preguntes. Torneu-ho a intentar més tard.',
         questionLabel:  'Pregunta',
       },
@@ -587,7 +556,6 @@
         errorRequired:  'Veuillez répondre à toutes les questions avant de soumettre.',
         successTitle:   'Questionnaire soumis\u00a0!',
         successDesc:    'Nous avons bien reçu vos réponses. Notre équipe les examinera et vous contactera sous peu.',
-        footerText:     'Questionnaire Revenus © 2024',
         loadError:      'Impossible de charger les questions. Veuillez réessayer ultérieurement.',
         questionLabel:  'Question',
       },
@@ -728,7 +696,6 @@
       document.getElementById('btn-label').textContent      = t('btnSubmit');
       document.getElementById('success-title').textContent  = t('successTitle');
       document.getElementById('success-desc').textContent   = t('successDesc');
-      document.getElementById('footer-text').textContent    = t('footerText');
     }
 
     function renderQuestions() {

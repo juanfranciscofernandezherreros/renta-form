@@ -64,8 +64,6 @@ const ALL_REQUIRED_KEYS = [
   'fieldPasswordPlaceholder',
   'fieldTelefono',
   'fieldTelefonoPlaceholder',
-  'footerBrandName',
-  'footerDisclaimer',
   'instructionsText',
   'instructionsText2',
   'instructionsTitle',

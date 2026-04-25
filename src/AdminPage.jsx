@@ -19,7 +19,7 @@ import UsuariosAdminTab from './UsuariosAdminTab.jsx'
 import IdiomasAdminTab from './IdiomasAdminTab.jsx'
 import TraduccionesAdminTab from './TraduccionesAdminTab.jsx'
 import Pagination from './Pagination.jsx'
-import Footer from './Footer.jsx'
+
 
 const ESTADOS = ['recibido', 'en_revision', 'documentacion_pendiente', 'completado', 'archivado']
 
@@ -787,9 +787,7 @@ export default function AdminPage({ onNavigate }) {
         </div>
       , document.body)}
 
-      <Footer />
 
-      {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
     </>
   )
 }
