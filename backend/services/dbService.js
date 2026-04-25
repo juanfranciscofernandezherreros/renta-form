@@ -237,10 +237,29 @@ async function changePassword({ dniNie, oldPassword, newPassword }) {
 
 // ── IRPF preguntas (loaded from DB) ──────────────────────────────────────
 
+// Static mapping from question orden to the camelCase form-field name used in
+// the declaraciones table.  Only the 13 questions that have a corresponding
+// column in declaraciones are listed here; all other questions use their UUID.
+const ORDEN_TO_CAMPO = {
+  1:  'viviendaAlquiler',
+  2:  'alquilerMenos35',
+  3:  'viviendaPropiedad',
+  4:  'propiedadAntes2013',
+  5:  'pisosAlquiladosTerceros',
+  6:  'segundaResidencia',
+  11: 'familiaNumerosa',
+  12: 'mayores65ACargo',
+  13: 'mayoresConviven',
+  14: 'hijosMenores26',
+  25: 'ingresosJuego',
+  26: 'ingresosInversiones',
+  31: 'ayudasGobierno',
+}
+
 async function getPreguntas(lang) {
   try {
     const { rows } = await pool.query(
-      `SELECT campo, texto, orden
+      `SELECT id, texto, orden
        FROM preguntas
        ORDER BY orden`
     )
@@ -256,7 +275,7 @@ async function getPreguntas(lang) {
       }
       // Use the requested language, fall back to 'es', then any available value
       const texto = (lang && textos[lang]) || textos.es || Object.values(textos)[0] || ''
-      return { id: r.campo, texto, textos }
+      return { id: ORDEN_TO_CAMPO[r.orden] ?? r.id, texto, textos }
     })
     return { data: { secciones: [{ id: 'general', numero: 1, titulo: '', titulos: {}, preguntas }] }, error: null }
   } catch (err) {
@@ -286,7 +305,6 @@ function rowToPreguntaFormulario(r) {
   }
   return {
     id: r.id,
-    campo: r.campo,
     texto: textoDisplay,
     textos,
     tipo: 'sino',
@@ -300,7 +318,7 @@ async function listPreguntasFormulario({ page = 1, limit = 10 } = {}) {
     const total = parseInt(countRes.rows[0].count, 10)
     const offset = (page - 1) * limit
     const { rows } = await pool.query(
-      `SELECT id, campo, texto, actualizada_en
+      `SELECT id, texto, actualizada_en
        FROM preguntas
        ORDER BY orden, id
        LIMIT $1 OFFSET $2`,
@@ -350,7 +368,7 @@ async function updatePreguntaFormulario(id, { texto, textos }) {
     if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
 
     const { rows } = await pool.query(
-      `SELECT id, campo, texto, actualizada_en FROM preguntas WHERE id = $1`,
+      `SELECT id, texto, actualizada_en FROM preguntas WHERE id = $1`,
       [id]
     )
     return { data: rowToPreguntaFormulario(rows[0]), error: null }
@@ -360,17 +378,7 @@ async function updatePreguntaFormulario(id, { texto, textos }) {
   }
 }
 
-async function createPreguntaFormulario({ campo, texto, textos }) {
-  // campo is required and must be a valid camelCase identifier
-  if (!campo || !String(campo).trim()) {
-    return { data: null, error: { message: 'El campo (nombre de campo) es obligatorio' } }
-  }
-  const campoTrimmed = String(campo).trim()
-  if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(campoTrimmed)) {
-    return { data: null, error: { message: 'El campo solo puede contener letras, números y guiones bajos, y debe empezar por letra' } }
-  }
-
-  // Accept either a full `textos` map or a legacy plain `texto` string (ES).
+async function createPreguntaFormulario({ texto, textos }) {
   let textoObj
   if (textos !== undefined) {
     if (typeof textos !== 'object' || Array.isArray(textos)) {
@@ -395,22 +403,19 @@ async function createPreguntaFormulario({ campo, texto, textos }) {
   try {
     const textoJson = JSON.stringify(textoObj)
     const { rows } = await pool.query(
-      `INSERT INTO preguntas (campo, texto)
-       VALUES ($1, $2::jsonb)
+      `INSERT INTO preguntas (texto)
+       VALUES ($1::jsonb)
        RETURNING id`,
-      [campoTrimmed, textoJson]
+      [textoJson]
     )
     if (!rows.length) return { data: null, error: { message: 'No se pudo crear la pregunta' } }
 
     const { rows: full } = await pool.query(
-      `SELECT id, campo, texto, actualizada_en FROM preguntas WHERE id = $1`,
+      `SELECT id, texto, actualizada_en FROM preguntas WHERE id = $1`,
       [rows[0].id]
     )
     return { data: rowToPreguntaFormulario(full[0]), error: null, status: 201 }
   } catch (err) {
-    if (err.code === '23505') {
-      return { data: null, error: { message: `Ya existe una pregunta con el campo '${campoTrimmed}'` }, status: 409 }
-    }
     console.error('createPreguntaFormulario error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
