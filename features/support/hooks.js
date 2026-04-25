@@ -4,12 +4,12 @@ import fs from 'fs'
 
 setWorldConstructor(World)
 
-Before({ tags: 'not @api' }, async function () {
+Before(async function () {
   fs.mkdirSync('screenshots', { recursive: true })
   await this.openBrowser()
 })
 
-After({ tags: 'not @api' }, async function (scenario) {
+After(async function (scenario) {
   if (scenario.result?.status === 'FAILED') {
     await this.screenshot(`failed_${scenario.pickle.name}`)
   }
