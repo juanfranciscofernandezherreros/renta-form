@@ -585,7 +585,7 @@ export default function App({ editData, onEditDataConsumed }) {
       </div>
 
 
- && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
+      {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
 
       {/* Confetti on submission */}
       {confettiPieces.map(p => (
