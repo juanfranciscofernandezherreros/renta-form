@@ -14,6 +14,8 @@
     "db:setup-100": "node db/migrate.js && node db/seedTraducciones.js && node db/seed100.js",
     "db:seed-translations": "node db/seedTraducciones.js",
     "db:seed-languages": "node db/seedLanguages.js",
+    "db:seed-questions": "node db/seedPreguntas.js",
+    "db:seed-users": "node db/seedUsuarios.js",
     "seed:admin": "node db/seedAdmin.js"
   },
   "engines": {
