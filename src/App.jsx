@@ -478,8 +478,11 @@ export default function App({ editData, onEditDataConsumed }) {
           <>
             {loadingPreguntas && <div className="info-box">{t('loadingQuestions')}</div>}
             {errorPreguntas && <div className="info-box">{t('errorQuestions')}{errorPreguntas}</div>}
+            {!loadingPreguntas && !errorPreguntas && visibleSteps.length === 0 && (
+              <div className="info-box">{t('noQuestions')}</div>
+            )}
 
-            {!loadingPreguntas && !errorPreguntas && (
+            {!loadingPreguntas && !errorPreguntas && visibleSteps.length > 0 && (
               <form onSubmit={handleSubmit} noValidate>
                 {/* Animated wizard step container – key change triggers CSS animation */}
                 <div

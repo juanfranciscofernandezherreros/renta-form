@@ -70,6 +70,7 @@ const ALL_REQUIRED_KEYS = [
   'labelTelefono',
   'langLabel',
   'loadingQuestions',
+  'noQuestions',
   'loginInfoText',
   'loginInfoTitle',
   'loginSectionId',

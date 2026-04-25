@@ -78,6 +78,42 @@ function resetState() {
   ])
 }
 
+// ── Validation (mirrors dbService.js validateDeclaracionBody) ─────────────────
+
+const REQUIRED_TEXT_FIELDS = ['nombre', 'apellidos', 'dniNie', 'email', 'telefono']
+const REQUIRED_YN_FIELDS = [
+  'viviendaAlquiler', 'viviendaPropiedad', 'pisosAlquiladosTerceros', 'segundaResidencia',
+  'familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'hijosMenores26',
+  'ingresosJuego', 'ingresosInversiones',
+]
+const OPTIONAL_YN_FIELDS = ['alquilerMenos35', 'propiedadAntes2013', 'mayoresConviven']
+
+function validateDeclaracion(body, { requireAll = false } = {}) {
+  if (requireAll) {
+    for (const field of REQUIRED_TEXT_FIELDS) {
+      if (!body[field]) return `Campo obligatorio: ${field}`
+    }
+    for (const field of REQUIRED_YN_FIELDS) {
+      if (body[field] !== 'si' && body[field] !== 'no') {
+        return `El campo '${field}' debe ser 'si' o 'no'`
+      }
+    }
+  }
+  for (const field of OPTIONAL_YN_FIELDS) {
+    if (body[field] !== undefined && body[field] !== null && body[field] !== '' && body[field] !== 'si' && body[field] !== 'no') {
+      return `El campo '${field}' debe ser 'si', 'no' o estar vacío`
+    }
+  }
+  if (!requireAll) {
+    for (const field of REQUIRED_YN_FIELDS) {
+      if (body[field] !== undefined && body[field] !== null && body[field] !== '' && body[field] !== 'si' && body[field] !== 'no') {
+        return `El campo '${field}' debe ser 'si' o 'no'`
+      }
+    }
+  }
+  return null
+}
+
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function userToResponse(u) {
@@ -165,6 +201,8 @@ const svc = {
   },
 
   async createDeclaracion(body) {
+    const validationError = validateDeclaracion(body, { requireAll: true })
+    if (validationError) return { data: null, error: { message: validationError }, status: 400 }
     for (const d of declaraciones.values()) {
       if (d.dniNie && body.dniNie && d.dniNie === body.dniNie) {
         return { data: null, error: { message: 'Ya existe una declaración con este DNI/NIE' }, status: 409 }
@@ -406,6 +444,12 @@ app.get('/health', (_req, res) => res.json({ status: 'ok' }))
 app.post('/test/reset', (_req, res) => {
   resetState()
   res.json({ reset: true })
+})
+
+// Test helper – empties the preguntas list to simulate no questions configured
+app.post('/test/empty-preguntas', (_req, res) => {
+  preguntas = []
+  res.json({ cleared: true })
 })
 
 // Load actual route factories so we test the real routing logic
