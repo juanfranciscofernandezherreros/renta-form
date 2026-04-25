@@ -16,6 +16,10 @@ const svc = require('./services/dbService')
 // ── Express app ────────────────────────────────────────────────────────────
 const app = express()
 
+// Trust Heroku's load balancer / reverse proxy so that rate limiters and
+// IP-detection middleware (express-rate-limit) work correctly.
+app.set('trust proxy', 1)
+
 app.use(
   cors({
     origin: config.CORS_ORIGIN,
