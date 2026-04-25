@@ -191,7 +191,7 @@ async function loginAdmin({ username, password }) {
     return { data: { username: normalised, role: user.role }, error: null }
   } catch (err) {
     console.error('loginAdmin DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -211,7 +211,7 @@ async function loginUser({ dniNie, password }) {
     return { data: { dniNie: normalised, role: user.role }, error: null }
   } catch (err) {
     console.error('loginUser DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -230,7 +230,7 @@ async function changePassword({ dniNie, oldPassword, newPassword }) {
     return { data: { success: true }, error: null }
   } catch (err) {
     console.error('changePassword DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -260,7 +260,7 @@ async function getPreguntas(lang) {
     return { data: { secciones: [{ id: 'general', numero: 1, titulo: '', titulos: {}, preguntas }] }, error: null }
   } catch (err) {
     console.error('getPreguntas DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -308,7 +308,7 @@ async function listPreguntasFormulario({ page = 1, limit = 10 } = {}) {
     return { data: { data: rows.map(rowToPreguntaFormulario), total, page, limit }, error: null }
   } catch (err) {
     console.error('listPreguntasFormulario error:', err.message)
-    return { data: null, error: { message: err.message }, status: 500 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -355,7 +355,7 @@ async function updatePreguntaFormulario(id, { texto, textos }) {
     return { data: rowToPreguntaFormulario(rows[0]), error: null }
   } catch (err) {
     console.error('updatePreguntaFormulario error:', err.message)
-    return { data: null, error: { message: err.message }, status: 500 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -402,7 +402,7 @@ async function createPreguntaFormulario({ texto, textos }) {
     return { data: rowToPreguntaFormulario(full[0]), error: null, status: 201 }
   } catch (err) {
     console.error('createPreguntaFormulario error:', err.message)
-    return { data: null, error: { message: err.message }, status: 500 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -417,7 +417,7 @@ async function deletePreguntaFormulario(id) {
     return { data: { deleted: true }, error: null }
   } catch (err) {
     console.error('deletePreguntaFormulario error:', err.message)
-    return { data: null, error: { message: err.message }, status: 500 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -442,7 +442,7 @@ async function listDeclaraciones({ dniNie, estado, page = 1, limit = 10 }) {
     return { data: { data: declaraciones, total, page, limit }, error: null }
   } catch (err) {
     console.error('listDeclaraciones DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -468,7 +468,7 @@ async function listDeclaracionesAll({ dniNie, estado, page = 1, limit = 20 }) {
     return { data: { data: declaraciones, total, page, limit }, error: null }
   } catch (err) {
     console.error('listDeclaracionesAll DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -506,7 +506,7 @@ async function createDeclaracion(body) {
       return { data: null, error: { message: 'Ya existe una declaración con este DNI/NIE' }, status: 409 }
     }
     console.error('createDeclaracion DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
   const row = rows[0]
   const declaracionId = row.id
@@ -522,7 +522,7 @@ async function getDeclaracion(id) {
     return { data: dec, error: null }
   } catch (err) {
     console.error('getDeclaracion DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -535,7 +535,7 @@ async function getDeclaracionByToken(token) {
     return { data: dec, error: null }
   } catch (err) {
     console.error('getDeclaracionByToken DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -549,7 +549,7 @@ async function updateEstadoDeclaracion(id, estado) {
     return { data: rowToDeclaracion(rows[0]), error: null }
   } catch (err) {
     console.error('updateEstadoDeclaracion DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -599,7 +599,7 @@ async function updateDeclaracion(id, body) {
     }
   } catch (err) {
     console.error('updateDeclaracion DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -610,7 +610,7 @@ async function deleteDeclaracion(id) {
     return { data: { success: true }, error: null }
   } catch (err) {
     console.error('deleteDeclaracion DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -644,7 +644,7 @@ async function listUsersAdmin({ bloqueado, denunciado, search, page = 1, limit =
     return { data: { data: rows.map(rowToUser), total, page, limit }, error: null }
   } catch (err) {
     console.error('listUsersAdmin DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -658,7 +658,7 @@ async function blockUser(dniNie, bloqueado) {
     return { data: { success: true }, error: null }
   } catch (err) {
     console.error('blockUser DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -672,7 +672,7 @@ async function reportUser(dniNie, denunciado) {
     return { data: { success: true }, error: null }
   } catch (err) {
     console.error('reportUser DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -688,7 +688,7 @@ async function deleteUser(dniNie) {
     return { data: { success: true }, error: null }
   } catch (err) {
     console.error('deleteUser DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -715,7 +715,7 @@ async function assignUserAccount({ dniNie, password, declaracionId }) {
     return { data: { created: isNew, dniNie }, error: null }
   } catch (err) {
     console.error('assignUserAccount DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -725,7 +725,7 @@ async function getUserByDniNie(dniNie) {
     return { data: rows.length ? rowToUser(rows[0]) : null, error: null }
   } catch (err) {
     console.error('getUserByDniNie DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -739,7 +739,7 @@ async function getIdiomas() {
     return { data: rows, error: null }
   } catch (err) {
     console.error('getIdiomas DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -760,7 +760,7 @@ async function getTraducciones() {
     return { data: result, error: null }
   } catch (err) {
     console.error('getTraducciones DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -797,7 +797,7 @@ async function listIdiomasAdmin({ activo, page = 1, limit = 20 } = {}) {
     return { data: { data: rows.map(rowToIdioma), total, page, limit }, error: null }
   } catch (err) {
     console.error('listIdiomasAdmin DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -815,7 +815,7 @@ async function createIdiomaAdmin({ code, label, activo }) {
       return { data: null, error: { message: 'Ya existe un idioma con ese código' }, status: 409 }
     }
     console.error('createIdiomaAdmin DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -842,7 +842,7 @@ async function updateIdiomaAdmin(id, { label, activo }) {
     return { data: rowToIdioma(rows[0]), error: null }
   } catch (err) {
     console.error('updateIdiomaAdmin DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -859,7 +859,7 @@ async function deleteIdiomaAdmin(id) {
     return { data: null, error: null, status: 204 }
   } catch (err) {
     console.error('deleteIdiomaAdmin DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -876,7 +876,7 @@ async function getIdiomaContent(id) {
     return { data: { code: idioma.rows[0].code, content }, error: null }
   } catch (err) {
     console.error('getIdiomaContent DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -922,7 +922,7 @@ async function updateIdiomaContent(id, { content }) {
     return getIdiomaContent(id)
   } catch (err) {
     console.error('updateIdiomaContent DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
@@ -1043,7 +1043,7 @@ async function getMissingTranslations(ref = 'static') {
     }
   } catch (err) {
     console.error('getMissingTranslations DB error:', err.message)
-    return { data: null, error: { message: err.message }, status: 503 }
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
