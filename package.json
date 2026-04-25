@@ -18,6 +18,7 @@
     "migrate": "cd backend && npm run migrate",
     "seed": "cd backend && npm run seed",
     "db:setup": "cd backend && npm run db:setup",
+    "db:setup-all": "cd backend && npm run db:setup-all",
     "db:setup-100": "cd backend && npm run db:setup-100",
     "db:seed-translations": "cd backend && npm run db:seed-translations",
     "db:seed-languages": "cd backend && npm run db:seed-languages",
