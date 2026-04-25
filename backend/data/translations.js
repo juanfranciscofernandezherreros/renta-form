@@ -11,7 +11,7 @@ const translations = {
     keys: {
       btnAdmin: 'Área de gestión',
       btnBack: 'Volver',
-      btnClear: 'Nueva declaración',
+      btnClear: 'Resetear formulario',
       btnConsultando: 'Consultando…',
       btnConsultar: 'Consultar',
       btnContinue: 'Continuar',
@@ -68,7 +68,7 @@ const translations = {
       loginSectionId: 'Identificación',
       loginTestPassword: 'Contraseña de prueba: ',
       loginTestUsers: 'Usuarios de prueba:',
-      logoText: 'Renta Form',
+      logoText: 'NH Integrales',
       navLogin: 'Iniciar sesión',
       navLogout: 'Cerrar sesión',
       navNewForm: 'Nueva declaración',
@@ -114,7 +114,7 @@ const translations = {
     keys: {
       btnAdmin: 'Àrea de gestió',
       btnBack: 'Tornar',
-      btnClear: 'Nova declaració',
+      btnClear: 'Netejar formulari',
       btnConsultando: 'Consultant…',
       btnConsultar: 'Consultar',
       btnContinue: 'Continuar',
@@ -217,7 +217,7 @@ const translations = {
     keys: {
       btnAdmin: 'Management area',
       btnBack: 'Back',
-      btnClear: 'New declaration',
+      btnClear: 'Reset form',
       btnConsultando: 'Searching…',
       btnConsultar: 'Search',
       btnContinue: 'Continue',
@@ -320,7 +320,7 @@ const translations = {
     keys: {
       btnAdmin: 'Espace de gestion',
       btnBack: 'Retour',
-      btnClear: 'Nouvelle déclaration',
+      btnClear: 'Réinitialiser le formulaire',
       btnConsultando: 'Recherche…',
       btnConsultar: 'Rechercher',
       btnContinue: 'Continuer',
