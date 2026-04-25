@@ -94,6 +94,7 @@ const ALL_REQUIRED_KEYS = [
   'rentaPdfBtn',
   'rentaPdfBtnTitle',
   'section1',
+  'section5',
   'step1Subtitle',
   'successText',
   'successTitle',
@@ -173,10 +174,27 @@ function rowToUser(row) {
 
 // ── Auth ───────────────────────────────────────────────────────────────────
 
-async function loginUser({ dniNie, password }) {
+async function loginAdmin({ username, password }) {
+  const normalised = (username ?? '').trim().toUpperCase()
   const { rows } = await pool.query(
-    'SELECT password_hash, role, bloqueado FROM usuarios WHERE dni_nie = $1',
-    [dniNie]
+    'SELECT password_hash, role, bloqueado FROM usuarios WHERE UPPER(dni_nie) = $1',
+    [normalised]
+  )
+  if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
+  const user = rows[0]
+  if (user.role !== 'admin') return { data: null, error: { message: 'No tienes permisos de administrador' } }
+  if (user.bloqueado) return { data: null, error: { message: 'USER_BLOCKED' } }
+  if (!(await verifyPassword(password, user.password_hash))) {
+    return { data: null, error: { message: 'Contraseña incorrecta' } }
+  }
+  return { data: { username: normalised, role: user.role }, error: null }
+}
+
+async function loginUser({ dniNie, password }) {
+  const normalised = (dniNie ?? '').trim().toUpperCase()
+  const { rows } = await pool.query(
+    'SELECT password_hash, role, bloqueado FROM usuarios WHERE UPPER(dni_nie) = $1',
+    [normalised]
   )
   if (!rows.length) return { data: null, error: { message: 'DNI/NIE no encontrado' } }
   const user = rows[0]
@@ -184,7 +202,7 @@ async function loginUser({ dniNie, password }) {
   if (!(await verifyPassword(password, user.password_hash))) {
     return { data: null, error: { message: 'Contraseña incorrecta' } }
   }
-  return { data: { dniNie, role: user.role }, error: null }
+  return { data: { dniNie: normalised, role: user.role }, error: null }
 }
 
 async function changePassword({ dniNie, oldPassword, newPassword }) {
@@ -593,9 +611,13 @@ async function reportUser(dniNie, denunciado) {
 }
 
 async function deleteUser(dniNie) {
+  const { rows } = await pool.query('SELECT role FROM usuarios WHERE dni_nie = $1', [dniNie])
+  if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
+  if (rows[0].role === 'admin') {
+    return { data: null, error: { message: 'No se pueden eliminar usuarios administradores' }, status: 403 }
+  }
   await pool.query('DELETE FROM declaraciones WHERE dni_nie = $1', [dniNie])
-  const { rowCount } = await pool.query('DELETE FROM usuarios WHERE dni_nie = $1', [dniNie])
-  if (!rowCount) return { data: null, error: { message: 'Usuario no encontrado' } }
+  await pool.query('DELETE FROM usuarios WHERE dni_nie = $1', [dniNie])
   return { data: { success: true }, error: null }
 }
 
@@ -906,6 +928,7 @@ async function getMissingTranslations(ref = 'static') {
 // ── Exports ────────────────────────────────────────────────────────────────
 
 module.exports = {
+  loginAdmin,
   loginUser,
   changePassword,
   getPreguntas,
