@@ -61,13 +61,19 @@ function escHtml(str) {
     .replace(/'/g, '&#39;')
 }
 
-function buildAdminSecciones(preguntasSecciones) {
+function buildAdminSecciones(preguntasSecciones, t) {
   const ID_CAMPOS = ['nombre', 'apellidos', 'dniNie', 'email', 'telefono']
-  const ID_CAMPOS_ES = { nombre: 'Nombre', apellidos: 'Apellidos', dniNie: 'DNI / NIE', email: 'Correo electrónico', telefono: 'Teléfono' }
+  const idLabels = {
+    nombre: t('fieldNombre'),
+    apellidos: t('fieldApellidos'),
+    dniNie: t('tokenResultDni'),
+    email: t('tokenResultEmail'),
+    telefono: t('labelTelefono'),
+  }
   const idSection = {
-    titulo: '1. Datos de Identificación',
+    titulo: t('section1'),
     campos: ID_CAMPOS,
-    labels: ID_CAMPOS_ES,
+    labels: idLabels,
   }
   const dynamic = (preguntasSecciones ?? []).map(sec => {
     const labels = {}
@@ -77,10 +83,16 @@ function buildAdminSecciones(preguntasSecciones) {
   return [idSection, ...dynamic]
 }
 
-function downloadDeclaracionPdf(dec, preguntasSecciones) {
-  const allSections = buildAdminSecciones(preguntasSecciones)
-  const YN_ES = { si: 'Sí', no: 'No' }
-  const ESTADO_ES = { recibido: 'Recibido', en_revision: 'En revisión', documentacion_pendiente: 'Documentación pendiente', completado: 'Completado', archivado: 'Archivado' }
+function downloadDeclaracionPdf(dec, preguntasSecciones, t) {
+  const allSections = buildAdminSecciones(preguntasSecciones, t)
+  const YN_ES = { si: t('yes'), no: t('no') }
+  const ESTADO_ES = {
+    recibido: t('estadoRecibido'),
+    en_revision: t('estadoEnRevision'),
+    documentacion_pendiente: t('estadoDocumentacionPendiente'),
+    completado: t('estadoCompletado'),
+    archivado: t('estadoArchivado'),
+  }
 
   const rows = allSections.flatMap(sec => {
     const camposVisibles = sec.campos
@@ -393,7 +405,7 @@ export default function AdminPage({ onNavigate }) {
         )}
 
         {activeTab === 'usuarios' && (
-          <UsuariosAdminTab showToast={showToast} />
+          <UsuariosAdminTab showToast={showToast} preguntasSecciones={preguntasSecciones} />
         )}
 
         {activeTab === 'idiomas' && (
@@ -600,7 +612,7 @@ export default function AdminPage({ onNavigate }) {
                       <button
                         type="button"
                         className="btn btn-secondary"
-                        onClick={() => downloadDeclaracionPdf(dec, preguntasSecciones)}
+                        onClick={() => downloadDeclaracionPdf(dec, preguntasSecciones, t)}
                         title="Abrir vista imprimible / Descargar PDF"
                       >
                         📄 Descargar PDF
@@ -674,14 +686,14 @@ export default function AdminPage({ onNavigate }) {
             </p>
             <div className="form-grid">
               {[
-                { name: 'nombre', label: 'Nombre', type: 'text' },
-                { name: 'apellidos', label: 'Apellidos', type: 'text' },
-                { name: 'dniNie', label: 'DNI / NIE', type: 'text' },
-                { name: 'email', label: 'Correo electrónico', type: 'email' },
-                { name: 'telefono', label: 'Teléfono', type: 'tel' },
-              ].map(({ name, label, type }) => (
+                { name: 'nombre', labelKey: 'fieldNombre', type: 'text' },
+                { name: 'apellidos', labelKey: 'fieldApellidos', type: 'text' },
+                { name: 'dniNie', labelKey: 'tokenResultDni', type: 'text' },
+                { name: 'email', labelKey: 'tokenResultEmail', type: 'email' },
+                { name: 'telefono', labelKey: 'labelTelefono', type: 'tel' },
+              ].map(({ name, labelKey, type }) => (
                 <div className="field" key={name}>
-                  <label>{label}</label>
+                  <label>{t(labelKey)}</label>
                   <input
                     type={type}
                     value={editForm[name] ?? ''}

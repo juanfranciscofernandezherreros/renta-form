@@ -8,44 +8,25 @@ import {
   listDeclaraciones,
 } from './apiClient.js'
 import Pagination from './Pagination.jsx'
+import { useLanguage } from './LanguageContext.jsx'
 
-// Re-use the same PDF logic as AdminPage
-const ESTADOS_LABELS = {
-  recibido: 'Recibido',
-  en_revision: 'En revisión',
-  documentacion_pendiente: 'Documentación pendiente',
-  completado: 'Completado',
-  archivado: 'Archivado',
+const ESTADO_T_KEYS = {
+  recibido: 'estadoRecibido',
+  en_revision: 'estadoEnRevision',
+  documentacion_pendiente: 'estadoDocumentacionPendiente',
+  completado: 'estadoCompletado',
+  archivado: 'estadoArchivado',
 }
 
-const CAMPOS_LABELS = {
-  nombre: 'Nombre',
-  apellidos: 'Apellidos',
-  dniNie: 'DNI / NIE',
-  email: 'Correo electrónico',
-  telefono: 'Teléfono',
-  viviendaAlquiler: '¿Vive de alquiler?',
-  alquilerMenos35: '¿Alquiler inferior al 35% de ingresos?',
-  viviendaPropiedad: '¿Tiene vivienda en propiedad?',
-  propiedadAntes2013: '¿Adquirida antes de 2013?',
-  pisosAlquiladosTerceros: '¿Tiene pisos alquilados a terceros?',
-  segundaResidencia: '¿Tiene segunda residencia?',
-  familiaNumerosa: '¿Familia numerosa?',
-  ayudasGobierno: '¿Ha recibido ayudas del gobierno?',
-  mayores65ACargo: '¿Tiene mayores de 65 años a cargo?',
-  mayoresConviven: '¿Conviven con usted?',
-  hijosMenores26: '¿Tiene hijos menores de 26 años?',
-  ingresosJuego: '¿Ha obtenido ingresos por juego?',
-  ingresosInversiones: '¿Ha obtenido ingresos por inversiones?',
+const ID_CAMPO_T_KEYS = {
+  nombre: 'fieldNombre',
+  apellidos: 'fieldApellidos',
+  dniNie: 'tokenResultDni',
+  email: 'tokenResultEmail',
+  telefono: 'labelTelefono',
 }
 
-const SECCIONES_DATOS = [
-  { titulo: '1. Datos de Identificación', campos: ['nombre', 'apellidos', 'dniNie', 'email', 'telefono'] },
-  { titulo: '2. Situación de Vivienda', campos: ['viviendaAlquiler', 'alquilerMenos35', 'viviendaPropiedad', 'propiedadAntes2013', 'pisosAlquiladosTerceros', 'segundaResidencia'] },
-  { titulo: '3. Cargas Familiares y Ayudas Públicas', campos: ['familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'mayoresConviven', 'hijosMenores26'] },
-  { titulo: '4. Ingresos Extraordinarios e Inversiones', campos: ['ingresosJuego', 'ingresosInversiones'] },
-]
-const YN_LABELS = { si: 'Sí', no: 'No' }
+const ID_CAMPOS = ['nombre', 'apellidos', 'dniNie', 'email', 'telefono']
 
 function escHtml(str) {
   return String(str ?? '')
@@ -61,7 +42,7 @@ function formatFecha(iso) {
   return new Date(iso).toLocaleString('es-ES', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
-async function downloadUserDeclaracionPdf(dniNie) {
+async function downloadUserDeclaracionPdf(dniNie, t, preguntasSecciones) {
   const { data: result } = await listDeclaraciones({ query: { dniNie, limit: 1 } })
   const dec = result?.data?.[0]
   if (!dec) {
@@ -69,10 +50,28 @@ async function downloadUserDeclaracionPdf(dniNie) {
     return
   }
 
+  // Build ID section labels from translation keys
+  const idLabels = {}
+  for (const campo of ID_CAMPOS) {
+    idLabels[campo] = t(ID_CAMPO_T_KEYS[campo] ?? campo)
+  }
+
+  // Build dynamic question sections from DB (same structure as AdminPage)
+  const dynamicSections = (preguntasSecciones ?? []).map(sec => {
+    const labels = {}
+    ;(sec.preguntas ?? []).forEach(p => { labels[p.id] = p.texto })
+    const campos = (sec.preguntas ?? []).map(p => p.id)
+    return { titulo: sec.titulo, campos, labels }
+  })
+
   const allSections = [
-    ...SECCIONES_DATOS,
-    { titulo: '5. Documentación Adjunta', campos: [] },
+    { titulo: t('section1'), campos: ID_CAMPOS, labels: idLabels },
+    ...dynamicSections,
+    { titulo: t('section5'), campos: [] },
   ]
+
+  const getLabel = (sec, c) => (sec.labels && sec.labels[c]) ? sec.labels[c] : c
+  const getYN = v => v === 'si' ? t('yes') : v === 'no' ? t('no') : v
 
   const rows = allSections.flatMap(sec => {
     if (sec.campos.length === 0) {
@@ -91,10 +90,12 @@ async function downloadUserDeclaracionPdf(dniNie) {
     return [
       `<tr><td colspan="2" class="sec-header">${escHtml(sec.titulo)}</td></tr>`,
       ...camposVisibles.map(
-        ([c, v]) => `<tr><td class="lbl">${escHtml(CAMPOS_LABELS[c] ?? c)}</td><td class="val">${escHtml(YN_LABELS[v] ?? v)}</td></tr>`
+        ([c, v]) => `<tr><td class="lbl">${escHtml(getLabel(sec, c))}</td><td class="val">${escHtml(getYN(v))}</td></tr>`
       ),
     ]
   }).join('')
+
+  const estadoLabel = t(ESTADO_T_KEYS[dec.estado] ?? dec.estado)
 
   const html = `<!DOCTYPE html>
 <html lang="es">
@@ -117,7 +118,7 @@ async function downloadUserDeclaracionPdf(dniNie) {
 <h1>🏛️ NH Gestión Integral – Cuestionario IRPF 2025</h1>
 <div class="meta">
   Declaración: <strong>${escHtml(dec.id)}</strong> &nbsp;·&nbsp;
-  Estado: <strong>${escHtml(ESTADOS_LABELS[dec.estado] ?? dec.estado)}</strong> &nbsp;·&nbsp;
+  Estado: <strong>${escHtml(estadoLabel)}</strong> &nbsp;·&nbsp;
   Enviada: <strong>${escHtml(formatFecha(dec.creadoEn))}</strong> &nbsp;·&nbsp;
   Última actualización: <strong>${escHtml(formatFecha(dec.actualizadoEn))}</strong>
 </div>
@@ -133,7 +134,8 @@ async function downloadUserDeclaracionPdf(dniNie) {
   setTimeout(() => win.print(), 400)
 }
 
-export default function UsuariosAdminTab({ showToast }) {
+export default function UsuariosAdminTab({ showToast, preguntasSecciones = [] }) {
+  const { t } = useLanguage()
   const [users, setUsers] = useState([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -320,7 +322,7 @@ export default function UsuariosAdminTab({ showToast }) {
                       <button
                         type="button"
                         className="btn btn-secondary btn-sm btn-xs"
-                        onClick={() => downloadUserDeclaracionPdf(u.dniNie)}
+                        onClick={() => downloadUserDeclaracionPdf(u.dniNie, t, preguntasSecciones)}
                         title="Descargar PDF de la declaración"
                       >
                         📄 PDF
