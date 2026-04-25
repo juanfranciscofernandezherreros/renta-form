@@ -15,7 +15,7 @@ const PAGE_LIMIT = 10
 function makeEmptyForm(langs) {
   const textos = {}
   for (const { code } of langs) textos[code] = ''
-  return { textos }
+  return { campo: '', textos }
 }
 
 function formatFecha(iso) {
@@ -84,7 +84,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
     for (const { code } of langs) {
       textos[code] = pregunta.textos?.[code] ?? ''
     }
-    setForm({ textos })
+    setForm({ campo: pregunta.campo ?? '', textos })
     setEditando(pregunta)
     setModal('edit')
   }
@@ -111,7 +111,12 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
     setSaving(true)
     try {
       if (modal === 'create') {
-        const { error: apiErr } = await createPreguntaFormulario({ body: { textos } })
+        const campo = (form.campo || '').trim()
+        if (!campo) {
+          showToast('El nombre de campo (campo) es obligatorio', 'error')
+          return
+        }
+        const { error: apiErr } = await createPreguntaFormulario({ body: { campo, textos } })
         if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
         showToast('Pregunta creada correctamente')
       } else {
@@ -232,6 +237,32 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
             </h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 16 }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>
+                  Nombre de campo (campo) *
+                </label>
+                {modal === 'create' ? (
+                  <>
+                    <input
+                      type="text"
+                      value={form.campo ?? ''}
+                      onChange={e => setForm(prev => ({ ...prev, campo: e.target.value }))}
+                      style={{ width: '100%', boxSizing: 'border-box', fontFamily: 'monospace' }}
+                      placeholder="ej: viviendaAlquiler"
+                    />
+                    <small style={{ color: '#666', display: 'block', marginTop: 4 }}>
+                      Identificador camelCase que coincide con la columna en la base de datos de declaraciones.
+                    </small>
+                  </>
+                ) : (
+                  <input
+                    type="text"
+                    value={form.campo ?? ''}
+                    disabled
+                    style={{ width: '100%', boxSizing: 'border-box', fontFamily: 'monospace', background: '#f5f5f5', color: '#666' }}
+                  />
+                )}
+              </div>
               {langs.map(({ code, label }) => (
                 <div key={code}>
                   <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>

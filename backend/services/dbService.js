@@ -359,7 +359,16 @@ async function updatePreguntaFormulario(id, { texto, textos }) {
   }
 }
 
-async function createPreguntaFormulario({ texto, textos }) {
+async function createPreguntaFormulario({ campo, texto, textos }) {
+  // campo is required and must be a valid camelCase identifier
+  if (!campo || !String(campo).trim()) {
+    return { data: null, error: { message: 'El campo (nombre de campo) es obligatorio' } }
+  }
+  const campoTrimmed = String(campo).trim()
+  if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(campoTrimmed)) {
+    return { data: null, error: { message: 'El campo solo puede contener letras, números y guiones bajos, y debe empezar por letra' } }
+  }
+
   // Accept either a full `textos` map or a legacy plain `texto` string (ES).
   let textoObj
   if (textos !== undefined) {
@@ -384,14 +393,11 @@ async function createPreguntaFormulario({ texto, textos }) {
 
   try {
     const textoJson = JSON.stringify(textoObj)
-    // Generate the UUID first and use it for both id and campo in a single INSERT,
-    // avoiding the CTE pattern where the outer UPDATE cannot see rows inserted by the CTE.
     const { rows } = await pool.query(
-      `WITH new_id AS (SELECT gen_random_uuid() AS id)
-       INSERT INTO preguntas (id, campo, texto)
-       SELECT id, id::text, $1::jsonb FROM new_id
+      `INSERT INTO preguntas (campo, texto)
+       VALUES ($1, $2::jsonb)
        RETURNING id`,
-      [textoJson]
+      [campoTrimmed, textoJson]
     )
     if (!rows.length) return { data: null, error: { message: 'No se pudo crear la pregunta' } }
 
@@ -401,6 +407,9 @@ async function createPreguntaFormulario({ texto, textos }) {
     )
     return { data: rowToPreguntaFormulario(full[0]), error: null, status: 201 }
   } catch (err) {
+    if (err.code === '23505') {
+      return { data: null, error: { message: `Ya existe una pregunta con el campo '${campoTrimmed}'` }, status: 409 }
+    }
     console.error('createPreguntaFormulario error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
