@@ -326,10 +326,15 @@ export default function App({ editData, onEditDataConsumed }) {
       return
     }
 
+    // Guard: no questions configured at all
+    const questionSteps = visibleSteps.filter(s => s.type === 'question')
+    if (questionSteps.length === 0) {
+      setFormError(t('noQuestions'))
+      return
+    }
+
     // Validate all visible questions are answered (excludes conditional questions whose condition is not met)
-    const unanswered = visibleSteps
-      .filter(s => s.type === 'question')
-      .some(s => form[s.pregunta.id] == null || form[s.pregunta.id] === '')
+    const unanswered = questionSteps.some(s => form[s.pregunta.id] == null || form[s.pregunta.id] === '')
     if (unanswered) {
       setFormError(t('errValidationQuestions'))
       return
