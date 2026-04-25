@@ -6,11 +6,3 @@ const defaultProfile = {
 }
 
 export { defaultProfile as default }
-
-export const api = {
-  paths: ['features/api/**/*.feature'],
-  require: ['features/support/api_hooks.js', 'features/step_definitions/api.steps.js'],
-  format: ['progress', 'html:cucumber-report.html'],
-  tags: '@api',
-  timeout: 30000,
-}

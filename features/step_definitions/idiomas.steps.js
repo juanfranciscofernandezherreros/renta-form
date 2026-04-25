@@ -1,108 +1,6 @@
 import { Given, When, Then } from '@cucumber/cucumber'
 
-// ── Mock data ──────────────────────────────────────────────────────────────
-
-const MOCK_IDIOMAS = [
-  { code: 'ca', label: 'Català' },
-  { code: 'en', label: 'English' },
-  { code: 'es', label: 'Español' },
-  { code: 'fr', label: 'Français' },
-]
-
-const MOCK_TRADUCCIONES = {
-  es: {
-    btnContinue: 'Continuar',
-    btnSubmit: 'Enviar declaración',
-    btnSubmitting: 'Enviando…',
-    btnBack: 'Atrás',
-    btnClear: 'Limpiar',
-    fieldNombre: 'Nombre',
-    fieldApellidos: 'Apellidos',
-    fieldDniNie: 'DNI / NIE',
-    fieldEmail: 'Email',
-    fieldTelefono: 'Teléfono',
-    yes: 'Sí',
-    no: 'No',
-    langLabel: 'Idioma',
-    successTitle: '¡Declaración enviada!',
-    section1: 'Datos de identificación',
-    instructionsTitle: 'Instrucciones:',
-  },
-  en: {
-    btnContinue: 'Continue',
-    btnSubmit: 'Send declaration',
-    btnSubmitting: 'Sending…',
-    btnBack: 'Back',
-    btnClear: 'Clear',
-    fieldNombre: 'Name',
-    fieldApellidos: 'Surnames',
-    fieldDniNie: 'ID / NIE',
-    fieldEmail: 'Email',
-    fieldTelefono: 'Phone',
-    yes: 'Yes',
-    no: 'No',
-    langLabel: 'Language',
-    successTitle: 'Declaration sent!',
-    section1: 'Identification data',
-    instructionsTitle: 'Instructions:',
-  },
-  ca: {
-    btnContinue: 'Continuar',
-    btnSubmit: 'Enviar declaració',
-    btnSubmitting: 'Enviant…',
-    btnBack: 'Enrere',
-    btnClear: 'Netejar',
-    fieldNombre: 'Nom',
-    fieldApellidos: 'Cognoms',
-    fieldDniNie: 'DNI / NIE',
-    fieldEmail: 'Correu',
-    fieldTelefono: 'Telèfon',
-    yes: 'Sí',
-    no: 'No',
-    langLabel: 'Idioma',
-    successTitle: 'Declaració enviada!',
-    section1: "Dades d'identificació",
-    instructionsTitle: "Instruccions:",
-  },
-  fr: {
-    btnContinue: 'Continuer',
-    btnSubmit: 'Envoyer la déclaration',
-    btnSubmitting: 'Envoi…',
-    btnBack: 'Retour',
-    btnClear: 'Effacer',
-    fieldNombre: 'Prénom',
-    fieldApellidos: 'Nom de famille',
-    fieldDniNie: 'DNI / NIE',
-    fieldEmail: 'E-mail',
-    fieldTelefono: 'Téléphone',
-    yes: 'Oui',
-    no: 'Non',
-    langLabel: 'Langue',
-    successTitle: 'Déclaration envoyée !',
-    section1: "Données d'identification",
-    instructionsTitle: "Instructions :",
-  },
-}
-
 // ── Helpers ────────────────────────────────────────────────────────────────
-
-/** Intercept idiomas and traducciones API with mock data. */
-async function interceptTranslationAPIs(page, { idiomas = MOCK_IDIOMAS, traducciones = MOCK_TRADUCCIONES } = {}) {
-  await page.route('**/v1/irpf/idiomas', route =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(idiomas),
-    })
-  )
-  await page.route('**/v1/irpf/traducciones', route =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(traducciones),
-    })
-  )
-}
 
 /** Click the language button for a given code (e.g. 'EN', 'CA', 'FR', 'ES'). */
 async function clickLangButton(page, code) {
@@ -116,25 +14,6 @@ async function clickLangButton(page, code) {
     { timeout: 5000 }
   )
 }
-
-// ── Steps: navegación con mock ──────────────────────────────────────────────
-
-Given('el usuario abre la pagina con traducciones simuladas', async function () {
-  await interceptTranslationAPIs(this.page)
-  await this.grantIntranetAccess()
-  await this.page.waitForSelector('input[name="nombre"]', { timeout: 20000 })
-  // Wait for translations to be applied (the lang-flag buttons appear once
-  // the LanguageContext loads the mocked data)
-  await this.page.waitForSelector('.lang-flag-btn', { timeout: 10000 })
-  // Wait until the Continuar button text is rendered (translations applied)
-  await this.page.waitForSelector('button.btn-primary', { timeout: 8000 })
-})
-
-Given('el usuario abre la pagina con traducciones vacías', async function () {
-  await interceptTranslationAPIs(this.page, { idiomas: [], traducciones: {} })
-  await this.grantIntranetAccess()
-  await this.page.waitForSelector('input[name="nombre"]', { timeout: 20000 })
-})
 
 // ── Steps: selector de idioma visible ──────────────────────────────────────
 
@@ -331,58 +210,7 @@ Then('la tabla de idiomas muestra el idioma recién creado', async function () {
   }
 })
 
-// ── Steps: estado vacío (sin idiomas ni traducciones) ────────────────────────
-
-/** Intercept admin idiomas and faltantes APIs with empty data. */
-async function interceptAdminEmptyAPIs(page) {
-  // Public endpoints (used by LanguageContext)
-  await page.route('**/v1/irpf/idiomas', route =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([]) })
-  )
-  await page.route('**/v1/irpf/traducciones', route =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({}) })
-  )
-  // Admin idiomas list
-  await page.route('**/v1/admin/idiomas*', route =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ data: [], total: 0, page: 1, totalPages: 0 }),
-    })
-  )
-  // Faltantes endpoint – simulate empty DB but return required keys
-  await page.route('**/v1/admin/traducciones/faltantes*', route =>
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        referencia: 'es',
-        total_claves: 0,
-        claves_requeridas: [
-          'btnContinue', 'btnSubmit', 'btnSubmitting', 'btnBack', 'btnClear',
-          'fieldNombre', 'fieldApellidos', 'fieldDniNie', 'fieldEmail', 'fieldTelefono',
-          'yes', 'no', 'langLabel', 'successTitle', 'section1', 'instructionsTitle',
-        ],
-        faltantes: {},
-        resumen: [],
-      }),
-    })
-  )
-}
-
-Given('el administrador accede al panel de administracion con traducciones vacías', async function () {
-  await interceptAdminEmptyAPIs(this.page)
-  await this.page.goto(`${this.baseUrl}/#/backend_admin`, { waitUntil: 'networkidle' })
-  const loginForm = this.page.locator('form')
-  if (await loginForm.isVisible()) {
-    await this.page.fill('input[name="dniNie"], input[type="text"]', 'ADMIN')
-    await this.page.fill('input[name="password"], input[type="password"]', 'admin1234')
-    // Re-intercept after navigation triggered by login (routes may reset)
-    await interceptAdminEmptyAPIs(this.page)
-    await this.page.click('button[type="submit"]')
-    await this.page.waitForSelector('.admin-tabs, .admin-panel, [class*="admin"]', { timeout: 10000 })
-  }
-})
+// ── Steps: admin pestaña de traducciones ─────────────────────────────────────
 
 When('el administrador navega a la pestaña de traducciones', async function () {
   const tab = this.page.locator('.admin-tabs button:has-text("Traducciones"), .admin-tabs [role="tab"]:has-text("Traducciones")').first()

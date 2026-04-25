@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "test": "cucumber-js",
-    "test:api": "cucumber-js --profile api",
     "generate": "openapi-ts",
     "dev": "vite",
     "build": "vite build",

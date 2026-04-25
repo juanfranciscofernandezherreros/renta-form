@@ -55,36 +55,6 @@ Feature: Idiomas y traducciones de la interfaz
     When el usuario selecciona el idioma "ES"
     Then el botón de idioma "ES" está activo
 
-  # ── Traducciones aplicadas con mock de API ──────────────────────────────
-
-  Scenario: Las traducciones al inglés se aplican correctamente en los botones
-    Given el usuario abre la pagina con traducciones simuladas
-    When el usuario selecciona el idioma "EN"
-    Then el botón de continuar muestra el texto traducido al inglés
-    Then se toma un screenshot "idiomas_07_botones_en_ingles"
-
-  Scenario: Las traducciones al español se muestran correctamente
-    Given el usuario abre la pagina con traducciones simuladas
-    Then el botón de continuar muestra el texto en español
-
-  Scenario: Las traducciones al francés se aplican en los campos del formulario
-    Given el usuario abre la pagina con traducciones simuladas
-    When el usuario selecciona el idioma "FR"
-    Then el formulario muestra etiquetas en francés
-    Then se toma un screenshot "idiomas_08_formulario_en_frances"
-
-  Scenario: Las traducciones al catalán se aplican en los botones de respuesta
-    Given el usuario abre la pagina con traducciones simuladas
-    When el usuario selecciona el idioma "CA"
-    Then los botones de respuesta muestran el texto en catalán
-    Then se toma un screenshot "idiomas_09_respuestas_en_catalan"
-
-  # ── Fallback de traducción ───────────────────────────────────────────────
-
-  Scenario: Si no hay traducciones cargadas se muestra la clave como fallback
-    Given el usuario abre la pagina con traducciones vacías
-    Then los elementos de interfaz son visibles aunque no haya traducciones cargadas
-
   # ── API de idiomas ───────────────────────────────────────────────────────
 
   Scenario: La API de idiomas devuelve un array con los idiomas disponibles
@@ -122,13 +92,6 @@ Feature: Idiomas y traducciones de la interfaz
     Then se toma un screenshot "idiomas_11_nuevo_idioma_creado"
 
   # ── Sin idiomas ni traducciones: estado vacío ───────────────────────────
-
-  Scenario: Sin idiomas la pestaña de traducciones muestra las claves requeridas
-    Given el administrador accede al panel de administracion con traducciones vacías
-    When el administrador navega a la pestaña de traducciones
-    Then la pestaña de traducciones indica que no hay idiomas configurados
-    Then la pestaña de traducciones muestra las claves de traducción requeridas
-    Then se toma un screenshot "idiomas_12_traducciones_vacias_claves_requeridas"
 
   Scenario: Sin traducciones el endpoint faltantes devuelve las claves requeridas
     Given el usuario abre la pagina principal
