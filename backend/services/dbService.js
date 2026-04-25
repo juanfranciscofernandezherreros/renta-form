@@ -533,6 +533,18 @@ async function createDeclaracion(body) {
   const validationError = validateDeclaracionBody(body, { requireAll: true })
   if (validationError) return { data: null, error: { message: validationError }, status: 400 }
 
+  // Guard: refuse to create a declaration if no questions are configured
+  try {
+    const countRes = await pool.query('SELECT COUNT(*) FROM preguntas')
+    const count = countRes.rows && countRes.rows.length > 0 ? parseInt(countRes.rows[0].count, 10) : 0
+    if (count === 0) {
+      return { data: null, error: { message: 'No hay preguntas configuradas. Contacta con el administrador.' }, status: 422 }
+    }
+  } catch (err) {
+    console.error('createDeclaracion preguntas-count error:', err.message)
+    return { data: null, error: { message: 'Error verificando configuración de preguntas' }, status: 503 }
+  }
+
   let rows
   try {
     ({ rows } = await pool.query(
