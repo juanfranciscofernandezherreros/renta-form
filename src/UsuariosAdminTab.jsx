@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import {
   listUsersAdmin,
@@ -9,6 +9,7 @@ import {
 } from './apiClient.js'
 import Pagination from './Pagination.jsx'
 import { useLanguage } from './LanguageContext.jsx'
+import { useAuth } from './AuthContext.jsx'
 
 const ESTADO_T_KEYS = {
   recibido: 'estadoRecibido',
@@ -136,6 +137,8 @@ async function downloadUserDeclaracionPdf(dniNie, t, preguntasSecciones) {
 
 export default function UsuariosAdminTab({ showToast, preguntasSecciones = [] }) {
   const { t } = useLanguage()
+  const { user: currentUser } = useAuth()
+  const currentDniNie = useMemo(() => (currentUser?.dniNie ?? '').toUpperCase(), [currentUser])
   const [users, setUsers] = useState([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -308,6 +311,7 @@ export default function UsuariosAdminTab({ showToast, preguntasSecciones = [] })
                         className={`btn btn-sm btn-xs ${u.bloqueado ? 'btn-primary' : 'btn-secondary'}`}
                         onClick={() => handleBlock(u)}
                         title={u.bloqueado ? 'Desbloquear usuario' : 'Bloquear usuario'}
+                        disabled={u.dniNie.toUpperCase() === currentDniNie}
                       >
                         {u.bloqueado ? '🔓 Desbloquear' : '🔒 Bloquear'}
                       </button>
@@ -316,6 +320,7 @@ export default function UsuariosAdminTab({ showToast, preguntasSecciones = [] })
                         className={`btn btn-sm btn-xs ${u.denunciado ? 'btn-primary' : 'btn-secondary'}`}
                         onClick={() => handleReport(u)}
                         title={u.denunciado ? 'Retirar denuncia' : 'Denunciar usuario'}
+                        disabled={u.dniNie.toUpperCase() === currentDniNie}
                       >
                         {u.denunciado ? '✅ Retirar denuncia' : '🚨 Denunciar'}
                       </button>
