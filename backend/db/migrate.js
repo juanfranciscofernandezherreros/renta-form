@@ -37,6 +37,11 @@ async function migrate() {
         DROP COLUMN IF EXISTS seccion_titulos
     `)
 
+    // Fix case mismatch: 'mayores65aCargo' (lowercase a) → 'mayores65ACargo' (uppercase A)
+    await client.query(`
+      UPDATE preguntas SET campo = 'mayores65ACargo' WHERE campo = 'mayores65aCargo'
+    `)
+
     // Create idiomas/traducciones tables if they were not in the original schema
     await client.query(`
       CREATE TABLE IF NOT EXISTS idiomas (
