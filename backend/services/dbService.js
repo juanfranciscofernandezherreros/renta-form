@@ -614,7 +614,7 @@ async function deleteUser(dniNie) {
   const { rows } = await pool.query('SELECT role FROM usuarios WHERE dni_nie = $1', [dniNie])
   if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
   if (rows[0].role === 'admin') {
-    return { data: null, error: { message: 'No se puede eliminar un usuario administrador' }, status: 403 }
+    return { data: null, error: { message: 'No se pueden eliminar usuarios administradores' }, status: 403 }
   }
   await pool.query('DELETE FROM declaraciones WHERE dni_nie = $1', [dniNie])
   await pool.query('DELETE FROM usuarios WHERE dni_nie = $1', [dniNie])
