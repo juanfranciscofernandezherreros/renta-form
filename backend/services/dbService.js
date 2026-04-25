@@ -481,6 +481,45 @@ async function listDeclaracionesAll({ dniNie, estado, page = 1, limit = 20 }) {
   }
 }
 
+const REQUIRED_TEXT_FIELDS = ['nombre', 'apellidos', 'dniNie', 'email', 'telefono']
+const REQUIRED_YN_FIELDS = [
+  'viviendaAlquiler', 'viviendaPropiedad', 'pisosAlquiladosTerceros', 'segundaResidencia',
+  'familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'hijosMenores26',
+  'ingresosJuego', 'ingresosInversiones',
+]
+const OPTIONAL_YN_FIELDS = ['alquilerMenos35', 'propiedadAntes2013', 'mayoresConviven']
+
+function validateDeclaracionBody(body, { requireAll = false } = {}) {
+  if (requireAll) {
+    for (const field of REQUIRED_TEXT_FIELDS) {
+      if (!body[field]) return `Campo obligatorio: ${field}`
+    }
+    for (const field of REQUIRED_YN_FIELDS) {
+      if (body[field] !== 'si' && body[field] !== 'no') {
+        return `El campo '${field}' debe ser 'si' o 'no'`
+      }
+    }
+  }
+  for (const field of OPTIONAL_YN_FIELDS) {
+    if (body[field] !== undefined && body[field] !== null && body[field] !== '' && body[field] !== 'si' && body[field] !== 'no') {
+      return `El campo '${field}' debe ser 'si', 'no' o estar vacío`
+    }
+  }
+  if (!requireAll) {
+    for (const field of REQUIRED_YN_FIELDS) {
+      if (body[field] !== undefined && body[field] !== null && body[field] !== '' && body[field] !== 'si' && body[field] !== 'no') {
+        return `El campo '${field}' debe ser 'si' o 'no'`
+      }
+    }
+  }
+  return null
+}
+
+function toYN(val) {
+  if (val === 'si' || val === 'no') return val
+  return null
+}
+
 async function createDeclaracion(body) {
   const {
     nombre, apellidos, dniNie, email, telefono,
@@ -489,6 +528,9 @@ async function createDeclaracion(body) {
     familiaNumerosa, ayudasGobierno, mayores65ACargo, mayoresConviven,
     hijosMenores26, ingresosJuego, ingresosInversiones,
   } = body
+
+  const validationError = validateDeclaracionBody(body, { requireAll: true })
+  if (validationError) return { data: null, error: { message: validationError }, status: 400 }
 
   let rows
   try {
@@ -504,9 +546,9 @@ async function createDeclaracion(body) {
       ) RETURNING id, estado, creado_en`,
       [
         nombre, apellidos, dniNie, email, telefono,
-        viviendaAlquiler, alquilerMenos35 ?? null, viviendaPropiedad, propiedadAntes2013 ?? null,
+        viviendaAlquiler, toYN(alquilerMenos35), viviendaPropiedad, toYN(propiedadAntes2013),
         pisosAlquiladosTerceros, segundaResidencia,
-        familiaNumerosa, ayudasGobierno, mayores65ACargo, mayoresConviven ?? null,
+        familiaNumerosa, ayudasGobierno, mayores65ACargo, toYN(mayoresConviven),
         hijosMenores26, ingresosJuego, ingresosInversiones,
       ]
     ))
@@ -563,6 +605,9 @@ async function updateEstadoDeclaracion(id, estado) {
 }
 
 async function updateDeclaracion(id, body) {
+  const validationError = validateDeclaracionBody(body, { requireAll: false })
+  if (validationError) return { data: null, error: { message: validationError }, status: 400 }
+
   // Build a dynamic SET clause for only provided fields
   const FIELD_MAP = {
     nombre: 'nombre',
@@ -583,11 +628,13 @@ async function updateDeclaracion(id, body) {
     ingresosJuego: 'ingresos_juego',
     ingresosInversiones: 'ingresos_inversiones',
   }
+  const ALL_YN_FIELDS = new Set([...REQUIRED_YN_FIELDS, ...OPTIONAL_YN_FIELDS])
   const setClauses = []
   const params = []
   for (const [camel, snake] of Object.entries(FIELD_MAP)) {
     if (body[camel] !== undefined) {
-      params.push(body[camel])
+      const val = ALL_YN_FIELDS.has(camel) ? toYN(body[camel]) : body[camel]
+      params.push(val)
       setClauses.push(`${snake} = $${params.length}`)
     }
   }
