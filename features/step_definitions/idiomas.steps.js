@@ -372,7 +372,7 @@ async function interceptAdminEmptyAPIs(page) {
 
 Given('el administrador accede al panel de administracion con traducciones vacías', async function () {
   await interceptAdminEmptyAPIs(this.page)
-  await this.page.goto(`${this.baseUrl}/#/admin`, { waitUntil: 'networkidle' })
+  await this.page.goto(`${this.baseUrl}/#/backend_admin`, { waitUntil: 'networkidle' })
   const loginForm = this.page.locator('form')
   if (await loginForm.isVisible()) {
     await this.page.fill('input[name="dniNie"], input[type="text"]', 'ADMIN')

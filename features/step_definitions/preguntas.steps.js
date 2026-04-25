@@ -112,7 +112,7 @@ Then('se muestra un error de pregunta sin responder', async function () {
 // ── Admin: tabla de preguntas ──────────────────────────────────────────────
 
 Given('el administrador accede al panel de administracion', async function () {
-  await this.page.goto(`${this.baseUrl}/#/admin`, { waitUntil: 'networkidle' })
+  await this.page.goto(`${this.baseUrl}/#/backend_admin`, { waitUntil: 'networkidle' })
   // Login as admin
   const loginForm = this.page.locator('form')
   if (await loginForm.isVisible()) {

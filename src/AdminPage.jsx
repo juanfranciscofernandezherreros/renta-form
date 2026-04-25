@@ -345,7 +345,7 @@ export default function AdminPage({ onNavigate }) {
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/')}>
               📋 Formulario
             </button>
-            <button type="button" className="btn btn-danger btn-sm" onClick={() => { logout(); onNavigate('#/admin') }}>
+            <button type="button" className="btn btn-danger btn-sm" onClick={() => { logout(); onNavigate('#/backend_admin') }}>
               🚪 Cerrar sesión
             </button>
           </nav>
