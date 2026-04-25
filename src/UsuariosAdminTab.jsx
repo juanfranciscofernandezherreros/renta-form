@@ -327,14 +327,16 @@ export default function UsuariosAdminTab({ showToast, preguntasSecciones = [] })
                       >
                         📄 PDF
                       </button>
-                      <button
-                        type="button"
-                        className="btn btn-danger btn-sm btn-xs"
-                        onClick={() => setConfirmDelete(u.dniNie)}
-                        title="Eliminar usuario"
-                      >
-                        🗑️
-                      </button>
+                      {u.role !== 'admin' && (
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-sm btn-xs"
+                          onClick={() => setConfirmDelete(u.dniNie)}
+                          title="Eliminar usuario"
+                        >
+                          🗑️
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
