@@ -938,6 +938,9 @@ components:
           description: Obligatorio cuando mayores65ACargo = si
         hijosMenores26:
           $ref: '#/components/schemas/RespuestaYN'
+        hijosConviven:
+          $ref: '#/components/schemas/RespuestaYN'
+          description: Obligatorio cuando hijosMenores26 = si
         # 4. Ingresos
         ingresosJuego:
           $ref: '#/components/schemas/RespuestaYN'
@@ -1054,6 +1057,8 @@ components:
             mayoresConviven:
               $ref: '#/components/schemas/RespuestaYN'
             hijosMenores26:
+              $ref: '#/components/schemas/RespuestaYN'
+            hijosConviven:
               $ref: '#/components/schemas/RespuestaYN'
             ingresosJuego:
               $ref: '#/components/schemas/RespuestaYN'

@@ -1,13 +1,13 @@
 'use strict'
 
 // ---------------------------------------------------------------------------
-// seed100.js – Seeds 60 preguntas, 100 usuarios, and 100 declaraciones.
+// seed100.js – Seeds 14 preguntas, 100 usuarios, and 100 declaraciones.
 // Idempotent: uses ON CONFLICT clauses so it can be run multiple times.
 // ---------------------------------------------------------------------------
 
 const bcrypt = require('bcrypt')
 const pool = require('./pool')
-const PREGUNTAS_60 = require('../data/preguntas')
+const PREGUNTAS_14 = require('../data/preguntas')
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -91,6 +91,7 @@ function buildDeclaraciones() {
       mayores_65_a_cargo:          yn(i, 1),
       mayores_conviven:            yn(i, 0),
       hijos_menores_26:            yn(i, 1),
+      hijos_conviven:              yn(i, 0),
       ingresos_juego:              yn(i, 0),
       ingresos_inversiones:        yn(i, 1),
     })
@@ -109,9 +110,9 @@ async function seed100(client) {
   }
 
   try {
-    // ── 1. Seed 60 preguntas ────────────────────────────────────────────────
-    console.log('[seed100] Seeding 60 preguntas...')
-    for (const p of PREGUNTAS_60) {
+    // ── 1. Seed 14 preguntas ────────────────────────────────────────────────
+    console.log('[seed100] Seeding 14 preguntas...')
+    for (const p of PREGUNTAS_14) {
       await client.query(
         `INSERT INTO preguntas (texto, orden)
          VALUES ($1::jsonb, $2)
@@ -119,7 +120,11 @@ async function seed100(client) {
         [JSON.stringify(p.texto), p.orden]
       )
     }
-    console.log('[seed100] 60 preguntas seeded.')
+
+    // Delete any old preguntas with orden > 14 (from a previous 60-question seed)
+    await client.query('DELETE FROM preguntas WHERE orden > 14')
+
+    console.log('[seed100] 14 preguntas seeded.')
 
     // ── 2. Seed 100 usuarios ────────────────────────────────────────────────
     console.log('[seed100] Seeding 100 usuarios...')
@@ -149,14 +154,14 @@ async function seed100(client) {
            nombre, apellidos, dni_nie, email, telefono, estado,
            vivienda_alquiler, alquiler_menos_35, vivienda_propiedad, propiedad_antes_2013,
            pisos_alquilados_terceros, segunda_residencia, familia_numerosa, ayudas_gobierno,
-           mayores_65_a_cargo, mayores_conviven, hijos_menores_26, ingresos_juego,
-           ingresos_inversiones
+           mayores_65_a_cargo, mayores_conviven, hijos_menores_26, hijos_conviven,
+           ingresos_juego, ingresos_inversiones
          ) VALUES (
            $1, $2, $3, $4, $5, $6::estado_expediente,
            $7::respuesta_yn, $8::respuesta_yn, $9::respuesta_yn, $10::respuesta_yn,
            $11::respuesta_yn, $12::respuesta_yn, $13::respuesta_yn, $14::respuesta_yn,
            $15::respuesta_yn, $16::respuesta_yn, $17::respuesta_yn, $18::respuesta_yn,
-           $19::respuesta_yn
+           $19::respuesta_yn, $20::respuesta_yn
          )
          ON CONFLICT (dni_nie) DO UPDATE SET
            nombre = EXCLUDED.nombre,
@@ -167,8 +172,8 @@ async function seed100(client) {
           d.nombre, d.apellidos, d.dni_nie, d.email, d.telefono, d.estado,
           d.vivienda_alquiler, d.alquiler_menos_35, d.vivienda_propiedad, d.propiedad_antes_2013,
           d.pisos_alquilados_terceros, d.segunda_residencia, d.familia_numerosa, d.ayudas_gobierno,
-          d.mayores_65_a_cargo, d.mayores_conviven, d.hijos_menores_26, d.ingresos_juego,
-          d.ingresos_inversiones,
+          d.mayores_65_a_cargo, d.mayores_conviven, d.hijos_menores_26, d.hijos_conviven,
+          d.ingresos_juego, d.ingresos_inversiones,
         ]
       )
     }

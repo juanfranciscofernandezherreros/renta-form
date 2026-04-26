@@ -24,6 +24,7 @@ const INITIAL_STATE = {
   mayores65ACargo: '',
   mayoresConviven: '',
   hijosMenores26: '',
+  hijosConviven: '',
   // 4. Ingresos extraordinarios e inversiones
   ingresosJuego: '',
   ingresosInversiones: '',
@@ -47,6 +48,7 @@ const CONDITIONAL_QUESTIONS = {
   alquilerMenos35:    { dependeDe: 'viviendaAlquiler',  valor: 'si' },
   propiedadAntes2013: { dependeDe: 'viviendaPropiedad', valor: 'si' },
   mayoresConviven:    { dependeDe: 'mayores65ACargo',   valor: 'si' },
+  hijosConviven:      { dependeDe: 'hijosMenores26',    valor: 'si' },
 }
 
 const LANG_FLAGS = {

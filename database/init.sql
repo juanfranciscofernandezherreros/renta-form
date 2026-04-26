@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS declaraciones (
     mayores_65_a_cargo        respuesta_yn      NOT NULL,
     mayores_conviven          respuesta_yn,
     hijos_menores_26          respuesta_yn      NOT NULL,
+    hijos_conviven            respuesta_yn,
     ingresos_juego            respuesta_yn      NOT NULL,
     ingresos_inversiones      respuesta_yn      NOT NULL,
 

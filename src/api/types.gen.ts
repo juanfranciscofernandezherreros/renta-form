@@ -52,6 +52,7 @@ export type DeclaracionInput = {
     mayores65ACargo: RespuestaYn;
     mayoresConviven?: RespuestaYn;
     hijosMenores26: RespuestaYn;
+    hijosConviven?: RespuestaYn;
     ingresosJuego: RespuestaYn;
     ingresosInversiones: RespuestaYn;
     /**
@@ -107,6 +108,7 @@ export type Declaracion = DeclaracionCreada & {
     mayores65ACargo: RespuestaYn;
     mayoresConviven?: RespuestaYn;
     hijosMenores26: RespuestaYn;
+    hijosConviven?: RespuestaYn;
     ingresosJuego: RespuestaYn;
     ingresosInversiones: RespuestaYn;
     actualizadoEn: string;
