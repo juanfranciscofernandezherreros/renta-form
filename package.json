@@ -27,7 +27,8 @@
     "heroku-postbuild": "npm install --prefix backend && npm run build"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20.0.0",
+    "npm": ">=11.13.0"
   },
   "dependencies": {
     "@hey-api/client-fetch": "^0.13.1",
