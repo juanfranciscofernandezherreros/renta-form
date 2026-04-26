@@ -9,6 +9,7 @@
     "dev": "node --watch server.js",
     "start:db": "PROFILE=db node server.js",
     "migrate": "node db/migrate.js",
+    "tablas": "node db/migrate.js",
     "seed": "node db/seedTraducciones.js",
     "db:setup": "node db/migrate.js && node db/seedTraducciones.js && node db/seedPreguntas.js",
     "db:setup-all": "node db/migrate.js && node db/seedTraducciones.js && node db/seedPreguntas.js && node db/seedUsuarios.js",
