@@ -30,6 +30,46 @@ app.use(
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 
+// ── Request logger (info-level on every endpoint) ─────────────────────────
+// Logs method, URL, query, sanitized body on entry, and status + duration
+// on completion. Sensitive fields (passwords, tokens) are masked.
+const SENSITIVE_KEYS = new Set([
+  'password', 'oldpassword', 'newpassword', 'passwordhash', 'password_hash',
+  'token', 'authorization', 'secret', 'apikey', 'api_key',
+])
+
+function sanitize(value) {
+  if (value === null || value === undefined) return value
+  if (Array.isArray(value)) return value.map(sanitize)
+  if (typeof value === 'object') {
+    const out = {}
+    for (const [k, v] of Object.entries(value)) {
+      out[k] = SENSITIVE_KEYS.has(k.toLowerCase()) ? '***' : sanitize(v)
+    }
+    return out
+  }
+  return value
+}
+
+app.use((req, res, next) => {
+  const start = Date.now()
+  const { method, originalUrl, query, body } = req
+  const safeQuery = query && Object.keys(query).length ? sanitize(query) : undefined
+  const safeBody = body && typeof body === 'object' && Object.keys(body).length
+    ? sanitize(body)
+    : undefined
+  console.info(
+    `[req] ${method} ${originalUrl}` +
+      (safeQuery ? ` query=${JSON.stringify(safeQuery)}` : '') +
+      (safeBody ? ` body=${JSON.stringify(safeBody)}` : '')
+  )
+  res.on('finish', () => {
+    const ms = Date.now() - start
+    console.info(`[res] ${method} ${originalUrl} -> ${res.statusCode} (${ms}ms)`)
+  })
+  next()
+})
+
 // ── Health check ──────────────────────────────────────────────────────────
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() })
