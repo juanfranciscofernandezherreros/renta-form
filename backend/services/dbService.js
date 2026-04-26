@@ -247,21 +247,24 @@ async function changePassword({ dniNie, oldPassword, newPassword }) {
 const PREGUNTAS_CATALOGO = require('../data/preguntas')
 const ID_ORDER = new Map(PREGUNTAS_CATALOGO.map((p, idx) => [p.id, idx]))
 const ID_TO_CAMPO = new Map(PREGUNTAS_CATALOGO.map(p => [p.id, p.campo]))
-const CANONICAL_IDS = PREGUNTAS_CATALOGO.map(p => p.id)
 
 async function getPreguntas(lang) {
   try {
+    // Return ALL preguntas from the DB (canonical + ones created via the
+    // admin CRUD). Canonical preguntas keep their static order; any newly
+    // created preguntas are appended at the end, ordered by `actualizada_en`
+    // (creation order) so they are stable.
     const { rows } = await pool.query(
-      `SELECT id, texto
-       FROM preguntas
-       WHERE id = ANY($1::uuid[])`,
-      [CANONICAL_IDS]
+      `SELECT id, texto, actualizada_en
+       FROM preguntas`
     )
-    // Order rows according to the canonical static catalogue order.
     rows.sort((a, b) => {
       const ai = ID_ORDER.has(a.id) ? ID_ORDER.get(a.id) : Number.MAX_SAFE_INTEGER
       const bi = ID_ORDER.has(b.id) ? ID_ORDER.get(b.id) : Number.MAX_SAFE_INTEGER
-      return ai - bi
+      if (ai !== bi) return ai - bi
+      const at = a.actualizada_en ? new Date(a.actualizada_en).getTime() : 0
+      const bt = b.actualizada_en ? new Date(b.actualizada_en).getTime() : 0
+      return at - bt
     })
     const preguntas = rows.map(r => {
       let textos
