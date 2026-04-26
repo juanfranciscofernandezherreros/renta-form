@@ -919,14 +919,6 @@ header .header-text p  { font-size: 0.85rem; opacity: .88; margin-top: 3px; font
   box-shadow: 0 4px 16px rgba(108,17,200,.12);
 }
 .question-card.answered::before { opacity: 1; }
-.question-card.indent {
-  border-left: 5px solid #c333e0;
-  margin-left: 24px;
-  background: #fdf6ff;
-}
-.question-card.indent.answered {
-  background: linear-gradient(135deg, #f9f0ff 0%, #f0e5ff 100%);
-}
 
 /* Question number badge */
 .question-card-text {
@@ -1023,12 +1015,6 @@ header .header-text p  { font-size: 0.85rem; opacity: .88; margin-top: 3px; font
 .question-row:only-child  { border-radius: 12px; }
 .question-row:hover { background: #f3eeff; }
 
-.question-row.indent {
-  background: #f0e9ff;
-  border-left: 4px solid #9b23e8;
-  padding-left: 28px;
-}
-.question-row.indent:hover { background: #ece0ff; }
 
 .question-text {
   font-size: .9rem;
