@@ -799,7 +799,10 @@ export default function AdminPage({ onNavigate }) {
         </div>
       , document.body)}
 
-
+      {toast && createPortal(
+        <div className={`toast ${toast.type}`} role="alert">{toast.msg}</div>,
+        document.body
+      )}
     </>
   )
 }
