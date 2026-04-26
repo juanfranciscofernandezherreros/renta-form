@@ -10,6 +10,8 @@
     "start:db": "PROFILE=db node server.js",
     "migrate": "node db/migrate.js",
     "tablas": "node db/migrate.js",
+    "db:drop": "node db/drop.js",
+    "db:reset": "node db/drop.js && node db/migrate.js && node db/seedTraducciones.js && node db/seedPreguntas.js && node db/seedUsuarios.js",
     "seed": "node db/seedTraducciones.js",
     "db:setup": "node db/migrate.js && node db/seedTraducciones.js && node db/seedPreguntas.js",
     "db:setup-all": "node db/migrate.js && node db/seedTraducciones.js && node db/seedPreguntas.js && node db/seedUsuarios.js",
