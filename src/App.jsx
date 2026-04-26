@@ -363,6 +363,7 @@ export default function App({ editData, onEditDataConsumed }) {
       mayores65ACargo: form.mayores65ACargo,
       ...(form.mayores65ACargo === 'si' && { mayoresConviven: form.mayoresConviven }),
       hijosMenores26: form.hijosMenores26,
+      ...(form.hijosMenores26 === 'si' && { hijosConviven: form.hijosConviven }),
       // Extraordinary income
       ingresosJuego: form.ingresosJuego,
       ingresosInversiones: form.ingresosInversiones,
@@ -389,6 +390,7 @@ export default function App({ editData, onEditDataConsumed }) {
           mayores65ACargo: form.mayores65ACargo,
           ...(form.mayores65ACargo === 'si' && { mayoresConviven: form.mayoresConviven }),
           hijosMenores26: form.hijosMenores26,
+          ...(form.hijosMenores26 === 'si' && { hijosConviven: form.hijosConviven }),
           ingresosJuego: form.ingresosJuego,
           ingresosInversiones: form.ingresosInversiones,
         }

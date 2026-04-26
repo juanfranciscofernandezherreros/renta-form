@@ -489,7 +489,7 @@ async function listDeclaracionesAll({ dniNie, estado, page = 1, limit = 20 }) {
   }
 }
 
-const REQUIRED_TEXT_FIELDS = ['nombre', 'apellidos', 'dniNie', 'email', 'telefono']
+const REQUIRED_TEXT_FIELDS = ['nombre', 'apellidos', 'dniNie', 'telefono']
 const REQUIRED_YN_FIELDS = [
   'viviendaAlquiler', 'viviendaPropiedad', 'pisosAlquiladosTerceros', 'segundaResidencia',
   'familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'hijosMenores26',
