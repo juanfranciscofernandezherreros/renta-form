@@ -316,30 +316,102 @@ function rowToPreguntaFormulario(r) {
 
 async function listPreguntasFormulario({ page = 1, limit = 10 } = {}) {
   try {
-    const countRes = await pool.query(
-      'SELECT COUNT(*) FROM preguntas WHERE id = ANY($1::uuid[])',
-      [CANONICAL_IDS]
-    )
+    const countRes = await pool.query('SELECT COUNT(*) FROM preguntas')
     const total = parseInt(countRes.rows[0].count, 10)
-    const offset = (page - 1) * limit
+    // Fetch all preguntas first so we can apply the canonical-first ordering
+    // before paginating; the table is small (≤ a few dozen rows).
     const { rows } = await pool.query(
-      `SELECT id, texto, actualizada_en
-       FROM preguntas
-       WHERE id = ANY($1::uuid[])
-       ORDER BY id
-       LIMIT $2 OFFSET $3`,
-      [CANONICAL_IDS, limit, offset]
+      `SELECT id, texto, actualizada_en FROM preguntas`
     )
-    // Order rows according to the canonical static catalogue order so the
-    // admin view always lists the 14 simple questions in the expected order.
+    // Order rows according to the canonical static catalogue order, then by
+    // creation order (actualizada_en ASC) for non-canonical rows so newly
+    // created preguntas appear at the bottom in a stable order.
     rows.sort((a, b) => {
       const ai = ID_ORDER.has(a.id) ? ID_ORDER.get(a.id) : Number.MAX_SAFE_INTEGER
       const bi = ID_ORDER.has(b.id) ? ID_ORDER.get(b.id) : Number.MAX_SAFE_INTEGER
-      return ai - bi
+      if (ai !== bi) return ai - bi
+      const at = a.actualizada_en ? new Date(a.actualizada_en).getTime() : 0
+      const bt = b.actualizada_en ? new Date(b.actualizada_en).getTime() : 0
+      return at - bt
     })
-    return { data: { data: rows.map(rowToPreguntaFormulario), total, page, limit }, error: null }
+    const offset = (page - 1) * limit
+    const paged = rows.slice(offset, offset + limit)
+    return {
+      data: {
+        data: paged.map(r => ({
+          ...rowToPreguntaFormulario(r),
+          canonica: ID_ORDER.has(r.id),
+        })),
+        total,
+        page,
+        limit,
+      },
+      error: null,
+    }
   } catch (err) {
     console.error('listPreguntasFormulario error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+}
+
+async function createPreguntaFormulario({ texto, textos } = {}) {
+  // Build the i18n object. Accept either a `textos` map or a plain `texto`
+  // string (treated as the Spanish translation).
+  let mergeObj
+  if (textos !== undefined) {
+    if (typeof textos !== 'object' || Array.isArray(textos) || textos === null) {
+      return { data: null, error: { message: 'textos debe ser un objeto con claves de idioma' } }
+    }
+    const sanitised = {}
+    for (const [lang, val] of Object.entries(textos)) {
+      const key = String(lang).trim().toLowerCase()
+      const v = String(val ?? '').trim()
+      if (key && v) sanitised[key] = v
+    }
+    if (!sanitised.es) {
+      return { data: null, error: { message: 'El texto en español (es) es obligatorio' } }
+    }
+    mergeObj = sanitised
+  } else if (texto !== undefined) {
+    const v = String(texto).trim()
+    if (!v) return { data: null, error: { message: 'El texto no puede estar vacío' } }
+    mergeObj = { es: v }
+  } else {
+    return { data: null, error: { message: 'Debes proporcionar texto o textos' } }
+  }
+
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO preguntas (texto)
+       VALUES ($1::jsonb)
+       RETURNING id, texto, actualizada_en`,
+      [JSON.stringify(mergeObj)]
+    )
+    return { data: { ...rowToPreguntaFormulario(rows[0]), canonica: false }, status: 201, error: null }
+  } catch (err) {
+    console.error('createPreguntaFormulario error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+}
+
+async function deletePreguntaFormulario(id) {
+  if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
+  if (ID_ORDER.has(id)) {
+    return {
+      data: null,
+      error: { message: 'No se puede eliminar una pregunta canónica del formulario' },
+      status: 400,
+    }
+  }
+  try {
+    const { rowCount } = await pool.query(
+      'DELETE FROM preguntas WHERE id = $1',
+      [id]
+    )
+    if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' }, status: 404 }
+    return { data: null, status: 204, error: null }
+  } catch (err) {
+    console.error('deletePreguntaFormulario error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
@@ -1132,7 +1204,9 @@ module.exports = {
   updateDeclaracion,
   deleteDeclaracion,
   listPreguntasFormulario,
+  createPreguntaFormulario,
   updatePreguntaFormulario,
+  deletePreguntaFormulario,
   listUsersAdmin,
   blockUser,
   reportUser,

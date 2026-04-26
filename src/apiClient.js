@@ -113,6 +113,16 @@ export async function updatePreguntaFormulario(options) {
   return request('PUT', `/admin/preguntas-formulario/${encodeURIComponent(id)}`, { body })
 }
 
+export async function createPreguntaFormulario(options) {
+  const body = options?.body ?? {}
+  return request('POST', '/admin/preguntas-formulario', { body })
+}
+
+export async function deletePreguntaFormulario(options) {
+  const id = options?.path?.id
+  return request('DELETE', `/admin/preguntas-formulario/${encodeURIComponent(id)}`)
+}
+
 // ── Admin: Usuarios ────────────────────────────────────────────────────────
 
 export async function listUsersAdmin(options) {
