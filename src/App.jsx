@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react'
 import './App.css'
-import { getPreguntas, createDeclaracion, updateDeclaracion } from './apiClient.js'
+import { getPreguntas, createDeclaracion, updateDeclaracion, listDeclaraciones } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
 
 
@@ -253,7 +253,8 @@ export default function App({ editData, onEditDataConsumed }) {
   const safeStep = Math.min(currentStep, Math.max(0, visibleSteps.length - 1))
   const currentStepInfo = visibleSteps[safeStep]
 
-  const handleNext = () => {
+  const [checkingDni, setCheckingDni] = useState(false)
+  const handleNext = async () => {
     const info = currentStepInfo
     if (info?.type === 'id') {
       const errors = {}
@@ -266,6 +267,25 @@ export default function App({ editData, onEditDataConsumed }) {
         setQuestionShake(true)
         setTimeout(() => setQuestionShake(false), SHAKE_DURATION_MS)
         return
+      }
+      // Check whether a declaration with this DNI/NIE already exists.
+      // When editing, the current declaration itself must not trigger the error.
+      // The unique constraint guarantees at most one match, so limit: 1 is enough.
+      setCheckingDni(true)
+      try {
+        const { data } = await listDeclaraciones({ query: { dniNie: form.dniNie.trim(), limit: 1 } })
+        const existing = (data?.data ?? []).filter(d => d.id !== editId)
+        if (existing.length > 0) {
+          setFieldErrors({ dniNie: t('errDniDuplicate') })
+          setQuestionShake(true)
+          setTimeout(() => setQuestionShake(false), SHAKE_DURATION_MS)
+          return
+        }
+      } catch (err) {
+        // On network errors, allow advancing; the final submit will still validate.
+        console.warn('DNI duplicate check failed:', err)
+      } finally {
+        setCheckingDni(false)
       }
     } else if (info?.type === 'question') {
       const { pregunta } = info
@@ -559,7 +579,7 @@ export default function App({ editData, onEditDataConsumed }) {
                   </div>
                   <div className="wizard-nav-right">
                     {safeStep < totalSteps - 1 ? (
-                      <button type="button" className="btn btn-primary" onClick={handleNext}>
+                      <button type="button" className="btn btn-primary" onClick={handleNext} disabled={checkingDni}>
                         {t('btnContinue')}
                       </button>
                     ) : (
