@@ -3,13 +3,11 @@ import { Given, When, Then, setDefaultTimeout } from '@cucumber/cucumber'
 setDefaultTimeout(60 * 1000)
 
 // ── Question counts per section ────────────────────────────────────────────
-// When answering 'si': conditional sub-questions become visible, raising the count
-// When answering 'no': conditional sub-questions are skipped
-const VIVIENDA_QUESTIONS_SI = 6   // 4 main + 2 conditional (alquilerMenos35, propiedadAntes2013)
-const VIVIENDA_QUESTIONS_NO = 4   // only main questions
-const FAMILIA_QUESTIONS_SI  = 5   // 4 main + 1 conditional (mayoresConviven)
-const FAMILIA_QUESTIONS_NO  = 4   // only main questions
-const INGRESOS_QUESTIONS    = 2   // always 2 (ingresosJuego, ingresosInversiones)
+// All catalog questions are now shown unconditionally (no follow-up logic),
+// so each section has a fixed number of questions regardless of yes/no answers.
+const VIVIENDA_QUESTIONS = 6   // viviendaAlquiler, alquilerMenos35, viviendaPropiedad, propiedadAntes2013, pisosAlquiladosTerceros, segundaResidencia
+const FAMILIA_QUESTIONS  = 6   // ayudasGobierno, familiaNumerosa, mayores65ACargo, mayoresConviven, hijosMenores26, hijosConviven
+const INGRESOS_QUESTIONS = 2   // ingresosJuego, ingresosInversiones
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -68,7 +66,6 @@ async function answerQuestion(page, value) {
 
 /**
  * Answer the next N questions sequentially.
- * When answering 'no', conditional sub-questions are skipped automatically.
  * @param {import('playwright').Page} page
  * @param {'si'|'no'} value
  * @param {number} count
@@ -114,25 +111,23 @@ Given('el usuario avanza al siguiente paso', async function () {
 })
 
 // ── Respuestas de vivienda ──
-// When answering 'si': 6 questions appear (including 2 conditional sub-questions)
-// When answering 'no': 4 questions (conditional sub-questions are hidden)
+// Always 6 questions (no conditional sub-questions; full catalog list is shown)
 Given('el usuario responde Si a todas las preguntas de vivienda', async function () {
-  await answerNQuestions(this.page, 'si', VIVIENDA_QUESTIONS_SI)
+  await answerNQuestions(this.page, 'si', VIVIENDA_QUESTIONS)
 })
 
 Given('el usuario responde No a todas las preguntas de vivienda', async function () {
-  await answerNQuestions(this.page, 'no', VIVIENDA_QUESTIONS_NO)
+  await answerNQuestions(this.page, 'no', VIVIENDA_QUESTIONS)
 })
 
 // ── Respuestas de familia ──
-// When answering 'si': 5 questions (including 1 conditional sub-question)
-// When answering 'no': 4 questions
+// Always 6 questions
 Given('el usuario responde No a todas las preguntas de familia', async function () {
-  await answerNQuestions(this.page, 'no', FAMILIA_QUESTIONS_NO)
+  await answerNQuestions(this.page, 'no', FAMILIA_QUESTIONS)
 })
 
 Given('el usuario responde Si a todas las preguntas de familia', async function () {
-  await answerNQuestions(this.page, 'si', FAMILIA_QUESTIONS_SI)
+  await answerNQuestions(this.page, 'si', FAMILIA_QUESTIONS)
 })
 
 // ── Respuestas de ingresos ──

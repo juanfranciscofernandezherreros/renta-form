@@ -92,14 +92,14 @@ Feature: Rellenar el formulario de declaración de la Renta
     Then se muestra el formulario de identificacion
     Then se toma un screenshot "16_volver_paso_identificacion"
 
-  Scenario: Paso 2 - Vivienda con respuestas Si (preguntas condicionales)
+  Scenario: Paso 2 - Vivienda con respuestas Si
     Given el usuario abre la pagina principal
     Given el usuario rellena los datos de identificacion
     Given el usuario avanza al siguiente paso
     When el usuario responde Si a todas las preguntas de vivienda
-    Then se toma un screenshot "17_vivienda_si_condicionales"
+    Then se toma un screenshot "17_vivienda_si"
 
-  Scenario: Envio completo con respuestas Si (preguntas condicionales activas)
+  Scenario: Envio completo con respuestas Si
     Given el usuario abre la pagina principal
     Given el usuario rellena los datos de identificacion con DNI "88888888T"
     Given el usuario avanza al siguiente paso
