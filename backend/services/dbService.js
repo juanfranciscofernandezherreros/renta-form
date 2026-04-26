@@ -1124,6 +1124,45 @@ async function getMissingTranslations(ref = 'static') {
   }
 }
 
+// ── Email stubs ────────────────────────────────────────────────────────────
+// Email delivery is not configured in this deployment.  These stubs keep the
+// API surface consistent (no unhandled TypeErrors in the routes) and return
+// a clear message so callers know the feature is unavailable.
+
+async function sendEmailDeclaracion({ declaracionId }) {
+  if (!declaracionId) {
+    return { data: null, error: { message: 'declaracionId es obligatorio' }, status: 400 }
+  }
+  // Verify the declaration exists before responding
+  try {
+    const { rows } = await pool.query('SELECT id FROM declaraciones WHERE id = $1', [declaracionId])
+    if (!rows.length) {
+      return { data: null, error: { message: 'Declaración no encontrada' }, status: 404 }
+    }
+  } catch (err) {
+    console.error('sendEmailDeclaracion DB error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+  return { data: null, error: { message: 'El envío de correo no está configurado en este servidor' }, status: 501 }
+}
+
+async function sendEmailToUser({ dniNie }) {
+  if (!dniNie) {
+    return { data: null, error: { message: 'dniNie es obligatorio' }, status: 400 }
+  }
+  // Verify the user exists before responding
+  try {
+    const { rows } = await pool.query('SELECT dni_nie FROM usuarios WHERE dni_nie = $1', [dniNie])
+    if (!rows.length) {
+      return { data: null, error: { message: 'Usuario no encontrado' }, status: 404 }
+    }
+  } catch (err) {
+    console.error('sendEmailToUser DB error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+  return { data: null, error: { message: 'El envío de correo no está configurado en este servidor' }, status: 501 }
+}
+
 // ── Exports ────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -1159,4 +1198,6 @@ module.exports = {
   updateIdiomaContent,
   getMissingTranslations,
   ALL_REQUIRED_KEYS,
+  sendEmailDeclaracion,
+  sendEmailToUser,
 }
