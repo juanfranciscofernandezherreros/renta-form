@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import {
   listPreguntasFormulario,
+  createPreguntaFormulario,
   updatePreguntaFormulario,
+  deletePreguntaFormulario,
   getIdiomas,
 } from './apiClient.js'
 import Pagination from './Pagination.jsx'
@@ -27,7 +29,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [page, setPage] = useState(1)
-  const [modal, setModal] = useState(null) // null | 'edit'
+  const [modal, setModal] = useState(null) // null | 'edit' | 'create'
   const [editando, setEditando] = useState(null)
   const [langs, setLangs] = useState(DEFAULT_LANGS)
   const [form, setForm] = useState(() => makeEmptyForm(DEFAULT_LANGS))
@@ -80,6 +82,12 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
     setModal('edit')
   }
 
+  const openCreate = () => {
+    setForm(makeEmptyForm(langs))
+    setEditando(null)
+    setModal('create')
+  }
+
   const closeModal = () => { setModal(null); setEditando(null); setForm(makeEmptyForm(langs)) }
 
   const handleLangChange = (code, value) => {
@@ -101,12 +109,18 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
 
     setSaving(true)
     try {
-      const { error: apiErr } = await updatePreguntaFormulario({
-        path: { id: editando.id },
-        body: { textos },
-      })
-      if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
-      showToast('Pregunta actualizada correctamente')
+      if (modal === 'create') {
+        const { error: apiErr } = await createPreguntaFormulario({ body: { textos } })
+        if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
+        showToast('Pregunta creada correctamente')
+      } else {
+        const { error: apiErr } = await updatePreguntaFormulario({
+          path: { id: editando.id },
+          body: { textos },
+        })
+        if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
+        showToast('Pregunta actualizada correctamente')
+      }
       closeModal()
       refresh()
     } finally {
@@ -114,11 +128,34 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
     }
   }
 
+  const handleDelete = async (pregunta) => {
+    if (pregunta.canonica) {
+      showToast('No se puede eliminar una pregunta canónica del formulario', 'error')
+      return
+    }
+    const confirmText = (pregunta.texto || '').slice(0, 80)
+    if (!window.confirm(`¿Eliminar la pregunta "${confirmText}"? Esta acción no se puede deshacer.`)) {
+      return
+    }
+    const { error: apiErr } = await deletePreguntaFormulario({ path: { id: pregunta.id } })
+    if (apiErr) {
+      showToast(`Error: ${apiErr.message}`, 'error')
+      return
+    }
+    showToast('Pregunta eliminada correctamente')
+    refresh()
+  }
+
   return (
     <div>
       <div className="admin-toolbar">
         <div className="admin-stats">
           <span className="admin-stat-badge">{total} pregunta{total !== 1 ? 's' : ''} del formulario</span>
+        </div>
+        <div className="admin-actions">
+          <button type="button" className="btn btn-primary" onClick={openCreate}>
+            ➕ Nueva pregunta
+          </button>
         </div>
       </div>
 
@@ -167,6 +204,16 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
                       >
                         ✏️ Editar
                       </button>
+                      {!p.canonica && (
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-sm btn-xs"
+                          onClick={() => handleDelete(p)}
+                          title="Eliminar pregunta"
+                        >
+                          🗑️ Eliminar
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -187,7 +234,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
         <div className="admin-modal-overlay" onClick={closeModal}>
           <div className="admin-modal" style={{ maxWidth: 600 }} onClick={e => e.stopPropagation()}>
             <h2 className="admin-modal-title">
-              ✏️ Editar pregunta del formulario
+              {modal === 'create' ? '➕ Nueva pregunta del formulario' : '✏️ Editar pregunta del formulario'}
             </h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 16 }}>
@@ -221,7 +268,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
                 Cancelar
               </button>
               <button type="button" className="btn btn-primary" disabled={saving} onClick={handleSave}>
-                {saving ? 'Guardando…' : '💾 Guardar'}
+                {saving ? 'Guardando…' : (modal === 'create' ? '➕ Crear' : '💾 Guardar')}
               </button>
             </div>
           </div>
