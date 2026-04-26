@@ -15,7 +15,7 @@ const PAGE_LIMIT = 10
 function makeEmptyForm(langs) {
   const textos = {}
   for (const { code } of langs) textos[code] = ''
-  return { textos }
+  return { campo: '', orden: '', textos }
 }
 
 function formatFecha(iso) {
@@ -77,7 +77,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
     for (const { code } of langs) {
       textos[code] = pregunta.textos?.[code] ?? ''
     }
-    setForm({ textos })
+    setForm({ campo: pregunta.campo ?? '', orden: pregunta.orden ?? '', textos })
     setEditando(pregunta)
     setModal('edit')
   }
@@ -100,6 +100,28 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
       showToast('El texto en español (ES) no puede estar vacío', 'error')
       return
     }
+    const campoTrim = (form.campo || '').trim()
+    if (modal === 'create') {
+      if (!campoTrim) {
+        showToast('El campo es obligatorio', 'error')
+        return
+      }
+      if (!/^[a-z][a-zA-Z0-9]*$/.test(campoTrim)) {
+        showToast('El campo debe ser camelCase (e.g. viviendaAlquiler)', 'error')
+        return
+      }
+    } else if (campoTrim && !/^[a-z][a-zA-Z0-9]*$/.test(campoTrim)) {
+      showToast('El campo debe ser camelCase (e.g. viviendaAlquiler)', 'error')
+      return
+    }
+    let ordenNum
+    if (form.orden !== '' && form.orden !== null && form.orden !== undefined) {
+      ordenNum = parseInt(form.orden, 10)
+      if (Number.isNaN(ordenNum)) {
+        showToast('El orden debe ser un número entero', 'error')
+        return
+      }
+    }
     // Build textos with trimmed non-empty values; always include ES
     const textos = {}
     for (const [code, val] of Object.entries(form.textos)) {
@@ -110,13 +132,18 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
     setSaving(true)
     try {
       if (modal === 'create') {
-        const { error: apiErr } = await createPreguntaFormulario({ body: { textos } })
+        const body = { textos, campo: campoTrim }
+        if (ordenNum !== undefined) body.orden = ordenNum
+        const { error: apiErr } = await createPreguntaFormulario({ body })
         if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
         showToast('Pregunta creada correctamente')
       } else {
+        const body = { textos }
+        if (campoTrim && campoTrim !== editando.campo) body.campo = campoTrim
+        if (ordenNum !== undefined) body.orden = ordenNum
         const { error: apiErr } = await updatePreguntaFormulario({
           path: { id: editando.id },
-          body: { textos },
+          body,
         })
         if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
         showToast('Pregunta actualizada correctamente')
@@ -168,6 +195,8 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
             <thead>
               <tr>
                 <th style={{ minWidth: 240 }}>Pregunta (ES)</th>
+                <th style={{ whiteSpace: 'nowrap' }}>Campo</th>
+                <th style={{ whiteSpace: 'nowrap' }}>Orden</th>
                 <th style={{ whiteSpace: 'nowrap' }}>Tipo</th>
                 <th style={{ whiteSpace: 'nowrap' }}>Idiomas</th>
                 <th style={{ whiteSpace: 'nowrap' }}>Última modificación</th>
@@ -180,6 +209,8 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
                   <td>
                     <div className="pregunta-texto">{p.texto}</div>
                   </td>
+                  <td style={{ whiteSpace: 'nowrap', fontFamily: 'monospace', fontSize: '.85em' }}>{p.campo}</td>
+                  <td style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>{p.orden ?? '—'}</td>
                   <td style={{ whiteSpace: 'nowrap' }}>Sí / No</td>
                   <td style={{ whiteSpace: 'nowrap', fontSize: '.85em', color: '#555' }}>
                     {p.textos
@@ -232,6 +263,30 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
             </h2>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 16 }}>
+              <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ flex: 2 }}>
+                  <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>
+                    Campo (camelCase) {modal === 'create' ? '*' : ''}
+                  </label>
+                  <input
+                    type="text"
+                    value={form.campo ?? ''}
+                    onChange={e => setForm(prev => ({ ...prev, campo: e.target.value }))}
+                    style={{ width: '100%', boxSizing: 'border-box', fontFamily: 'monospace' }}
+                    placeholder="viviendaAlquiler"
+                  />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>Orden</label>
+                  <input
+                    type="number"
+                    value={form.orden ?? ''}
+                    onChange={e => setForm(prev => ({ ...prev, orden: e.target.value }))}
+                    style={{ width: '100%', boxSizing: 'border-box' }}
+                    placeholder="auto"
+                  />
+                </div>
+              </div>
               {langs.map(({ code, label }) => (
                 <div key={code}>
                   <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>

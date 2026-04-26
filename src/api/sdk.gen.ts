@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { CreateDeclaracionData, CreateDeclaracionErrors, CreateDeclaracionResponses, CreateIdiomaAdminData, CreateIdiomaAdminErrors, CreateIdiomaAdminResponses, CreatePreguntaAdminData, CreatePreguntaAdminErrors, CreatePreguntaAdminResponses, CreateSeccionAdminData, CreateSeccionAdminErrors, CreateSeccionAdminResponses, DeleteIdiomaAdminData, DeleteIdiomaAdminErrors, DeleteIdiomaAdminResponses, DeletePreguntaAdminData, DeletePreguntaAdminErrors, DeletePreguntaAdminResponses, DeleteSeccionAdminData, DeleteSeccionAdminErrors, DeleteSeccionAdminResponses, GetDeclaracionData, GetDeclaracionErrors, GetDeclaracionPreguntasData, GetDeclaracionPreguntasErrors, GetDeclaracionPreguntasResponses, GetDeclaracionResponses, GetIdiomaContentData, GetIdiomaContentErrors, GetIdiomaContentResponses, GetIdiomasData, GetIdiomasResponses, GetPreguntaAdminData, GetPreguntaAdminErrors, GetPreguntaAdminResponses, GetPreguntasData, GetPreguntasErrors, GetPreguntasResponses, GetTraduccionesData, GetTraduccionesResponses, ListDeclaracionesData, ListDeclaracionesErrors, ListDeclaracionesResponses, ListIdiomasAdminData, ListIdiomasAdminErrors, ListIdiomasAdminResponses, ListPreguntasAdminData, ListPreguntasAdminErrors, ListPreguntasAdminResponses, ListSeccionesAdminData, ListSeccionesAdminErrors, ListSeccionesAdminResponses, RemoveDeclaracionPreguntaData, RemoveDeclaracionPreguntaErrors, RemoveDeclaracionPreguntaResponses, UpdateEstadoDeclaracionData, UpdateEstadoDeclaracionErrors, UpdateEstadoDeclaracionResponses, UpdateIdiomaAdminData, UpdateIdiomaAdminErrors, UpdateIdiomaAdminResponses, UpdateIdiomaContentData, UpdateIdiomaContentErrors, UpdateIdiomaContentResponses, UpdatePreguntaAdminData, UpdatePreguntaAdminErrors, UpdatePreguntaAdminResponses, UpdateSeccionAdminData, UpdateSeccionAdminErrors, UpdateSeccionAdminResponses, UpsertDeclaracionPreguntasData, UpsertDeclaracionPreguntasErrors, UpsertDeclaracionPreguntasResponses } from './types.gen';
+import type { CreateDeclaracionData, CreateDeclaracionErrors, CreateDeclaracionResponses, CreateIdiomaAdminData, CreateIdiomaAdminErrors, CreateIdiomaAdminResponses, CreatePreguntaAdminData, CreatePreguntaAdminErrors, CreatePreguntaAdminResponses, CreateSeccionAdminData, CreateSeccionAdminErrors, CreateSeccionAdminResponses, DeleteIdiomaAdminData, DeleteIdiomaAdminErrors, DeleteIdiomaAdminResponses, DeletePreguntaAdminData, DeletePreguntaAdminErrors, DeletePreguntaAdminResponses, DeleteSeccionAdminData, DeleteSeccionAdminErrors, DeleteSeccionAdminResponses, GetDeclaracionData, GetDeclaracionErrors, GetDeclaracionPreguntasData, GetDeclaracionPreguntasErrors, GetDeclaracionPreguntasResponses, GetDeclaracionResponses, GetIdiomaContentData, GetIdiomaContentErrors, GetIdiomaContentResponses, GetIdiomasData, GetIdiomasResponses, GetMissingTranslationsData, GetMissingTranslationsErrors, GetMissingTranslationsResponses, GetPreguntaAdminData, GetPreguntaAdminErrors, GetPreguntaAdminResponses, GetPreguntasData, GetPreguntasErrors, GetPreguntasResponses, GetTraduccionesData, GetTraduccionesResponses, ListDeclaracionesData, ListDeclaracionesErrors, ListDeclaracionesResponses, ListIdiomasAdminData, ListIdiomasAdminErrors, ListIdiomasAdminResponses, ListPreguntasAdminData, ListPreguntasAdminErrors, ListPreguntasAdminResponses, ListSeccionesAdminData, ListSeccionesAdminErrors, ListSeccionesAdminResponses, RemoveDeclaracionPreguntaData, RemoveDeclaracionPreguntaErrors, RemoveDeclaracionPreguntaResponses, UpdateEstadoDeclaracionData, UpdateEstadoDeclaracionErrors, UpdateEstadoDeclaracionResponses, UpdateIdiomaAdminData, UpdateIdiomaAdminErrors, UpdateIdiomaAdminResponses, UpdateIdiomaContentData, UpdateIdiomaContentErrors, UpdateIdiomaContentResponses, UpdatePreguntaAdminData, UpdatePreguntaAdminErrors, UpdatePreguntaAdminResponses, UpdateSeccionAdminData, UpdateSeccionAdminErrors, UpdateSeccionAdminResponses, UpsertDeclaracionPreguntasData, UpsertDeclaracionPreguntasErrors, UpsertDeclaracionPreguntasResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean, TResponse = unknown> = Options2<TData, ThrowOnError, TResponse> & {
     /**
@@ -234,3 +234,22 @@ export const updateIdiomaContent = <ThrowOnError extends boolean = false>(option
         ...options.headers
     }
 });
+
+/**
+ * Traducciones faltantes por idioma
+ *
+ * Compara las claves de cada idioma activo con el conjunto canónico de claves
+ * extraído del código fuente del frontend (`ALL_REQUIRED_KEYS`) y devuelve
+ * qué claves faltan en cada idioma.
+ *
+ * Cuando se omite `ref` o se pasa `ref=static` (por defecto), el conjunto de
+ * referencia son las claves estáticas del proyecto — **no hace falta tener
+ * ningún idioma base** en la base de datos.
+ *
+ * Si se indica un código de idioma concreto (p.ej. `ref=es`), ese idioma se
+ * usa como referencia adicional: sus claves en BD se combinan con las estáticas
+ * para formar el conjunto de referencia.  Si el idioma indicado no existe,
+ * el endpoint vuelve automáticamente al modo estático.
+ *
+ */
+export const getMissingTranslations = <ThrowOnError extends boolean = false>(options?: Options<GetMissingTranslationsData, ThrowOnError>) => (options?.client ?? client).get<GetMissingTranslationsResponses, GetMissingTranslationsErrors, ThrowOnError>({ url: '/admin/traducciones/faltantes', ...options });

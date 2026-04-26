@@ -129,8 +129,8 @@ function verifyPassword(input, stored) {
   return bcrypt.compare(input, stored)
 }
 
-/** Maps a DB row (snake_case) to the camelCase shape the frontend expects. */
-function rowToDeclaracion(row) {
+/** Maps the personal-data row of a declaracion (snake_case → camelCase). */
+function rowToDeclaracion(row, respuestas = {}) {
   if (!row) return null
   return {
     id: row.id,
@@ -142,20 +142,10 @@ function rowToDeclaracion(row) {
     dniNie: row.dni_nie,
     email: row.email,
     telefono: row.telefono,
-    viviendaAlquiler: row.vivienda_alquiler,
-    alquilerMenos35: row.alquiler_menos_35 ?? undefined,
-    viviendaPropiedad: row.vivienda_propiedad,
-    propiedadAntes2013: row.propiedad_antes_2013 ?? undefined,
-    pisosAlquiladosTerceros: row.pisos_alquilados_terceros,
-    segundaResidencia: row.segunda_residencia,
-    familiaNumerosa: row.familia_numerosa,
-    ayudasGobierno: row.ayudas_gobierno,
-    mayores65ACargo: row.mayores_65_a_cargo,
-    mayoresConviven: row.mayores_conviven ?? undefined,
-    hijosMenores26: row.hijos_menores_26,
-    hijosConviven: row.hijos_conviven ?? undefined,
-    ingresosJuego: row.ingresos_juego,
-    ingresosInversiones: row.ingresos_inversiones,
+    // Spread answer map so each campo (e.g. viviendaAlquiler) becomes a
+    // top-level property of the declaracion object — the frontend reads
+    // them as `dec[pregunta.campo]`.
+    ...respuestas,
   }
 }
 
@@ -237,35 +227,15 @@ async function changePassword({ dniNie, oldPassword, newPassword }) {
   }
 }
 
-// ── IRPF preguntas (loaded from DB) ──────────────────────────────────────
-
-// Static catalogue used as the canonical ordering of preguntas.  Each entry
-// has a stable UUID `id` (primary key in the DB) and a `campo` identifier
-// (camelCase, matching the column name in declaraciones).  The `campo`
-// column was dropped from the DB; the id↔campo mapping lives only here and
-// is used to translate the DB row id into the public id returned by the API.
-const PREGUNTAS_CATALOGO = require('../data/preguntas')
-const ID_ORDER = new Map(PREGUNTAS_CATALOGO.map((p, idx) => [p.id, idx]))
-const ID_TO_CAMPO = new Map(PREGUNTAS_CATALOGO.map(p => [p.id, p.campo]))
+// ── IRPF preguntas (loaded from DB, fully dynamic) ───────────────────────
 
 async function getPreguntas(lang) {
   try {
-    // Return ALL preguntas from the DB (canonical + ones created via the
-    // admin CRUD). Canonical preguntas keep their static order; any newly
-    // created preguntas are appended at the end, ordered by `actualizada_en`
-    // (creation order) so they are stable.
     const { rows } = await pool.query(
-      `SELECT id, texto, actualizada_en
-       FROM preguntas`
+      `SELECT id, campo, orden, texto, actualizada_en
+         FROM preguntas
+        ORDER BY orden NULLS LAST, actualizada_en, campo`
     )
-    rows.sort((a, b) => {
-      const ai = ID_ORDER.has(a.id) ? ID_ORDER.get(a.id) : Number.MAX_SAFE_INTEGER
-      const bi = ID_ORDER.has(b.id) ? ID_ORDER.get(b.id) : Number.MAX_SAFE_INTEGER
-      if (ai !== bi) return ai - bi
-      const at = a.actualizada_en ? new Date(a.actualizada_en).getTime() : 0
-      const bt = b.actualizada_en ? new Date(b.actualizada_en).getTime() : 0
-      return at - bt
-    })
     const preguntas = rows.map(r => {
       let textos
       if (r.texto === null || r.texto === undefined) {
@@ -273,14 +243,12 @@ async function getPreguntas(lang) {
       } else if (typeof r.texto === 'object') {
         textos = r.texto
       } else {
-        // Plain string stored in JSONB column – treat as Spanish text
         textos = { es: String(r.texto) }
       }
-      // Use the requested language, fall back to 'es', then any available value
       const texto = (lang && textos[lang]) || textos.es || Object.values(textos)[0] || ''
-      // The public id of the pregunta is its camelCase `campo` (matches the
-      // column name in declaraciones), not the internal UUID.
-      return { id: ID_TO_CAMPO.get(r.id) ?? r.id, texto, textos }
+      // The public id of each pregunta is its `campo` (camelCase). The
+      // internal UUID stays in the DB as the FK target for respuestas.
+      return { id: r.campo, texto, textos }
     })
     return { data: { secciones: [{ id: 'general', numero: 1, titulo: '', titulos: {}, preguntas }] }, error: null }
   } catch (err) {
@@ -291,9 +259,7 @@ async function getPreguntas(lang) {
 
 // ── Admin: preguntas ─────────────────────────────────────────────────────
 
-
 function rowToPreguntaFormulario(r) {
-  // texto is JSONB – extract Spanish text for display, or stringify if needed
   const textoRaw = r.texto
   let textos
   let textoDisplay
@@ -304,12 +270,13 @@ function rowToPreguntaFormulario(r) {
     textos = textoRaw
     textoDisplay = textoRaw.es || Object.values(textoRaw)[0] || ''
   } else {
-    // Plain string stored in JSONB column
     textos = { es: String(textoRaw) }
     textoDisplay = String(textoRaw)
   }
   return {
     id: r.id,
+    campo: r.campo,
+    orden: r.orden,
     texto: textoDisplay,
     textos,
     tipo: 'sino',
@@ -321,30 +288,17 @@ async function listPreguntasFormulario({ page = 1, limit = 10 } = {}) {
   try {
     const countRes = await pool.query('SELECT COUNT(*) FROM preguntas')
     const total = parseInt(countRes.rows[0].count, 10)
-    // Fetch all preguntas first so we can apply the canonical-first ordering
-    // before paginating; the table is small (≤ a few dozen rows).
-    const { rows } = await pool.query(
-      `SELECT id, texto, actualizada_en FROM preguntas`
-    )
-    // Order rows according to the canonical static catalogue order, then by
-    // creation order (actualizada_en ASC) for non-canonical rows so newly
-    // created preguntas appear at the bottom in a stable order.
-    rows.sort((a, b) => {
-      const ai = ID_ORDER.has(a.id) ? ID_ORDER.get(a.id) : Number.MAX_SAFE_INTEGER
-      const bi = ID_ORDER.has(b.id) ? ID_ORDER.get(b.id) : Number.MAX_SAFE_INTEGER
-      if (ai !== bi) return ai - bi
-      const at = a.actualizada_en ? new Date(a.actualizada_en).getTime() : 0
-      const bt = b.actualizada_en ? new Date(b.actualizada_en).getTime() : 0
-      return at - bt
-    })
     const offset = (page - 1) * limit
-    const paged = rows.slice(offset, offset + limit)
+    const { rows } = await pool.query(
+      `SELECT id, campo, orden, texto, actualizada_en
+         FROM preguntas
+        ORDER BY orden NULLS LAST, actualizada_en, campo
+        LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    )
     return {
       data: {
-        data: paged.map(r => ({
-          ...rowToPreguntaFormulario(r),
-          canonica: ID_ORDER.has(r.id),
-        })),
+        data: rows.map(rowToPreguntaFormulario),
         total,
         page,
         limit,
@@ -357,23 +311,37 @@ async function listPreguntasFormulario({ page = 1, limit = 10 } = {}) {
   }
 }
 
-async function createPreguntaFormulario({ texto, textos } = {}) {
-  // Build the i18n object. Accept either a `textos` map or a plain `texto`
-  // string (treated as the Spanish translation).
+// camelCase identifier used as the public id of a pregunta.
+const CAMPO_RE = /^[a-z][a-zA-Z0-9]*$/
+
+function sanitiseTextos(raw) {
+  if (raw === undefined || raw === null) return null
+  if (typeof raw !== 'object' || Array.isArray(raw)) return null
+  const out = {}
+  for (const [lang, val] of Object.entries(raw)) {
+    const key = String(lang).trim().toLowerCase()
+    const v = String(val ?? '').trim()
+    if (key && v) out[key] = v
+  }
+  return out
+}
+
+async function createPreguntaFormulario({ campo, orden, texto, textos } = {}) {
+  // Validate campo (mandatory, camelCase, unique)
+  if (!campo || typeof campo !== 'string' || !campo.trim()) {
+    return { data: null, error: { message: 'El campo es obligatorio' } }
+  }
+  const campoNorm = campo.trim()
+  if (!CAMPO_RE.test(campoNorm)) {
+    return { data: null, error: { message: 'El campo debe ser camelCase (letras y números, comenzando por minúscula)' } }
+  }
+
+  // Build the i18n object
   let mergeObj
   if (textos !== undefined) {
-    if (typeof textos !== 'object' || Array.isArray(textos) || textos === null) {
-      return { data: null, error: { message: 'textos debe ser un objeto con claves de idioma' } }
-    }
-    const sanitised = {}
-    for (const [lang, val] of Object.entries(textos)) {
-      const key = String(lang).trim().toLowerCase()
-      const v = String(val ?? '').trim()
-      if (key && v) sanitised[key] = v
-    }
-    if (!sanitised.es) {
-      return { data: null, error: { message: 'El texto en español (es) es obligatorio' } }
-    }
+    const sanitised = sanitiseTextos(textos)
+    if (!sanitised) return { data: null, error: { message: 'textos debe ser un objeto con claves de idioma' } }
+    if (!sanitised.es) return { data: null, error: { message: 'El texto en español (es) es obligatorio' } }
     mergeObj = sanitised
   } else if (texto !== undefined) {
     const v = String(texto).trim()
@@ -383,15 +351,28 @@ async function createPreguntaFormulario({ texto, textos } = {}) {
     return { data: null, error: { message: 'Debes proporcionar texto o textos' } }
   }
 
+  // Compute orden
+  let ordenNum
+  if (orden !== undefined && orden !== null && orden !== '') {
+    ordenNum = parseInt(orden, 10)
+    if (Number.isNaN(ordenNum)) return { data: null, error: { message: 'orden debe ser un número entero' } }
+  } else {
+    const { rows: maxRows } = await pool.query(`SELECT COALESCE(MAX(orden), 0) AS maxo FROM preguntas`)
+    ordenNum = parseInt(maxRows[0].maxo, 10) + 1
+  }
+
   try {
     const { rows } = await pool.query(
-      `INSERT INTO preguntas (texto)
-       VALUES ($1::jsonb)
-       RETURNING id, texto, actualizada_en`,
-      [JSON.stringify(mergeObj)]
+      `INSERT INTO preguntas (campo, orden, texto)
+       VALUES ($1, $2, $3::jsonb)
+       RETURNING id, campo, orden, texto, actualizada_en`,
+      [campoNorm, ordenNum, JSON.stringify(mergeObj)]
     )
-    return { data: { ...rowToPreguntaFormulario(rows[0]), canonica: false }, status: 201, error: null }
+    return { data: rowToPreguntaFormulario(rows[0]), status: 201, error: null }
   } catch (err) {
+    if (err.code === '23505') {
+      return { data: null, error: { message: 'Ya existe una pregunta con ese campo' }, status: 409 }
+    }
     console.error('createPreguntaFormulario error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
@@ -399,15 +380,8 @@ async function createPreguntaFormulario({ texto, textos } = {}) {
 
 async function deletePreguntaFormulario(id) {
   if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
-  // Allow deleting any pregunta, including canonical ones.  The static
-  // catalogue (backend/data/preguntas.js) keeps the id↔campo mapping for any
-  // canonical row that is still present in the DB; deleting the row simply
-  // removes that question from the form and the admin list.
   try {
-    const { rowCount } = await pool.query(
-      'DELETE FROM preguntas WHERE id = $1',
-      [id]
-    )
+    const { rowCount } = await pool.query('DELETE FROM preguntas WHERE id = $1', [id])
     if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' }, status: 404 }
     return { data: null, status: 204, error: null }
   } catch (err) {
@@ -416,54 +390,143 @@ async function deletePreguntaFormulario(id) {
   }
 }
 
-async function updatePreguntaFormulario(id, { texto, textos }) {
+async function updatePreguntaFormulario(id, { campo, orden, texto, textos } = {}) {
   if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
 
-  // Build the i18n object to merge.  Accept either a full `textos` map or a
-  // legacy plain `texto` string (treated as the Spanish translation).
+  const setClauses = []
+  const params = []
+
+  if (campo !== undefined) {
+    const campoNorm = String(campo).trim()
+    if (!CAMPO_RE.test(campoNorm)) {
+      return { data: null, error: { message: 'El campo debe ser camelCase (letras y números, comenzando por minúscula)' } }
+    }
+    params.push(campoNorm)
+    setClauses.push(`campo = $${params.length}`)
+  }
+
+  if (orden !== undefined && orden !== null && orden !== '') {
+    const ordenNum = parseInt(orden, 10)
+    if (Number.isNaN(ordenNum)) return { data: null, error: { message: 'orden debe ser un número entero' } }
+    params.push(ordenNum)
+    setClauses.push(`orden = $${params.length}`)
+  }
+
+  // Build merge object for texto
   let mergeObj
   if (textos !== undefined) {
-    if (typeof textos !== 'object' || Array.isArray(textos)) {
-      return { data: null, error: { message: 'textos debe ser un objeto con claves de idioma' } }
-    }
-    const sanitised = {}
-    for (const [lang, val] of Object.entries(textos)) {
-      const key = lang.trim().toLowerCase()
-      if (key) sanitised[key] = String(val)
-    }
-    if (!Object.keys(sanitised).length) {
+    const sanitised = sanitiseTextos(textos)
+    if (!sanitised || !Object.keys(sanitised).length) {
       return { data: null, error: { message: 'textos no puede estar vacío' } }
     }
     mergeObj = sanitised
   } else if (texto !== undefined) {
     if (!String(texto).trim()) return { data: null, error: { message: 'El texto no puede estar vacío' } }
     mergeObj = { es: String(texto).trim() }
-  } else {
+  }
+
+  if (mergeObj) {
+    params.push(JSON.stringify(mergeObj))
+    setClauses.push(`texto = COALESCE(texto, '{}'::jsonb) || $${params.length}::jsonb`)
+  }
+
+  if (!setClauses.length) {
     return { data: null, error: { message: 'No hay cambios que guardar' } }
   }
 
+  setClauses.push(`actualizada_en = NOW()`)
+
   try {
+    params.push(id)
     const { rowCount } = await pool.query(
-      `UPDATE preguntas
-         SET texto = COALESCE(texto, '{}'::jsonb) || $1::jsonb,
-             actualizada_en = NOW()
-       WHERE id = $2`,
-      [JSON.stringify(mergeObj), id]
+      `UPDATE preguntas SET ${setClauses.join(', ')} WHERE id = $${params.length}`,
+      params
     )
     if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
 
     const { rows } = await pool.query(
-      `SELECT id, texto, actualizada_en FROM preguntas WHERE id = $1`,
+      `SELECT id, campo, orden, texto, actualizada_en FROM preguntas WHERE id = $1`,
       [id]
     )
     return { data: rowToPreguntaFormulario(rows[0]), error: null }
   } catch (err) {
+    if (err.code === '23505') {
+      return { data: null, error: { message: 'Ya existe una pregunta con ese campo' }, status: 409 }
+    }
     console.error('updatePreguntaFormulario error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
 
 // ── Declaraciones ──────────────────────────────────────────────────────────
+
+const REQUIRED_TEXT_FIELDS = ['nombre', 'apellidos', 'dniNie', 'telefono']
+const PERSONAL_FIELDS = new Set([
+  ...REQUIRED_TEXT_FIELDS,
+  'email',
+])
+
+function toYN(val) {
+  if (val === 'si' || val === 'no') return val
+  return null
+}
+
+/**
+ * Loads the campo→pregunta_id map from the DB.  Used by create/update to
+ * resolve answer keys posted by the client.
+ */
+async function loadCampoToPreguntaId(client = pool) {
+  const { rows } = await client.query(`SELECT id, campo FROM preguntas`)
+  const map = new Map()
+  for (const r of rows) map.set(r.campo, r.id)
+  return map
+}
+
+/**
+ * Loads all answers for a set of declaration ids, indexed by declaration id.
+ * Returns Map<declId, { [campo]: 'si'|'no' }>.
+ */
+async function loadRespuestasFor(declIds, client = pool) {
+  const out = new Map()
+  if (!declIds.length) return out
+  for (const id of declIds) out.set(id, {})
+  const { rows } = await client.query(
+    `SELECT r.declaracion_id, p.campo, r.respuesta
+       FROM respuestas_declaracion r
+       JOIN preguntas p ON p.id = r.pregunta_id
+      WHERE r.declaracion_id = ANY($1::uuid[])`,
+    [declIds]
+  )
+  for (const r of rows) {
+    const m = out.get(r.declaracion_id)
+    if (m) m[r.campo] = r.respuesta
+  }
+  return out
+}
+
+/**
+ * Validates that any answer-style field in `body` (anything that isn't a
+ * known personal field) is either undefined, empty, 'si' or 'no'.
+ */
+function validateRespuestasShape(body) {
+  for (const [k, v] of Object.entries(body)) {
+    if (PERSONAL_FIELDS.has(k)) continue
+    if (v === undefined || v === null || v === '') continue
+    if (v !== 'si' && v !== 'no') {
+      return `El campo '${k}' debe ser 'si', 'no' o estar vacío`
+    }
+  }
+  return null
+}
+
+function validateDeclaracionPersonalFields(body, { requireAll = false } = {}) {
+  if (requireAll) {
+    for (const field of REQUIRED_TEXT_FIELDS) {
+      if (!body[field]) return `Campo obligatorio: ${field}`
+    }
+  }
+  return validateRespuestasShape(body)
+}
 
 async function listDeclaraciones({ dniNie, estado, page = 1, limit = 10 }) {
   try {
@@ -480,7 +543,8 @@ async function listDeclaraciones({ dniNie, estado, page = 1, limit = 10 }) {
       `SELECT * FROM declaraciones ${where} ORDER BY creado_en DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
       params
     )
-    const declaraciones = rows.map(rowToDeclaracion)
+    const respuestasMap = await loadRespuestasFor(rows.map(r => r.id))
+    const declaraciones = rows.map(r => rowToDeclaracion(r, respuestasMap.get(r.id) ?? {}))
     return { data: { data: declaraciones, total, page, limit }, error: null }
   } catch (err) {
     console.error('listDeclaraciones DB error:', err.message)
@@ -506,7 +570,8 @@ async function listDeclaracionesAll({ dniNie, estado, page = 1, limit = 20 }) {
       `SELECT * FROM declaraciones ${where} ORDER BY creado_en DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
       params
     )
-    const declaraciones = rows.map(rowToDeclaracion)
+    const respuestasMap = await loadRespuestasFor(rows.map(r => r.id))
+    const declaraciones = rows.map(r => rowToDeclaracion(r, respuestasMap.get(r.id) ?? {}))
     return { data: { data: declaraciones, total, page, limit }, error: null }
   } catch (err) {
     console.error('listDeclaracionesAll DB error:', err.message)
@@ -514,53 +579,17 @@ async function listDeclaracionesAll({ dniNie, estado, page = 1, limit = 20 }) {
   }
 }
 
-const REQUIRED_TEXT_FIELDS = ['nombre', 'apellidos', 'dniNie', 'telefono']
-// All Sí/No answer fields are optional. They map 1:1 to nullable
-// `respuesta_yn` columns in `declaraciones`; empty/missing values are
-// stored as NULL via `toYN()`.
-const YN_FIELDS = [
-  'viviendaAlquiler', 'alquilerMenos35', 'viviendaPropiedad', 'propiedadAntes2013',
-  'pisosAlquiladosTerceros', 'segundaResidencia', 'familiaNumerosa', 'ayudasGobierno',
-  'mayores65ACargo', 'mayoresConviven', 'hijosMenores26', 'hijosConviven',
-  'ingresosJuego', 'ingresosInversiones',
-]
-
-function validateDeclaracionBody(body, { requireAll = false } = {}) {
-  if (requireAll) {
-    for (const field of REQUIRED_TEXT_FIELDS) {
-      if (!body[field]) return `Campo obligatorio: ${field}`
-    }
-  }
-  for (const field of YN_FIELDS) {
-    if (body[field] !== undefined && body[field] !== null && body[field] !== '' && body[field] !== 'si' && body[field] !== 'no') {
-      return `El campo '${field}' debe ser 'si', 'no' o estar vacío`
-    }
-  }
-  return null
-}
-
-function toYN(val) {
-  if (val === 'si' || val === 'no') return val
-  return null
-}
-
 async function createDeclaracion(body) {
-  const {
-    nombre, apellidos, dniNie, email, telefono,
-    viviendaAlquiler, alquilerMenos35, viviendaPropiedad, propiedadAntes2013,
-    pisosAlquiladosTerceros, segundaResidencia,
-    familiaNumerosa, ayudasGobierno, mayores65ACargo, mayoresConviven,
-    hijosMenores26, hijosConviven, ingresosJuego, ingresosInversiones,
-  } = body
+  const { nombre, apellidos, dniNie, email, telefono } = body
 
-  const validationError = validateDeclaracionBody(body, { requireAll: true })
+  const validationError = validateDeclaracionPersonalFields(body, { requireAll: true })
   if (validationError) return { data: null, error: { message: validationError }, status: 400 }
 
   // Guard: refuse to create a declaration if no questions are configured
+  let campoToId
   try {
-    const countRes = await pool.query('SELECT COUNT(*) FROM preguntas')
-    const count = countRes.rows && countRes.rows.length > 0 ? parseInt(countRes.rows[0].count, 10) : 0
-    if (count === 0) {
+    campoToId = await loadCampoToPreguntaId()
+    if (campoToId.size === 0) {
       return { data: null, error: { message: 'No hay preguntas configuradas. Contacta con el administrador.' }, status: 422 }
     }
   } catch (err) {
@@ -568,45 +597,55 @@ async function createDeclaracion(body) {
     return { data: null, error: { message: 'Error verificando configuración de preguntas' }, status: 503 }
   }
 
-  let rows
+  // Collect answers from the body: any property whose key matches a known
+  // pregunta `campo` and whose value is 'si'|'no'.
+  const respuestaEntries = []
+  for (const [campo, preguntaId] of campoToId) {
+    const v = toYN(body[campo])
+    if (v) respuestaEntries.push([preguntaId, v])
+  }
+
+  const client = await pool.connect()
   try {
-    ({ rows } = await pool.query(
-      `INSERT INTO declaraciones (
-        nombre, apellidos, dni_nie, email, telefono,
-        vivienda_alquiler, alquiler_menos_35, vivienda_propiedad, propiedad_antes_2013,
-        pisos_alquilados_terceros, segunda_residencia,
-        familia_numerosa, ayudas_gobierno, mayores_65_a_cargo, mayores_conviven,
-        hijos_menores_26, hijos_conviven, ingresos_juego, ingresos_inversiones
-      ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19
-      ) RETURNING id, estado, creado_en`,
-      [
-        nombre, apellidos, dniNie, email, telefono,
-        toYN(viviendaAlquiler), toYN(alquilerMenos35), toYN(viviendaPropiedad), toYN(propiedadAntes2013),
-        toYN(pisosAlquiladosTerceros), toYN(segundaResidencia),
-        toYN(familiaNumerosa), toYN(ayudasGobierno), toYN(mayores65ACargo), toYN(mayoresConviven),
-        toYN(hijosMenores26), toYN(hijosConviven), toYN(ingresosJuego), toYN(ingresosInversiones),
-      ]
-    ))
+    await client.query('BEGIN')
+
+    const { rows } = await client.query(
+      `INSERT INTO declaraciones (nombre, apellidos, dni_nie, email, telefono)
+       VALUES ($1,$2,$3,$4,$5)
+       RETURNING id, estado, creado_en`,
+      [nombre, apellidos, dniNie, email, telefono]
+    )
+    const row = rows[0]
+    const declaracionId = row.id
+
+    for (const [preguntaId, respuesta] of respuestaEntries) {
+      await client.query(
+        `INSERT INTO respuestas_declaracion (declaracion_id, pregunta_id, respuesta)
+         VALUES ($1, $2, $3::respuesta_yn)`,
+        [declaracionId, preguntaId, respuesta]
+      )
+    }
+
+    await client.query('COMMIT')
+    return { data: { id: declaracionId, estado: row.estado, creadoEn: row.creado_en }, error: null, status: 201 }
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {})
     if (err.code === '23505' && err.constraint === 'uq_declaraciones_dni_nie') {
       return { data: null, error: { message: 'Ya existe una declaración con este DNI/NIE' }, status: 409 }
     }
     console.error('createDeclaracion DB error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  } finally {
+    client.release()
   }
-  const row = rows[0]
-  const declaracionId = row.id
-
-  return { data: { id: declaracionId, estado: row.estado, creadoEn: row.creado_en }, error: null, status: 201 }
 }
 
 async function getDeclaracion(id) {
   try {
     const { rows } = await pool.query('SELECT * FROM declaraciones WHERE id = $1', [id])
     if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
-    const dec = rowToDeclaracion(rows[0])
-    return { data: dec, error: null }
+    const respuestasMap = await loadRespuestasFor([rows[0].id])
+    return { data: rowToDeclaracion(rows[0], respuestasMap.get(rows[0].id) ?? {}), error: null }
   } catch (err) {
     console.error('getDeclaracion DB error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
@@ -618,8 +657,8 @@ async function getDeclaracionByToken(token) {
   try {
     const { rows } = await pool.query('SELECT * FROM declaraciones WHERE id = $1', [token.trim()])
     if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
-    const dec = rowToDeclaracion(rows[0])
-    return { data: dec, error: null }
+    const respuestasMap = await loadRespuestasFor([rows[0].id])
+    return { data: rowToDeclaracion(rows[0], respuestasMap.get(rows[0].id) ?? {}), error: null }
   } catch (err) {
     console.error('getDeclaracionByToken DB error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
@@ -629,11 +668,12 @@ async function getDeclaracionByToken(token) {
 async function updateEstadoDeclaracion(id, estado) {
   try {
     const { rows } = await pool.query(
-      'UPDATE declaraciones SET estado = $1 WHERE id = $2 RETURNING *',
+      'UPDATE declaraciones SET estado = $1, actualizado_en = NOW() WHERE id = $2 RETURNING *',
       [estado, id]
     )
     if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
-    return { data: rowToDeclaracion(rows[0]), error: null }
+    const respuestasMap = await loadRespuestasFor([rows[0].id])
+    return { data: rowToDeclaracion(rows[0], respuestasMap.get(rows[0].id) ?? {}), error: null }
   } catch (err) {
     console.error('updateEstadoDeclaracion DB error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
@@ -641,63 +681,107 @@ async function updateEstadoDeclaracion(id, estado) {
 }
 
 async function updateDeclaracion(id, body) {
-  const validationError = validateDeclaracionBody(body, { requireAll: false })
+  const validationError = validateDeclaracionPersonalFields(body, { requireAll: false })
   if (validationError) return { data: null, error: { message: validationError }, status: 400 }
 
-  // Build a dynamic SET clause for only provided fields
-  const FIELD_MAP = {
+  // Build a dynamic SET clause for personal fields only
+  const PERSONAL_FIELD_MAP = {
     nombre: 'nombre',
     apellidos: 'apellidos',
     email: 'email',
     telefono: 'telefono',
-    viviendaAlquiler: 'vivienda_alquiler',
-    alquilerMenos35: 'alquiler_menos_35',
-    viviendaPropiedad: 'vivienda_propiedad',
-    propiedadAntes2013: 'propiedad_antes_2013',
-    pisosAlquiladosTerceros: 'pisos_alquilados_terceros',
-    segundaResidencia: 'segunda_residencia',
-    familiaNumerosa: 'familia_numerosa',
-    ayudasGobierno: 'ayudas_gobierno',
-    mayores65ACargo: 'mayores_65_a_cargo',
-    mayoresConviven: 'mayores_conviven',
-    hijosMenores26: 'hijos_menores_26',
-    hijosConviven: 'hijos_conviven',
-    ingresosJuego: 'ingresos_juego',
-    ingresosInversiones: 'ingresos_inversiones',
+    dniNie: 'dni_nie',
   }
-  const ALL_YN_FIELDS = new Set(YN_FIELDS)
   const setClauses = []
   const params = []
-  for (const [camel, snake] of Object.entries(FIELD_MAP)) {
+  for (const [camel, snake] of Object.entries(PERSONAL_FIELD_MAP)) {
     if (body[camel] !== undefined) {
-      const val = ALL_YN_FIELDS.has(camel) ? toYN(body[camel]) : body[camel]
-      params.push(val)
+      params.push(body[camel])
       setClauses.push(`${snake} = $${params.length}`)
     }
   }
 
+  // Resolve campo→pregunta_id for any answer-style fields
+  let campoToId
   try {
+    campoToId = await loadCampoToPreguntaId()
+  } catch (err) {
+    console.error('updateDeclaracion campo lookup error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+
+  // Collect answer changes: each key matching a configured pregunta `campo`.
+  // 'si'/'no' → upsert; '' or null → delete the answer.
+  const answerOps = [] // [{ preguntaId, action: 'set'|'delete', value? }]
+  for (const [campo, preguntaId] of campoToId) {
+    if (!Object.prototype.hasOwnProperty.call(body, campo)) continue
+    const raw = body[campo]
+    const v = toYN(raw)
+    if (v) {
+      answerOps.push({ preguntaId, action: 'set', value: v })
+    } else if (raw === '' || raw === null) {
+      answerOps.push({ preguntaId, action: 'delete' })
+    }
+  }
+
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+
+    let row
     if (setClauses.length) {
+      setClauses.push(`actualizado_en = NOW()`)
       params.push(id)
-      const { rows } = await pool.query(
+      const { rows } = await client.query(
         `UPDATE declaraciones SET ${setClauses.join(', ')} WHERE id = $${params.length} RETURNING *`,
         params
       )
-      if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
-      return { data: rowToDeclaracion(rows[0]), error: null }
+      if (!rows.length) {
+        await client.query('ROLLBACK')
+        return { data: null, error: { message: 'Declaración no encontrada' } }
+      }
+      row = rows[0]
     } else {
-      const { rows } = await pool.query('SELECT * FROM declaraciones WHERE id = $1', [id])
-      if (!rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
-      return { data: rowToDeclaracion(rows[0]), error: null }
+      const { rows } = await client.query('SELECT * FROM declaraciones WHERE id = $1', [id])
+      if (!rows.length) {
+        await client.query('ROLLBACK')
+        return { data: null, error: { message: 'Declaración no encontrada' } }
+      }
+      row = rows[0]
     }
+
+    for (const op of answerOps) {
+      if (op.action === 'set') {
+        await client.query(
+          `INSERT INTO respuestas_declaracion (declaracion_id, pregunta_id, respuesta)
+           VALUES ($1, $2, $3::respuesta_yn)
+           ON CONFLICT (declaracion_id, pregunta_id) DO UPDATE
+             SET respuesta = EXCLUDED.respuesta`,
+          [row.id, op.preguntaId, op.value]
+        )
+      } else {
+        await client.query(
+          `DELETE FROM respuestas_declaracion WHERE declaracion_id = $1 AND pregunta_id = $2`,
+          [row.id, op.preguntaId]
+        )
+      }
+    }
+
+    await client.query('COMMIT')
+    const respuestasMap = await loadRespuestasFor([row.id])
+    return { data: rowToDeclaracion(row, respuestasMap.get(row.id) ?? {}), error: null }
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {})
     console.error('updateDeclaracion DB error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  } finally {
+    client.release()
   }
 }
 
 async function deleteDeclaracion(id) {
   try {
+    // respuestas_declaracion is removed automatically via ON DELETE CASCADE.
     const { rowCount } = await pool.query('DELETE FROM declaraciones WHERE id = $1', [id])
     if (!rowCount) return { data: null, error: { message: 'Declaración no encontrada' } }
     return { data: { success: true }, error: null }

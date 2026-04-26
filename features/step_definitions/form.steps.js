@@ -2,12 +2,35 @@ import { Given, When, Then, setDefaultTimeout } from '@cucumber/cucumber'
 
 setDefaultTimeout(60 * 1000)
 
-// ── Question counts per section ────────────────────────────────────────────
-// All catalog questions are now shown unconditionally (no follow-up logic),
-// so each section has a fixed number of questions regardless of yes/no answers.
-const VIVIENDA_QUESTIONS = 6   // viviendaAlquiler, alquilerMenos35, viviendaPropiedad, propiedadAntes2013, pisosAlquiladosTerceros, segundaResidencia
-const FAMILIA_QUESTIONS  = 6   // ayudasGobierno, familiaNumerosa, mayores65ACargo, mayoresConviven, hijosMenores26, hijosConviven
-const INGRESOS_QUESTIONS = 2   // ingresosJuego, ingresosInversiones
+// ── Question counts ──────────────────────────────────────────────────────
+// The catalog is fully dynamic in the DB – the test reads the configured
+// list once and uses it both for total count and section grouping.  Tests
+// rely on the default seed (seedPreguntas.js) where preguntas 1-6 are
+// "vivienda", 7-12 are "familia" and 13-14 are "ingresos".  If you change
+// the seed/order, also update the slice boundaries below.
+const SECTION_BOUNDARIES = { vivienda: [0, 6], familia: [6, 12], ingresos: [12, 14] }
+
+let _cachedTotal = null
+async function fetchTotalQuestions() {
+  if (_cachedTotal !== null) return _cachedTotal
+  const baseUrl = process.env.API_BASE_URL || 'http://localhost:3001/v1'
+  const res = await fetch(`${baseUrl}/irpf/preguntas`)
+  const json = await res.json()
+  _cachedTotal = (json.secciones || []).reduce(
+    (acc, s) => acc + (s.preguntas?.length || 0), 0
+  )
+  return _cachedTotal
+}
+
+async function questionsForSection(name) {
+  // Use the seed-derived boundaries while preferring the real total when
+  // it differs (e.g. an admin added a new pregunta).  Sections "vivienda"
+  // and "familia" stay at 6 each; "ingresos" absorbs any extra questions.
+  const total = await fetchTotalQuestions()
+  const [start, end] = SECTION_BOUNDARIES[name]
+  if (name === 'ingresos') return Math.max(0, total - start)
+  return Math.max(0, Math.min(end, total) - start)
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -111,33 +134,30 @@ Given('el usuario avanza al siguiente paso', async function () {
 })
 
 // ── Respuestas de vivienda ──
-// Always 6 questions (no conditional sub-questions; full catalog list is shown)
 Given('el usuario responde Si a todas las preguntas de vivienda', async function () {
-  await answerNQuestions(this.page, 'si', VIVIENDA_QUESTIONS)
+  await answerNQuestions(this.page, 'si', await questionsForSection('vivienda'))
 })
 
 Given('el usuario responde No a todas las preguntas de vivienda', async function () {
-  await answerNQuestions(this.page, 'no', VIVIENDA_QUESTIONS)
+  await answerNQuestions(this.page, 'no', await questionsForSection('vivienda'))
 })
 
 // ── Respuestas de familia ──
-// Always 6 questions
 Given('el usuario responde No a todas las preguntas de familia', async function () {
-  await answerNQuestions(this.page, 'no', FAMILIA_QUESTIONS)
+  await answerNQuestions(this.page, 'no', await questionsForSection('familia'))
 })
 
 Given('el usuario responde Si a todas las preguntas de familia', async function () {
-  await answerNQuestions(this.page, 'si', FAMILIA_QUESTIONS)
+  await answerNQuestions(this.page, 'si', await questionsForSection('familia'))
 })
 
 // ── Respuestas de ingresos ──
-// Always 2 questions
 Given('el usuario responde No a todas las preguntas de ingresos', async function () {
-  await answerNQuestions(this.page, 'no', INGRESOS_QUESTIONS)
+  await answerNQuestions(this.page, 'no', await questionsForSection('ingresos'))
 })
 
 Given('el usuario responde Si a todas las preguntas de ingresos', async function () {
-  await answerNQuestions(this.page, 'si', INGRESOS_QUESTIONS)
+  await answerNQuestions(this.page, 'si', await questionsForSection('ingresos'))
 })
 
 Given('el usuario envia el formulario', async function () {

@@ -49,17 +49,22 @@ CREATE TABLE IF NOT EXISTS usuarios (
     creado_en            TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
--- 4. Tabla: Preguntas (Traducciones en JSONB)
--- El identificador estable es la UUID `id`; los seeds insertan UUIDs fijos
--- definidos en backend/data/preguntas.js, que también mantiene el mapeo
--- id ↔ campo (camelCase) usado por el API público.
+-- 4. Tabla: Preguntas (catálogo dinámico, totalmente autodescriptivo)
+-- El identificador público es el `campo` camelCase (e.g. 'viviendaAlquiler').
+-- El UUID es la clave primaria interna usada por las foreign keys.
+-- `orden` controla la posición en el wizard; `texto` JSONB contiene las
+-- traducciones por idioma ({"es": "...", "fr": "...", ...}).
 CREATE TABLE IF NOT EXISTS preguntas (
     id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    texto          JSONB        NOT NULL DEFAULT '{}', -- Estructura: {"es": "", "fr": "", "ca": "", "en": ""}
+    campo          VARCHAR(100) NOT NULL UNIQUE,
+    orden          INTEGER      NOT NULL DEFAULT 0,
+    texto          JSONB        NOT NULL DEFAULT '{}',
     actualizada_en TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
+CREATE INDEX IF NOT EXISTS idx_preguntas_orden ON preguntas (orden);
 
--- 5. Tabla: Declaraciones
+-- 5. Tabla: Declaraciones (sólo datos personales — las respuestas viven
+--    en la tabla `respuestas_declaracion` y son completamente dinámicas).
 CREATE TABLE IF NOT EXISTS declaraciones (
     id                        UUID              PRIMARY KEY DEFAULT gen_random_uuid(),
     creado_en                 TIMESTAMPTZ       NOT NULL DEFAULT NOW(),
@@ -71,25 +76,21 @@ CREATE TABLE IF NOT EXISTS declaraciones (
     email                     VARCHAR(254)      NOT NULL,
     telefono                  VARCHAR(20)       NOT NULL,
 
-    -- Respuestas (columnas fijas de la declaración) — todas opcionales
-    vivienda_alquiler         respuesta_yn,
-    alquiler_menos_35         respuesta_yn,
-    vivienda_propiedad        respuesta_yn,
-    propiedad_antes_2013      respuesta_yn,
-    pisos_alquilados_terceros respuesta_yn,
-    segunda_residencia        respuesta_yn,
-    familia_numerosa          respuesta_yn,
-    ayudas_gobierno           respuesta_yn,
-    mayores_65_a_cargo        respuesta_yn,
-    mayores_conviven          respuesta_yn,
-    hijos_menores_26          respuesta_yn,
-    hijos_conviven            respuesta_yn,
-    ingresos_juego            respuesta_yn,
-    ingresos_inversiones      respuesta_yn,
-
     CONSTRAINT chk_dni_nie_formato       CHECK (dni_nie ~ '^[0-9XYZ][0-9]{7}[A-Z]$'),
     CONSTRAINT uq_declaraciones_dni_nie  UNIQUE (dni_nie)
 );
+
+-- 5b. Tabla: Respuestas de cada declaración (clave/valor dinámico).
+--     Una fila por (declaración, pregunta). Las respuestas son siempre
+--     'si' o 'no'. La FK a `preguntas` con ON DELETE CASCADE garantiza
+--     que al borrar una pregunta se eliminan también sus respuestas.
+CREATE TABLE IF NOT EXISTS respuestas_declaracion (
+    declaracion_id UUID         NOT NULL REFERENCES declaraciones(id) ON DELETE CASCADE,
+    pregunta_id    UUID         NOT NULL REFERENCES preguntas(id)    ON DELETE CASCADE,
+    respuesta      respuesta_yn NOT NULL,
+    PRIMARY KEY (declaracion_id, pregunta_id)
+);
+CREATE INDEX IF NOT EXISTS idx_respuestas_pregunta ON respuestas_declaracion (pregunta_id);
 
 -- 6. Tabla: Idiomas
 CREATE TABLE IF NOT EXISTS idiomas (

@@ -8,7 +8,7 @@
 const bcrypt = require('bcrypt')
 const pool = require('./pool')
 const migrate = require('./migrate')
-const PREGUNTAS_14 = require('../data/preguntas')
+const seedPreguntas = require('./seedPreguntas')
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -62,10 +62,6 @@ function buildUsuarios() {
 const ESTADOS = ['recibido', 'en_revision', 'documentacion_pendiente', 'completado', 'archivado']
 const YN = ['si', 'no']
 
-function yn(i, offset = 0) {
-  return YN[(i + offset) % 2]
-}
-
 function buildDeclaraciones() {
   const list = []
   for (let i = 1; i <= 100; i++) {
@@ -81,23 +77,17 @@ function buildDeclaraciones() {
       email: `decl${String(i).padStart(3, '0')}@rentaform.test`,
       telefono: `7${String(700000000 + i).slice(1)}`,
       estado,
-      vivienda_alquiler:           yn(i, 0),
-      alquiler_menos_35:           yn(i, 1),
-      vivienda_propiedad:          yn(i, 1),
-      propiedad_antes_2013:        yn(i, 0),
-      pisos_alquilados_terceros:   yn(i, 1),
-      segunda_residencia:          yn(i, 0),
-      familia_numerosa:            yn(i, 1),
-      ayudas_gobierno:             yn(i, 0),
-      mayores_65_a_cargo:          yn(i, 1),
-      mayores_conviven:            yn(i, 0),
-      hijos_menores_26:            yn(i, 1),
-      hijos_conviven:              yn(i, 0),
-      ingresos_juego:              yn(i, 0),
-      ingresos_inversiones:        yn(i, 1),
     })
   }
   return list
+}
+
+/**
+ * Builds a deterministic but varied yes/no answer for declaration `i`
+ * and the question at zero-based `qIndex`.
+ */
+function answerFor(i, qIndex) {
+  return YN[(i + qIndex) % 2]
 }
 
 // ---------------------------------------------------------------------------
@@ -111,25 +101,14 @@ async function seed100(client) {
   }
 
   try {
-    // ── 1. Seed 14 preguntas ────────────────────────────────────────────────
-    console.log('[seed100] Seeding 14 preguntas...')
-    for (const p of PREGUNTAS_14) {
-      await client.query(
-        `INSERT INTO preguntas (id, texto)
-         VALUES ($1, $2::jsonb)
-         ON CONFLICT (id) DO UPDATE SET texto = EXCLUDED.texto`,
-        [p.id, JSON.stringify(p.texto)]
-      )
-    }
+    // ── 1. Seed demo preguntas via the canonical seedPreguntas helper ──────
+    await seedPreguntas(client)
 
-    // Delete any preguntas whose id is not in the canonical 14-question list
-    // (cleans up rows from previous schemas/seeds).
-    await client.query(
-      'DELETE FROM preguntas WHERE NOT (id = ANY($1::uuid[]))',
-      [PREGUNTAS_14.map(p => p.id)]
+    // Load the seeded preguntas so we can populate respuestas_declaracion.
+    const { rows: preguntasRows } = await client.query(
+      `SELECT id, campo, orden FROM preguntas ORDER BY orden, campo`
     )
-
-    console.log('[seed100] 14 preguntas seeded.')
+    console.log(`[seed100] ${preguntasRows.length} preguntas available.`)
 
     // ── 2. Seed 100 usuarios ────────────────────────────────────────────────
     console.log('[seed100] Seeding 100 usuarios...')
@@ -150,37 +129,37 @@ async function seed100(client) {
     }
     console.log('[seed100] 100 usuarios seeded.')
 
-    // ── 3. Seed 100 declaraciones ───────────────────────────────────────────
+    // ── 3. Seed 100 declaraciones (only personal data) ──────────────────────
     console.log('[seed100] Seeding 100 declaraciones...')
     const declaraciones = buildDeclaraciones()
-    for (const d of declaraciones) {
-      await client.query(
+    for (let i = 0; i < declaraciones.length; i++) {
+      const d = declaraciones[i]
+      const { rows: insertRows } = await client.query(
         `INSERT INTO declaraciones (
-           nombre, apellidos, dni_nie, email, telefono, estado,
-           vivienda_alquiler, alquiler_menos_35, vivienda_propiedad, propiedad_antes_2013,
-           pisos_alquilados_terceros, segunda_residencia, familia_numerosa, ayudas_gobierno,
-           mayores_65_a_cargo, mayores_conviven, hijos_menores_26, hijos_conviven,
-           ingresos_juego, ingresos_inversiones
+           nombre, apellidos, dni_nie, email, telefono, estado
          ) VALUES (
-           $1, $2, $3, $4, $5, $6::estado_expediente,
-           $7::respuesta_yn, $8::respuesta_yn, $9::respuesta_yn, $10::respuesta_yn,
-           $11::respuesta_yn, $12::respuesta_yn, $13::respuesta_yn, $14::respuesta_yn,
-           $15::respuesta_yn, $16::respuesta_yn, $17::respuesta_yn, $18::respuesta_yn,
-           $19::respuesta_yn, $20::respuesta_yn
+           $1, $2, $3, $4, $5, $6::estado_expediente
          )
          ON CONFLICT (dni_nie) DO UPDATE SET
            nombre = EXCLUDED.nombre,
            apellidos = EXCLUDED.apellidos,
            email = EXCLUDED.email,
-           estado = EXCLUDED.estado`,
-        [
-          d.nombre, d.apellidos, d.dni_nie, d.email, d.telefono, d.estado,
-          d.vivienda_alquiler, d.alquiler_menos_35, d.vivienda_propiedad, d.propiedad_antes_2013,
-          d.pisos_alquilados_terceros, d.segunda_residencia, d.familia_numerosa, d.ayudas_gobierno,
-          d.mayores_65_a_cargo, d.mayores_conviven, d.hijos_menores_26, d.hijos_conviven,
-          d.ingresos_juego, d.ingresos_inversiones,
-        ]
+           estado = EXCLUDED.estado
+         RETURNING id`,
+        [d.nombre, d.apellidos, d.dni_nie, d.email, d.telefono, d.estado]
       )
+      const declId = insertRows[0].id
+
+      // Replace respuestas for this declaration with deterministic answers
+      // for every currently configured pregunta.
+      await client.query(`DELETE FROM respuestas_declaracion WHERE declaracion_id = $1`, [declId])
+      for (let q = 0; q < preguntasRows.length; q++) {
+        await client.query(
+          `INSERT INTO respuestas_declaracion (declaracion_id, pregunta_id, respuesta)
+           VALUES ($1, $2, $3::respuesta_yn)`,
+          [declId, preguntasRows[q].id, answerFor(i + 1, q)]
+        )
+      }
     }
     console.log('[seed100] 100 declaraciones seeded.')
   } finally {

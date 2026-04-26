@@ -5,30 +5,16 @@ import { useLanguage } from './LanguageContext.jsx'
 
 
 const INITIAL_STATE = {
-  // 1. Datos de identificación
+  // Identificación – únicos campos fijos. Las respuestas a las preguntas se
+  // construyen dinámicamente a partir de las preguntas que devuelve la API.
   nombre: '',
   apellidos: '',
   dniNie: '',
   email: '',
   telefono: '',
-  // 2. Situación de vivienda
-  viviendaAlquiler: '',
-  alquilerMenos35: '',
-  viviendaPropiedad: '',
-  propiedadAntes2013: '',
-  pisosAlquiladosTerceros: '',
-  segundaResidencia: '',
-  // 3. Cargas familiares y ayudas públicas
-  familiaNumerosa: '',
-  ayudasGobierno: '',
-  mayores65ACargo: '',
-  mayoresConviven: '',
-  hijosMenores26: '',
-  hijosConviven: '',
-  // 4. Ingresos extraordinarios e inversiones
-  ingresosJuego: '',
-  ingresosInversiones: '',
 }
+
+const ID_FIELDS = ['nombre', 'apellidos', 'dniNie', 'email', 'telefono']
 
 const STEP_ICONS = ['👤', '🏠', '👨‍👩‍👧', '💶', '📝', '⭐', '❓']
 
@@ -124,27 +110,15 @@ export default function App({ editData, onEditDataConsumed }) {
   useEffect(() => {
     if (!editData) return
     setEditId(editData.id)
-    setForm({
-      ...INITIAL_STATE,
-      nombre: editData.nombre ?? '',
-      apellidos: editData.apellidos ?? '',
-      dniNie: editData.dniNie ?? '',
-      email: editData.email ?? '',
-      telefono: editData.telefono ?? '',
-      viviendaAlquiler: editData.viviendaAlquiler ?? '',
-      alquilerMenos35: editData.alquilerMenos35 ?? '',
-      viviendaPropiedad: editData.viviendaPropiedad ?? '',
-      propiedadAntes2013: editData.propiedadAntes2013 ?? '',
-      pisosAlquiladosTerceros: editData.pisosAlquiladosTerceros ?? '',
-      segundaResidencia: editData.segundaResidencia ?? '',
-      familiaNumerosa: editData.familiaNumerosa ?? '',
-      ayudasGobierno: editData.ayudasGobierno ?? '',
-      mayores65ACargo: editData.mayores65ACargo ?? '',
-      mayoresConviven: editData.mayoresConviven ?? '',
-      hijosMenores26: editData.hijosMenores26 ?? '',
-      ingresosJuego: editData.ingresosJuego ?? '',
-      ingresosInversiones: editData.ingresosInversiones ?? '',
-    })
+    // Copy identification fields and any answer-style property already
+    // present on editData (each `pregunta.id` becomes a top-level key).
+    const next = { ...INITIAL_STATE }
+    for (const f of ID_FIELDS) next[f] = editData[f] ?? ''
+    for (const [k, v] of Object.entries(editData)) {
+      if (ID_FIELDS.includes(k)) continue
+      if (v === 'si' || v === 'no') next[k] = v
+    }
+    setForm(next)
     setSubmitted(false)
     onEditDataConsumed?.()
     setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
@@ -343,50 +317,18 @@ export default function App({ editData, onEditDataConsumed }) {
       dniNie: form.dniNie,
       email: form.email,
       telefono: form.telefono,
-      // Housing
-      viviendaAlquiler: form.viviendaAlquiler,
-      alquilerMenos35: form.alquilerMenos35,
-      viviendaPropiedad: form.viviendaPropiedad,
-      propiedadAntes2013: form.propiedadAntes2013,
-      pisosAlquiladosTerceros: form.pisosAlquiladosTerceros,
-      segundaResidencia: form.segundaResidencia,
-      // Family
-      familiaNumerosa: form.familiaNumerosa,
-      ayudasGobierno: form.ayudasGobierno,
-      mayores65ACargo: form.mayores65ACargo,
-      mayoresConviven: form.mayoresConviven,
-      hijosMenores26: form.hijosMenores26,
-      hijosConviven: form.hijosConviven,
-      // Extraordinary income
-      ingresosJuego: form.ingresosJuego,
-      ingresosInversiones: form.ingresosInversiones,
+    }
+    // Append every dynamic answer (one property per pregunta.id)
+    for (const step of questionSteps) {
+      const v = form[step.pregunta.id]
+      if (v === 'si' || v === 'no') body[step.pregunta.id] = v
     }
 
     setSubmitting(true)
     try {
       if (editId && updateDeclaracion) {
-        // Update existing declaration
-        const updateBody = {
-          nombre: form.nombre,
-          apellidos: form.apellidos,
-          dniNie: form.dniNie,
-          email: form.email,
-          telefono: form.telefono,
-          viviendaAlquiler: form.viviendaAlquiler,
-          alquilerMenos35: form.alquilerMenos35,
-          viviendaPropiedad: form.viviendaPropiedad,
-          propiedadAntes2013: form.propiedadAntes2013,
-          pisosAlquiladosTerceros: form.pisosAlquiladosTerceros,
-          segundaResidencia: form.segundaResidencia,
-          familiaNumerosa: form.familiaNumerosa,
-          ayudasGobierno: form.ayudasGobierno,
-          mayores65ACargo: form.mayores65ACargo,
-          mayoresConviven: form.mayoresConviven,
-          hijosMenores26: form.hijosMenores26,
-          hijosConviven: form.hijosConviven,
-          ingresosJuego: form.ingresosJuego,
-          ingresosInversiones: form.ingresosInversiones,
-        }
+        // Update existing declaration with the same dynamic body
+        const updateBody = { ...body }
         const { data, error, response } = await updateDeclaracion({ path: { id: editId }, body: updateBody })
         if (data) {
           setEditId(null)
