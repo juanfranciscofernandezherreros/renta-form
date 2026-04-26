@@ -34,6 +34,7 @@ const ALL_REQUIRED_KEYS = [
   'campaignName',
   'changePasswordTitle',
   'confirmClear',
+  'errDniDuplicate',
   'errDniFormat',
   'errNewPasswordLength',
   'errNewPasswordLengthSuffix',
