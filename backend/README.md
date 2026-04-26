@@ -52,7 +52,7 @@ npm run db:seed-users
 npm run db:setup
 ```
 
-> `npm run migrate` aplica `database/init.sql` si las tablas no existen. `npm run seed` solo actualiza idiomas y traducciones sin tocar el esquema.
+> `npm run migrate` aplica `database/init.sql` si las tablas no existen. Los scripts `npm run db:seed-*` también ejecutan la migración antes de sembrar, por lo que pueden usarse de forma autónoma sobre una BD vacía.
 
 ### 4. Arrancar el servidor
 

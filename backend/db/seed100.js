@@ -7,6 +7,7 @@
 
 const bcrypt = require('bcrypt')
 const pool = require('./pool')
+const migrate = require('./migrate')
 const PREGUNTAS_14 = require('../data/preguntas')
 
 // ---------------------------------------------------------------------------
@@ -193,7 +194,8 @@ module.exports = seed100
 
 // Allow running directly: node db/seed100.js
 if (require.main === module) {
-  seed100()
+  migrate()
+    .then(() => seed100())
     .then(() => {
       console.log('[seed100] Done.')
       process.exit(0)
