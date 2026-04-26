@@ -114,15 +114,19 @@ async function seed100(client) {
     console.log('[seed100] Seeding 14 preguntas...')
     for (const p of PREGUNTAS_14) {
       await client.query(
-        `INSERT INTO preguntas (texto, orden)
-         VALUES ($1::jsonb, $2)
-         ON CONFLICT (orden) DO UPDATE SET texto = EXCLUDED.texto`,
-        [JSON.stringify(p.texto), p.orden]
+        `INSERT INTO preguntas (campo, texto)
+         VALUES ($1, $2::jsonb)
+         ON CONFLICT (campo) DO UPDATE SET texto = EXCLUDED.texto`,
+        [p.campo, JSON.stringify(p.texto)]
       )
     }
 
-    // Delete any old preguntas with orden > 14 (from a previous 60-question seed)
-    await client.query('DELETE FROM preguntas WHERE orden > 14')
+    // Delete any preguntas whose campo is not in the canonical 14-question list
+    // (cleans up rows from previous schemas/seeds).
+    await client.query(
+      'DELETE FROM preguntas WHERE campo IS NULL OR NOT (campo = ANY($1::text[]))',
+      [PREGUNTAS_14.map(p => p.campo)]
+    )
 
     console.log('[seed100] 14 preguntas seeded.')
 

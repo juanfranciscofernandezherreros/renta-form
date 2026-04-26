@@ -238,33 +238,27 @@ async function changePassword({ dniNie, oldPassword, newPassword }) {
 
 // ── IRPF preguntas (loaded from DB) ──────────────────────────────────────
 
-// Static mapping from question orden to the camelCase form-field name used in
-// the declaraciones table.  Only the 13 questions that have a corresponding
-// column in declaraciones are listed here; all other questions use their UUID.
-const ORDEN_TO_CAMPO = {
-  1:  'viviendaAlquiler',
-  2:  'alquilerMenos35',
-  3:  'viviendaPropiedad',
-  4:  'propiedadAntes2013',
-  5:  'pisosAlquiladosTerceros',
-  6:  'segundaResidencia',
-  7:  'ayudasGobierno',
-  8:  'familiaNumerosa',
-  9:  'mayores65ACargo',
-  10: 'mayoresConviven',
-  11: 'hijosMenores26',
-  12: 'hijosConviven',
-  13: 'ingresosJuego',
-  14: 'ingresosInversiones',
-}
+// Static catalogue used as the canonical ordering of preguntas.  Each entry
+// has a stable `campo` identifier that is used as the public id of the
+// pregunta (it matches the column name in declaraciones).
+const PREGUNTAS_CATALOGO = require('../data/preguntas')
+const CAMPO_ORDER = new Map(PREGUNTAS_CATALOGO.map((p, idx) => [p.campo, idx]))
 
 async function getPreguntas(lang) {
   try {
     const { rows } = await pool.query(
-      `SELECT id, texto, orden
-       FROM preguntas
-       ORDER BY orden`
+      `SELECT id, campo, texto
+       FROM preguntas`
     )
+    // Order rows according to the canonical static catalogue order.  Rows
+    // whose campo is not part of the catalogue are appended at the end,
+    // sorted alphabetically by campo for stability.
+    rows.sort((a, b) => {
+      const ai = CAMPO_ORDER.has(a.campo) ? CAMPO_ORDER.get(a.campo) : Number.MAX_SAFE_INTEGER
+      const bi = CAMPO_ORDER.has(b.campo) ? CAMPO_ORDER.get(b.campo) : Number.MAX_SAFE_INTEGER
+      if (ai !== bi) return ai - bi
+      return String(a.campo || '').localeCompare(String(b.campo || ''))
+    })
     const preguntas = rows.map(r => {
       let textos
       if (r.texto === null || r.texto === undefined) {
@@ -277,7 +271,7 @@ async function getPreguntas(lang) {
       }
       // Use the requested language, fall back to 'es', then any available value
       const texto = (lang && textos[lang]) || textos.es || Object.values(textos)[0] || ''
-      return { id: ORDEN_TO_CAMPO[r.orden] ?? r.id, texto, textos }
+      return { id: r.campo ?? r.id, texto, textos }
     })
     return { data: { secciones: [{ id: 'general', numero: 1, titulo: '', titulos: {}, preguntas }] }, error: null }
   } catch (err) {
@@ -322,7 +316,7 @@ async function listPreguntasFormulario({ page = 1, limit = 10 } = {}) {
     const { rows } = await pool.query(
       `SELECT id, texto, actualizada_en
        FROM preguntas
-       ORDER BY orden, id
+       ORDER BY campo, id
        LIMIT $1 OFFSET $2`,
       [limit, offset]
     )
@@ -380,7 +374,7 @@ async function updatePreguntaFormulario(id, { texto, textos }) {
   }
 }
 
-async function createPreguntaFormulario({ texto, textos }) {
+async function createPreguntaFormulario({ texto, textos, campo }) {
   let textoObj
   if (textos !== undefined) {
     if (typeof textos !== 'object' || Array.isArray(textos)) {
@@ -402,13 +396,20 @@ async function createPreguntaFormulario({ texto, textos }) {
     return { data: null, error: { message: 'El texto es obligatorio' } }
   }
 
+  // `campo` is the unique stable identifier for the pregunta.  If the caller
+  // does not supply one, derive a unique value so the NOT NULL UNIQUE
+  // constraint is satisfied.
+  const campoFinal = (typeof campo === 'string' && campo.trim())
+    ? campo.trim()
+    : `pregunta_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
+
   try {
     const textoJson = JSON.stringify(textoObj)
     const { rows } = await pool.query(
-      `INSERT INTO preguntas (texto)
-       VALUES ($1::jsonb)
+      `INSERT INTO preguntas (campo, texto)
+       VALUES ($1, $2::jsonb)
        RETURNING id`,
-      [textoJson]
+      [campoFinal, textoJson]
     )
     if (!rows.length) return { data: null, error: { message: 'No se pudo crear la pregunta' } }
 

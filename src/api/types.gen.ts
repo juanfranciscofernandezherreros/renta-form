@@ -149,7 +149,6 @@ export type PreguntaAdicionalInput = {
      */
     seccion: string;
     tipoRespuesta: TipoRespuesta;
-    orden?: number;
     activa?: boolean;
     obligatoria?: boolean;
 };
@@ -192,7 +191,6 @@ export type SeccionInput = {
      * Nombre de la sección
      */
     nombre: string;
-    orden?: number;
     activa?: boolean;
 };
 
