@@ -1,24 +1,8 @@
 Feature: Preguntas del formulario de declaración de la Renta
 
-  # ── Comportamiento de preguntas condicionales ──────────────────────────────
+  # ── Lista plana de preguntas (sin preguntas condicionales) ────────────────
 
-  Scenario: La pregunta de importe del alquiler no aparece si NO vive de alquiler
-    Given el usuario abre la pagina principal
-    When el usuario rellena los datos de identificacion
-    And el usuario avanza al siguiente paso
-    Then el usuario ve la primera pregunta del formulario
-    When el usuario responde No a la pregunta actual
-    Then la pregunta condicional sobre alquiler no es visible
-
-  Scenario: La pregunta de importe del alquiler aparece si SÍ vive de alquiler
-    Given el usuario abre la pagina principal
-    When el usuario rellena los datos de identificacion
-    And el usuario avanza al siguiente paso
-    Then el usuario ve la primera pregunta del formulario
-    When el usuario responde Si a la pregunta actual
-    Then la pregunta condicional sobre alquiler es visible
-
-  Scenario: Las preguntas condicionales se omiten en la validacion cuando no aplican
+  Scenario: El formulario se envia correctamente respondiendo No a todas las preguntas
     Given el usuario abre la pagina principal
     Given el usuario rellena los datos de identificacion
     Given el usuario avanza al siguiente paso
@@ -54,4 +38,3 @@ Feature: Preguntas del formulario de declaración de la Renta
     When el administrador navega a la pestaña de preguntas del formulario
     And el administrador edita la primera pregunta con texto "Texto de prueba editado"
     Then la pregunta muestra el texto actualizado
-

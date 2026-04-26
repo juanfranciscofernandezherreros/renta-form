@@ -16,7 +16,7 @@ async function answerCurrentQuestion(page, value) {
   await page.waitForTimeout(700) // Wait for auto-advance animation
 }
 
-// ── Preguntas condicionales ────────────────────────────────────────────────
+// ── Preguntas del formulario ───────────────────────────────────────────────
 
 Then('el usuario ve la primera pregunta del formulario', async function () {
   await this.page.waitForSelector('.wizard-step .question-card', { timeout: 10000 })
@@ -31,33 +31,6 @@ When('el usuario responde No a la pregunta actual', async function () {
 
 When('el usuario responde Si a la pregunta actual', async function () {
   await answerCurrentQuestion(this.page, 'si')
-})
-
-Then('la pregunta condicional sobre alquiler no es visible', async function () {
-  // After answering 'no' to viviendaAlquiler, the alquilerMenos35 question should be skipped.
-  // The wizard should have moved to the next non-conditional question (viviendaPropiedad).
-  // We verify the current question card does NOT contain the phrase about rental percentage.
-  await this.page.waitForSelector('.wizard-step .question-card', { timeout: 10000 })
-  const text = await this.page.locator('.wizard-step .question-card').first().innerText()
-  const isRentalPercentage =
-    text.includes('35 %') ||
-    text.includes('35%') ||
-    text.includes('alquiler') && text.includes('inferior')
-  if (isRentalPercentage) {
-    throw new Error(`La pregunta condicional de alquiler apareció cuando no debería: "${text}"`)
-  }
-})
-
-Then('la pregunta condicional sobre alquiler es visible', async function () {
-  // After answering 'si' to viviendaAlquiler, the next question should be alquilerMenos35.
-  await this.page.waitForSelector('.wizard-step .question-card', { timeout: 10000 })
-  const text = await this.page.locator('.wizard-step .question-card').first().innerText()
-  const isRentalPercentage =
-    text.includes('35') ||
-    (text.toLowerCase().includes('alquiler') && text.toLowerCase().includes('inferior'))
-  if (!isRentalPercentage) {
-    throw new Error(`La pregunta condicional de alquiler no apareció. Texto actual: "${text}"`)
-  }
 })
 
 Then('el formulario se ha enviado correctamente', async function () {

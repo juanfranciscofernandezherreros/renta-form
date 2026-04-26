@@ -32,17 +32,6 @@ const INITIAL_STATE = {
 
 const STEP_ICONS = ['👤', '🏠', '👨‍👩‍👧', '💶', '📝', '⭐', '❓']
 
-/**
- * Map of conditional question IDs to their parent field and required value.
- * A conditional question is only shown when form[dependeDe] === valor.
- */
-const CONDITIONAL_QUESTIONS = {
-  alquilerMenos35:    { dependeDe: 'viviendaAlquiler',  valor: 'si' },
-  propiedadAntes2013: { dependeDe: 'viviendaPropiedad', valor: 'si' },
-  mayoresConviven:    { dependeDe: 'mayores65ACargo',   valor: 'si' },
-  hijosConviven:      { dependeDe: 'hijosMenores26',    valor: 'si' },
-}
-
 const LANG_FLAGS = {
   es: '🇪🇸',
   fr: '🇫🇷',
@@ -248,31 +237,18 @@ export default function App({ editData, onEditDataConsumed }) {
   }
 
   // Wizard step helpers
-  // Steps: 0 = ID fields, 1..N = API sections, N+1 = Docs + Comments (last)
-  // Build a flat list of visible steps: id → individual questions → docs
-  // Derive a stable key from the form fields that control conditional question visibility.
-  // This changes only when a parent field (viviendaAlquiler, viviendaPropiedad, mayores65ACargo)
-  // changes value, avoiding recomputation on unrelated field edits.
-  const conditionalKey = Object.values(CONDITIONAL_QUESTIONS)
-    .map(c => form[c.dependeDe] ?? '')
-    .join('|')
-
+  // Steps: 0 = ID fields, 1..N = one step per question from the catalog.
+  // Every question returned by the API is shown unconditionally as a flat list.
   const visibleSteps = useMemo(() => {
     if (loadingPreguntas || secciones.length === 0) return []
     const steps = [{ type: 'id', key: 'id' }]
     for (const seccion of secciones) {
       for (const pregunta of seccion.preguntas) {
-        // Reflect the DB `preguntas` table as-is: include every question
-        // returned by the API.  Conditional questions are still hidden when
-        // their parent answer hasn't enabled them (UX behaviour).
-        const cond = CONDITIONAL_QUESTIONS[pregunta.id]
-        if (cond && form[cond.dependeDe] !== cond.valor) continue
         steps.push({ type: 'question', key: `q:${pregunta.id}`, seccion, pregunta })
       }
     }
     return steps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadingPreguntas, secciones, conditionalKey])
+  }, [loadingPreguntas, secciones])
   const totalSteps = visibleSteps.length
   const safeStep = Math.min(currentStep, Math.max(0, visibleSteps.length - 1))
   const currentStepInfo = visibleSteps[safeStep]
@@ -349,18 +325,18 @@ export default function App({ editData, onEditDataConsumed }) {
       telefono: form.telefono,
       // Housing
       viviendaAlquiler: form.viviendaAlquiler,
-      ...(form.viviendaAlquiler === 'si' && { alquilerMenos35: form.alquilerMenos35 }),
+      alquilerMenos35: form.alquilerMenos35,
       viviendaPropiedad: form.viviendaPropiedad,
-      ...(form.viviendaPropiedad === 'si' && { propiedadAntes2013: form.propiedadAntes2013 }),
+      propiedadAntes2013: form.propiedadAntes2013,
       pisosAlquiladosTerceros: form.pisosAlquiladosTerceros,
       segundaResidencia: form.segundaResidencia,
       // Family
       familiaNumerosa: form.familiaNumerosa,
       ayudasGobierno: form.ayudasGobierno,
       mayores65ACargo: form.mayores65ACargo,
-      ...(form.mayores65ACargo === 'si' && { mayoresConviven: form.mayoresConviven }),
+      mayoresConviven: form.mayoresConviven,
       hijosMenores26: form.hijosMenores26,
-      ...(form.hijosMenores26 === 'si' && { hijosConviven: form.hijosConviven }),
+      hijosConviven: form.hijosConviven,
       // Extraordinary income
       ingresosJuego: form.ingresosJuego,
       ingresosInversiones: form.ingresosInversiones,
@@ -377,17 +353,17 @@ export default function App({ editData, onEditDataConsumed }) {
           email: form.email,
           telefono: form.telefono,
           viviendaAlquiler: form.viviendaAlquiler,
-          ...(form.viviendaAlquiler === 'si' && { alquilerMenos35: form.alquilerMenos35 }),
+          alquilerMenos35: form.alquilerMenos35,
           viviendaPropiedad: form.viviendaPropiedad,
-          ...(form.viviendaPropiedad === 'si' && { propiedadAntes2013: form.propiedadAntes2013 }),
+          propiedadAntes2013: form.propiedadAntes2013,
           pisosAlquiladosTerceros: form.pisosAlquiladosTerceros,
           segundaResidencia: form.segundaResidencia,
           familiaNumerosa: form.familiaNumerosa,
           ayudasGobierno: form.ayudasGobierno,
           mayores65ACargo: form.mayores65ACargo,
-          ...(form.mayores65ACargo === 'si' && { mayoresConviven: form.mayoresConviven }),
+          mayoresConviven: form.mayoresConviven,
           hijosMenores26: form.hijosMenores26,
-          ...(form.hijosMenores26 === 'si' && { hijosConviven: form.hijosConviven }),
+          hijosConviven: form.hijosConviven,
           ingresosJuego: form.ingresosJuego,
           ingresosInversiones: form.ingresosInversiones,
         }
