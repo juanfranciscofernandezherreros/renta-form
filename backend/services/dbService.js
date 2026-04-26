@@ -310,16 +310,28 @@ function rowToPreguntaFormulario(r) {
 
 async function listPreguntasFormulario({ page = 1, limit = 10 } = {}) {
   try {
-    const countRes = await pool.query('SELECT COUNT(*) FROM preguntas')
+    const campos = PREGUNTAS_CATALOGO.map(p => p.campo)
+    const countRes = await pool.query(
+      'SELECT COUNT(*) FROM preguntas WHERE campo = ANY($1::text[])',
+      [campos]
+    )
     const total = parseInt(countRes.rows[0].count, 10)
     const offset = (page - 1) * limit
     const { rows } = await pool.query(
-      `SELECT id, texto, actualizada_en
+      `SELECT id, campo, texto, actualizada_en
        FROM preguntas
+       WHERE campo = ANY($1::text[])
        ORDER BY campo, id
-       LIMIT $1 OFFSET $2`,
-      [limit, offset]
+       LIMIT $2 OFFSET $3`,
+      [campos, limit, offset]
     )
+    // Order rows according to the canonical static catalogue order so the
+    // admin view always lists the 14 simple questions in the expected order.
+    rows.sort((a, b) => {
+      const ai = CAMPO_ORDER.has(a.campo) ? CAMPO_ORDER.get(a.campo) : Number.MAX_SAFE_INTEGER
+      const bi = CAMPO_ORDER.has(b.campo) ? CAMPO_ORDER.get(b.campo) : Number.MAX_SAFE_INTEGER
+      return ai - bi
+    })
     return { data: { data: rows.map(rowToPreguntaFormulario), total, page, limit }, error: null }
   } catch (err) {
     console.error('listPreguntasFormulario error:', err.message)
@@ -370,71 +382,6 @@ async function updatePreguntaFormulario(id, { texto, textos }) {
     return { data: rowToPreguntaFormulario(rows[0]), error: null }
   } catch (err) {
     console.error('updatePreguntaFormulario error:', err.message)
-    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
-  }
-}
-
-async function createPreguntaFormulario({ texto, textos, campo }) {
-  let textoObj
-  if (textos !== undefined) {
-    if (typeof textos !== 'object' || Array.isArray(textos)) {
-      return { data: null, error: { message: 'textos debe ser un objeto con claves de idioma' } }
-    }
-    const sanitised = {}
-    for (const [lang, val] of Object.entries(textos)) {
-      const key = lang.trim().toLowerCase()
-      if (key) sanitised[key] = String(val)
-    }
-    if (!Object.keys(sanitised).length) {
-      return { data: null, error: { message: 'textos no puede estar vacío' } }
-    }
-    textoObj = sanitised
-  } else if (texto) {
-    if (!String(texto).trim()) return { data: null, error: { message: 'El texto es obligatorio' } }
-    textoObj = { es: String(texto).trim() }
-  } else {
-    return { data: null, error: { message: 'El texto es obligatorio' } }
-  }
-
-  // `campo` is the unique stable identifier for the pregunta.  If the caller
-  // does not supply one, derive a unique value so the NOT NULL UNIQUE
-  // constraint is satisfied.
-  const campoFinal = (typeof campo === 'string' && campo.trim())
-    ? campo.trim()
-    : `pregunta_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`
-
-  try {
-    const textoJson = JSON.stringify(textoObj)
-    const { rows } = await pool.query(
-      `INSERT INTO preguntas (campo, texto)
-       VALUES ($1, $2::jsonb)
-       RETURNING id`,
-      [campoFinal, textoJson]
-    )
-    if (!rows.length) return { data: null, error: { message: 'No se pudo crear la pregunta' } }
-
-    const { rows: full } = await pool.query(
-      `SELECT id, texto, actualizada_en FROM preguntas WHERE id = $1`,
-      [rows[0].id]
-    )
-    return { data: rowToPreguntaFormulario(full[0]), error: null, status: 201 }
-  } catch (err) {
-    console.error('createPreguntaFormulario error:', err.message)
-    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
-  }
-}
-
-async function deletePreguntaFormulario(id) {
-  if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
-  try {
-    const { rowCount } = await pool.query(
-      'DELETE FROM preguntas WHERE id = $1',
-      [id]
-    )
-    if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
-    return { data: { deleted: true }, error: null }
-  } catch (err) {
-    console.error('deletePreguntaFormulario error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
@@ -1180,9 +1127,7 @@ module.exports = {
   updateDeclaracion,
   deleteDeclaracion,
   listPreguntasFormulario,
-  createPreguntaFormulario,
   updatePreguntaFormulario,
-  deletePreguntaFormulario,
   listUsersAdmin,
   blockUser,
   reportUser,

@@ -73,10 +73,11 @@ async function migrate() {
         )
       }
     }
-    // Any remaining rows without a campo get a unique synthetic identifier so
-    // the NOT NULL UNIQUE constraint can be enforced.
+    // Any remaining rows without a campo are orphans from legacy schemas
+    // (they have no mapping to the canonical 14-question catalogue) and
+    // would otherwise pollute the admin/preguntas list.  Drop them.
     await client.query(
-      `UPDATE preguntas SET campo = 'pregunta_' || id::text WHERE campo IS NULL`
+      `DELETE FROM preguntas WHERE campo IS NULL`
     )
 
     // Drop the legacy orden column and its unique constraint if they still exist

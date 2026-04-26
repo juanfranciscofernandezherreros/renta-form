@@ -23,18 +23,8 @@ module.exports = function adminRoutes(svc) {
     send(res, result)
   })
 
-  router.post('/preguntas-formulario', async (req, res) => {
-    const result = await svc.createPreguntaFormulario(req.body ?? {})
-    send(res, result)
-  })
-
   router.put('/preguntas-formulario/:id', async (req, res) => {
     const result = await svc.updatePreguntaFormulario(req.params.id, req.body ?? {})
-    send(res, result)
-  })
-
-  router.delete('/preguntas-formulario/:id', async (req, res) => {
-    const result = await svc.deletePreguntaFormulario(req.params.id)
     send(res, result)
   })
 

@@ -107,20 +107,10 @@ export async function listPreguntasFormulario(options = {}) {
   return request('GET', '/admin/preguntas-formulario', { query: { page, limit } })
 }
 
-export async function createPreguntaFormulario(options) {
-  const body = options?.body ?? {}
-  return request('POST', '/admin/preguntas-formulario', { body })
-}
-
 export async function updatePreguntaFormulario(options) {
   const id = options?.path?.id
   const body = options?.body ?? {}
   return request('PUT', `/admin/preguntas-formulario/${encodeURIComponent(id)}`, { body })
-}
-
-export async function deletePreguntaFormulario(options) {
-  const id = options?.path?.id
-  return request('DELETE', `/admin/preguntas-formulario/${encodeURIComponent(id)}`)
 }
 
 // ── Admin: Usuarios ────────────────────────────────────────────────────────

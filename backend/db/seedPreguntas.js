@@ -23,6 +23,15 @@ async function seedPreguntas(client) {
         [p.campo, JSON.stringify(p.texto)]
       )
     }
+
+    // Delete any preguntas whose campo is not in the canonical 14-question
+    // catalogue (cleans up rows from previous schemas/seeds or from manual
+    // inserts via the admin UI).
+    await client.query(
+      'DELETE FROM preguntas WHERE campo IS NULL OR NOT (campo = ANY($1::text[]))',
+      [preguntas.map(p => p.campo)]
+    )
+
     console.log(`[seedPreguntas] ${preguntas.length} preguntas seeded.`)
   } finally {
     if (useLocalClient) {
