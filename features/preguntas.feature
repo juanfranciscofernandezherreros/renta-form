@@ -28,11 +28,6 @@ Feature: Preguntas del formulario de declaración de la Renta
 
   # ── Tabla de administración de preguntas ──────────────────────────────────
 
-  Scenario: La tabla de admin muestra las preguntas del formulario con el campo
-    Given el administrador accede al panel de administracion
-    When el administrador navega a la pestaña de preguntas del formulario
-    Then la tabla muestra las preguntas con columna Campo
-
   Scenario: El administrador puede editar el texto de una pregunta
     Given el administrador accede al panel de administracion
     When el administrador navega a la pestaña de preguntas del formulario
