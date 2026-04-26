@@ -131,6 +131,7 @@ export default function App({ editData, onEditDataConsumed }) {
   const [stepDirection, setStepDirection] = useState('forward')
   const [fieldErrors, setFieldErrors] = useState({})
   const topRef = useRef(null)
+  const formRef = useRef(null)
 
   // Game animation state
   const [xpPopups, setXpPopups] = useState([])
@@ -231,6 +232,9 @@ export default function App({ editData, onEditDataConsumed }) {
       setStepDirection('forward')
       setCurrentStep(prev => prev + 1)
       setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+    } else {
+      // Last question answered – auto-submit after React commits the answer state
+      setTimeout(() => formRef.current?.requestSubmit(), 0)
     }
   }
 
@@ -492,7 +496,7 @@ export default function App({ editData, onEditDataConsumed }) {
             )}
 
             {!loadingPreguntas && !errorPreguntas && visibleSteps.length > 0 && (
-              <form onSubmit={handleSubmit} noValidate>
+              <form ref={formRef} onSubmit={handleSubmit} noValidate>
                 {/* Animated wizard step container – key change triggers CSS animation */}
                 <div
                   key={`step-${currentStep}`}
