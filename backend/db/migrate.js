@@ -42,7 +42,16 @@ async function migrate() {
 
     // Ensure orden is unique so seeding can use ON CONFLICT (orden)
     await client.query(`
-      ALTER TABLE preguntas ADD CONSTRAINT IF NOT EXISTS uq_preguntas_orden UNIQUE (orden)
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_constraint
+          WHERE conname = 'uq_preguntas_orden'
+            AND conrelid = 'preguntas'::regclass
+        ) THEN
+          ALTER TABLE preguntas ADD CONSTRAINT uq_preguntas_orden UNIQUE (orden);
+        END IF;
+      END $$
     `)
 
     // Create idiomas/traducciones tables if they were not in the original schema
