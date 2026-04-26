@@ -130,13 +130,21 @@ async function migrate() {
         ADD COLUMN IF NOT EXISTS hijos_conviven       respuesta_yn,
         ADD COLUMN IF NOT EXISTS ingresos_inversiones respuesta_yn
     `)
-    // Backfill NOT NULL default for ingresos_inversiones if rows already exist
-    await client.query(`
-      UPDATE declaraciones SET ingresos_inversiones = 'no' WHERE ingresos_inversiones IS NULL
-    `)
+
+    // All Sí/No answer columns are now optional — drop legacy NOT NULL
+    // constraints so empty responses are allowed.
     await client.query(`
       ALTER TABLE declaraciones
-        ALTER COLUMN ingresos_inversiones SET NOT NULL
+        ALTER COLUMN vivienda_alquiler         DROP NOT NULL,
+        ALTER COLUMN vivienda_propiedad        DROP NOT NULL,
+        ALTER COLUMN pisos_alquilados_terceros DROP NOT NULL,
+        ALTER COLUMN segunda_residencia        DROP NOT NULL,
+        ALTER COLUMN familia_numerosa          DROP NOT NULL,
+        ALTER COLUMN ayudas_gobierno           DROP NOT NULL,
+        ALTER COLUMN mayores_65_a_cargo        DROP NOT NULL,
+        ALTER COLUMN hijos_menores_26          DROP NOT NULL,
+        ALTER COLUMN ingresos_juego            DROP NOT NULL,
+        ALTER COLUMN ingresos_inversiones      DROP NOT NULL
     `)
 
   } finally {
