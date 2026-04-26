@@ -5,6 +5,7 @@
 // ---------------------------------------------------------------------------
 
 const pool = require('./pool')
+const migrate = require('./migrate')
 const preguntas = require('../data/preguntas')
 
 async function seedPreguntas(client) {
@@ -44,7 +45,8 @@ module.exports = seedPreguntas
 
 // Allow running directly: node db/seedPreguntas.js
 if (require.main === module) {
-  seedPreguntas()
+  migrate()
+    .then(() => seedPreguntas())
     .then(() => {
       console.log('[seedPreguntas] Done.')
       process.exit(0)

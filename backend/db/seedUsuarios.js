@@ -6,6 +6,7 @@
 
 const bcrypt = require('bcrypt')
 const pool = require('./pool')
+const migrate = require('./migrate')
 
 const SALT_ROUNDS = 10
 
@@ -104,7 +105,8 @@ module.exports = seedUsuarios
 
 // Allow running directly: node db/seedUsuarios.js
 if (require.main === module) {
-  seedUsuarios()
+  migrate()
+    .then(() => seedUsuarios())
     .then(() => {
       console.log('[seedUsuarios] Done.')
       process.exit(0)

@@ -19,6 +19,7 @@
 
 const bcrypt = require('bcrypt')
 const pool = require('./pool')
+const migrate = require('./migrate')
 
 const SALT_ROUNDS = 10
 
@@ -55,7 +56,9 @@ async function seedAdmin() {
   }
 }
 
-seedAdmin().catch((err) => {
-  console.error('[seedAdmin] ❌  Error:', err.message)
-  process.exit(1)
-})
+migrate()
+  .then(() => seedAdmin())
+  .catch((err) => {
+    console.error('[seedAdmin] ❌  Error:', err.message)
+    process.exit(1)
+  })

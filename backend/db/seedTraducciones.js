@@ -7,6 +7,7 @@
 // ---------------------------------------------------------------------------
 
 const pool = require('./pool')
+const migrate = require('./migrate')
 const translations = require('../data/translations')
 
 async function seedTraducciones(client) {
@@ -47,7 +48,8 @@ module.exports = seedTraducciones
 
 // Allow running directly: node db/seedTraducciones.js
 if (require.main === module) {
-  seedTraducciones()
+  migrate()
+    .then(() => seedTraducciones())
     .then(() => {
       console.log('[seed] Translations seeded successfully.')
       process.exit(0)
