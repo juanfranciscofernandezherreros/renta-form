@@ -152,6 +152,7 @@ function rowToDeclaracion(row) {
     mayores65ACargo: row.mayores_65_a_cargo,
     mayoresConviven: row.mayores_conviven ?? undefined,
     hijosMenores26: row.hijos_menores_26,
+    hijosConviven: row.hijos_conviven ?? undefined,
     ingresosJuego: row.ingresos_juego,
     ingresosInversiones: row.ingresos_inversiones,
   }
@@ -247,13 +248,14 @@ const ORDEN_TO_CAMPO = {
   4:  'propiedadAntes2013',
   5:  'pisosAlquiladosTerceros',
   6:  'segundaResidencia',
-  11: 'familiaNumerosa',
-  12: 'mayores65ACargo',
-  13: 'mayoresConviven',
-  14: 'hijosMenores26',
-  25: 'ingresosJuego',
-  26: 'ingresosInversiones',
-  31: 'ayudasGobierno',
+  7:  'ayudasGobierno',
+  8:  'familiaNumerosa',
+  9:  'mayores65ACargo',
+  10: 'mayoresConviven',
+  11: 'hijosMenores26',
+  12: 'hijosConviven',
+  13: 'ingresosJuego',
+  14: 'ingresosInversiones',
 }
 
 async function getPreguntas(lang) {
@@ -493,7 +495,7 @@ const REQUIRED_YN_FIELDS = [
   'familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'hijosMenores26',
   'ingresosJuego', 'ingresosInversiones',
 ]
-const OPTIONAL_YN_FIELDS = ['alquilerMenos35', 'propiedadAntes2013', 'mayoresConviven']
+const OPTIONAL_YN_FIELDS = ['alquilerMenos35', 'propiedadAntes2013', 'mayoresConviven', 'hijosConviven']
 
 function validateDeclaracionBody(body, { requireAll = false } = {}) {
   if (requireAll) {
@@ -532,7 +534,7 @@ async function createDeclaracion(body) {
     viviendaAlquiler, alquilerMenos35, viviendaPropiedad, propiedadAntes2013,
     pisosAlquiladosTerceros, segundaResidencia,
     familiaNumerosa, ayudasGobierno, mayores65ACargo, mayoresConviven,
-    hijosMenores26, ingresosJuego, ingresosInversiones,
+    hijosMenores26, hijosConviven, ingresosJuego, ingresosInversiones,
   } = body
 
   const validationError = validateDeclaracionBody(body, { requireAll: true })
@@ -558,16 +560,16 @@ async function createDeclaracion(body) {
         vivienda_alquiler, alquiler_menos_35, vivienda_propiedad, propiedad_antes_2013,
         pisos_alquilados_terceros, segunda_residencia,
         familia_numerosa, ayudas_gobierno, mayores_65_a_cargo, mayores_conviven,
-        hijos_menores_26, ingresos_juego, ingresos_inversiones
+        hijos_menores_26, hijos_conviven, ingresos_juego, ingresos_inversiones
       ) VALUES (
-        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18
+        $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19
       ) RETURNING id, estado, creado_en`,
       [
         nombre, apellidos, dniNie, email, telefono,
         viviendaAlquiler, toYN(alquilerMenos35), viviendaPropiedad, toYN(propiedadAntes2013),
         pisosAlquiladosTerceros, segundaResidencia,
         familiaNumerosa, ayudasGobierno, mayores65ACargo, toYN(mayoresConviven),
-        hijosMenores26, ingresosJuego, ingresosInversiones,
+        hijosMenores26, toYN(hijosConviven), ingresosJuego, ingresosInversiones,
       ]
     ))
   } catch (err) {
@@ -643,6 +645,7 @@ async function updateDeclaracion(id, body) {
     mayores65ACargo: 'mayores_65_a_cargo',
     mayoresConviven: 'mayores_conviven',
     hijosMenores26: 'hijos_menores_26',
+    hijosConviven: 'hijos_conviven',
     ingresosJuego: 'ingresos_juego',
     ingresosInversiones: 'ingresos_inversiones',
   }
