@@ -76,6 +76,22 @@ async function migrate() {
     `)
     await client.query(`CREATE INDEX IF NOT EXISTS idx_traducciones_idioma ON traducciones (idioma_id)`)
 
+    // Add columns that may be missing from older declaraciones schemas
+    await client.query(`
+      ALTER TABLE declaraciones
+        ADD COLUMN IF NOT EXISTS mayores_conviven     respuesta_yn,
+        ADD COLUMN IF NOT EXISTS hijos_conviven       respuesta_yn,
+        ADD COLUMN IF NOT EXISTS ingresos_inversiones respuesta_yn
+    `)
+    // Backfill NOT NULL default for ingresos_inversiones if rows already exist
+    await client.query(`
+      UPDATE declaraciones SET ingresos_inversiones = 'no' WHERE ingresos_inversiones IS NULL
+    `)
+    await client.query(`
+      ALTER TABLE declaraciones
+        ALTER COLUMN ingresos_inversiones SET NOT NULL
+    `)
+
   } finally {
     client.release()
   }
