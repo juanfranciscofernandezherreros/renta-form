@@ -817,8 +817,16 @@ components:
       properties:
         id:
           type: string
-          description: Identificador único (coincide con el nombre del campo en el formulario)
+          description: Identificador público de la pregunta. Coincide con `campo` (camelCase).
           example: alquilerMenos35
+        campo:
+          type: string
+          description: Identificador estable camelCase. Único en `preguntas`.
+          example: alquilerMenos35
+        orden:
+          type: integer
+          description: Posición de aparición en el wizard (ascendente).
+          example: 2
         texto:
           type: string
           description: Texto de la pregunta en español
@@ -870,6 +878,12 @@ components:
 
     # ------------------------------------------------------------------
     # Declaración – Input (multipart/form-data)
+    #
+    # Sólo los datos personales son fijos en el esquema. Las respuestas a
+    # las preguntas son completamente dinámicas: cada pregunta se identifica
+    # por su `campo` (camelCase) y se envía como propiedad adicional con
+    # valor 'si' o 'no'. Por ejemplo:
+    #     { "nombre": "...", ..., "viviendaAlquiler": "si", "ingresosJuego": "no" }
     # ------------------------------------------------------------------
     DeclaracionInput:
       type: object
@@ -879,6 +893,16 @@ components:
         - dniNie
         - email
         - telefono
+      additionalProperties:
+        oneOf:
+          - $ref: '#/components/schemas/RespuestaYN'
+          - type: string
+            format: binary
+          - type: array
+            items:
+              type: string
+              format: binary
+        description: Respuesta a la pregunta cuyo `campo` coincide con la clave, o documento adjunto.
       properties:
         # 1. Identificación
         nombre:
@@ -901,42 +925,7 @@ components:
           type: string
           maxLength: 20
           example: '600123456'
-        # 2. Vivienda
-        viviendaAlquiler:
-          $ref: '#/components/schemas/RespuestaYN'
-        alquilerMenos35:
-          $ref: '#/components/schemas/RespuestaYN'
-          description: Obligatorio cuando viviendaAlquiler = si
-        viviendaPropiedad:
-          $ref: '#/components/schemas/RespuestaYN'
-        propiedadAntes2013:
-          $ref: '#/components/schemas/RespuestaYN'
-          description: Obligatorio cuando viviendaPropiedad = si
-        pisosAlquiladosTerceros:
-          $ref: '#/components/schemas/RespuestaYN'
-        segundaResidencia:
-          $ref: '#/components/schemas/RespuestaYN'
-        # 3. Familia
-        familiaNumerosa:
-          $ref: '#/components/schemas/RespuestaYN'
-        ayudasGobierno:
-          $ref: '#/components/schemas/RespuestaYN'
-        mayores65ACargo:
-          $ref: '#/components/schemas/RespuestaYN'
-        mayoresConviven:
-          $ref: '#/components/schemas/RespuestaYN'
-          description: Obligatorio cuando mayores65ACargo = si
-        hijosMenores26:
-          $ref: '#/components/schemas/RespuestaYN'
-        hijosConviven:
-          $ref: '#/components/schemas/RespuestaYN'
-          description: Obligatorio cuando hijosMenores26 = si
-        # 4. Ingresos
-        ingresosJuego:
-          $ref: '#/components/schemas/RespuestaYN'
-        ingresosInversiones:
-          $ref: '#/components/schemas/RespuestaYN'
-        # 5. Documentación
+        # 2. Documentación
         docDniAnverso:
           type: string
           format: binary
@@ -1003,7 +992,9 @@ components:
             - email
             - telefono
             - actualizadoEn
-            - documentos
+          additionalProperties:
+            $ref: '#/components/schemas/RespuestaYN'
+            description: Respuesta a la pregunta cuyo `campo` coincide con la clave.
           properties:
             nombre:
               type: string
@@ -1016,34 +1007,6 @@ components:
               format: email
             telefono:
               type: string
-            viviendaAlquiler:
-              $ref: '#/components/schemas/RespuestaYN'
-            alquilerMenos35:
-              $ref: '#/components/schemas/RespuestaYN'
-            viviendaPropiedad:
-              $ref: '#/components/schemas/RespuestaYN'
-            propiedadAntes2013:
-              $ref: '#/components/schemas/RespuestaYN'
-            pisosAlquiladosTerceros:
-              $ref: '#/components/schemas/RespuestaYN'
-            segundaResidencia:
-              $ref: '#/components/schemas/RespuestaYN'
-            familiaNumerosa:
-              $ref: '#/components/schemas/RespuestaYN'
-            ayudasGobierno:
-              $ref: '#/components/schemas/RespuestaYN'
-            mayores65ACargo:
-              $ref: '#/components/schemas/RespuestaYN'
-            mayoresConviven:
-              $ref: '#/components/schemas/RespuestaYN'
-            hijosMenores26:
-              $ref: '#/components/schemas/RespuestaYN'
-            hijosConviven:
-              $ref: '#/components/schemas/RespuestaYN'
-            ingresosJuego:
-              $ref: '#/components/schemas/RespuestaYN'
-            ingresosInversiones:
-              $ref: '#/components/schemas/RespuestaYN'
             actualizadoEn:
               type: string
               format: date-time

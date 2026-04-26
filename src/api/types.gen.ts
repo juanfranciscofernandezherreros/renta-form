@@ -15,19 +15,39 @@ export type TipoDocumento = 'dni_anverso' | 'dni_reverso' | 'adicional';
 
 export type Pregunta = {
     /**
-     * Identificador único (coincide con el nombre del campo en el formulario)
+     * Identificador público de la pregunta. Coincide con `campo` (camelCase).
      */
     id: string;
     /**
-     * Texto de la pregunta que se muestra al usuario
+     * Identificador estable camelCase. Único en `preguntas`.
+     */
+    campo?: string;
+    /**
+     * Posición de aparición en el wizard (ascendente).
+     */
+    orden?: number;
+    /**
+     * Texto de la pregunta en español
      */
     texto: string;
+    /**
+     * Traducciones del texto de la pregunta por código de idioma
+     */
+    textos?: {
+        [key: string]: string;
+    };
 };
 
 export type Seccion = {
     id: string;
     numero: number;
     titulo: string;
+    /**
+     * Traducciones del título de la sección por código de idioma
+     */
+    titulos?: {
+        [key: string]: string;
+    };
     preguntas: Array<Pregunta>;
 };
 
@@ -41,20 +61,6 @@ export type DeclaracionInput = {
     dniNie: string;
     email: string;
     telefono: string;
-    viviendaAlquiler: RespuestaYn;
-    alquilerMenos35?: RespuestaYn;
-    viviendaPropiedad: RespuestaYn;
-    propiedadAntes2013?: RespuestaYn;
-    pisosAlquiladosTerceros: RespuestaYn;
-    segundaResidencia: RespuestaYn;
-    familiaNumerosa: RespuestaYn;
-    ayudasGobierno: RespuestaYn;
-    mayores65ACargo: RespuestaYn;
-    mayoresConviven?: RespuestaYn;
-    hijosMenores26: RespuestaYn;
-    hijosConviven?: RespuestaYn;
-    ingresosJuego: RespuestaYn;
-    ingresosInversiones: RespuestaYn;
     /**
      * Anverso del DNI/NIE (PDF, JPG, PNG; máx. 5 MB)
      */
@@ -67,6 +73,7 @@ export type DeclaracionInput = {
      * Documentación adicional (nóminas, certificados, etc.)
      */
     docAdicional?: Array<Blob | File>;
+    [key: string]: RespuestaYn | Blob | File | Array<Blob | File> | string | string | string | string | string | Blob | File | Array<Blob | File> | undefined;
 };
 
 export type DeclaracionCreada = {
@@ -97,22 +104,9 @@ export type Declaracion = DeclaracionCreada & {
     dniNie: string;
     email: string;
     telefono: string;
-    viviendaAlquiler: RespuestaYn;
-    alquilerMenos35?: RespuestaYn;
-    viviendaPropiedad: RespuestaYn;
-    propiedadAntes2013?: RespuestaYn;
-    pisosAlquiladosTerceros: RespuestaYn;
-    segundaResidencia: RespuestaYn;
-    familiaNumerosa: RespuestaYn;
-    ayudasGobierno: RespuestaYn;
-    mayores65ACargo: RespuestaYn;
-    mayoresConviven?: RespuestaYn;
-    hijosMenores26: RespuestaYn;
-    hijosConviven?: RespuestaYn;
-    ingresosJuego: RespuestaYn;
-    ingresosInversiones: RespuestaYn;
     actualizadoEn: string;
-    documentos: Array<Documento>;
+    documentos?: Array<Documento>;
+    [key: string]: RespuestaYn | string | string | string | Array<Documento> | undefined;
 };
 
 export type ListaDeclaraciones = {
@@ -255,6 +249,30 @@ export type IdiomaContentInput = {
     content: {
         [key: string]: string;
     };
+};
+
+export type TraduccionesFaltantes = {
+    /**
+     * Código del idioma usado como referencia
+     */
+    referencia?: string;
+    /**
+     * Número total de claves en el idioma de referencia
+     */
+    total_claves?: number;
+    /**
+     * Mapa idioma → lista de claves que le faltan
+     */
+    faltantes?: {
+        [key: string]: Array<string>;
+    };
+    /**
+     * Resumen con el número de claves faltantes por idioma
+     */
+    resumen?: Array<{
+        idioma?: string;
+        total_faltantes?: number;
+    }>;
 };
 
 /**
@@ -1022,3 +1040,36 @@ export type UpdateIdiomaContentResponses = {
 };
 
 export type UpdateIdiomaContentResponse = UpdateIdiomaContentResponses[keyof UpdateIdiomaContentResponses];
+
+export type GetMissingTranslationsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Código del idioma de referencia o `static` (valor por defecto).
+         * Usa `static` para comparar contra las claves del código fuente del
+         * frontend sin depender de ningún idioma base en la BD.
+         *
+         */
+        ref?: string;
+    };
+    url: '/admin/traducciones/faltantes';
+};
+
+export type GetMissingTranslationsErrors = {
+    /**
+     * El idioma de referencia no existe o no está activo
+     */
+    404: Error;
+};
+
+export type GetMissingTranslationsError = GetMissingTranslationsErrors[keyof GetMissingTranslationsErrors];
+
+export type GetMissingTranslationsResponses = {
+    /**
+     * Resumen de traducciones faltantes
+     */
+    200: TraduccionesFaltantes;
+};
+
+export type GetMissingTranslationsResponse = GetMissingTranslationsResponses[keyof GetMissingTranslationsResponses];
