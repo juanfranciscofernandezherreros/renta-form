@@ -399,13 +399,10 @@ async function createPreguntaFormulario({ texto, textos } = {}) {
 
 async function deletePreguntaFormulario(id) {
   if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
-  if (ID_ORDER.has(id)) {
-    return {
-      data: null,
-      error: { message: 'No se puede eliminar una pregunta canónica del formulario' },
-      status: 400,
-    }
-  }
+  // Allow deleting any pregunta, including canonical ones.  The static
+  // catalogue (backend/data/preguntas.js) keeps the id↔campo mapping for any
+  // canonical row that is still present in the DB; deleting the row simply
+  // removes that question from the form and the admin list.
   try {
     const { rowCount } = await pool.query(
       'DELETE FROM preguntas WHERE id = $1',
