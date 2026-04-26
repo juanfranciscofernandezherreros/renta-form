@@ -65,10 +65,8 @@ CREATE TABLE IF NOT EXISTS preguntas (
 -- without `campo` / `orden` (pre-multi-section schema). The CREATE TABLE
 -- above is a no-op in that case, so we must explicitly add them here
 -- before any index that references them.
-ALTER TABLE preguntas ADD COLUMN IF NOT EXISTS campo          VARCHAR(100);
-ALTER TABLE preguntas ADD COLUMN IF NOT EXISTS orden          INTEGER     NOT NULL DEFAULT 0;
-ALTER TABLE preguntas ADD COLUMN IF NOT EXISTS texto          JSONB       NOT NULL DEFAULT '{}';
-ALTER TABLE preguntas ADD COLUMN IF NOT EXISTS actualizada_en TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE preguntas ADD COLUMN IF NOT EXISTS campo VARCHAR(100);
+ALTER TABLE preguntas ADD COLUMN IF NOT EXISTS orden INTEGER NOT NULL DEFAULT 0;
 CREATE INDEX IF NOT EXISTS idx_preguntas_orden ON preguntas (orden);
 
 -- 5. Tabla: Declaraciones (sólo datos personales — las respuestas viven
