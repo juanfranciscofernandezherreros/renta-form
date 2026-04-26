@@ -129,10 +129,6 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
   }
 
   const handleDelete = async (pregunta) => {
-    if (pregunta.canonica) {
-      showToast('No se puede eliminar una pregunta canónica del formulario', 'error')
-      return
-    }
     const confirmText = (pregunta.texto || '').slice(0, 80)
     if (!window.confirm(`¿Eliminar la pregunta "${confirmText}"? Esta acción no se puede deshacer.`)) {
       return
@@ -204,16 +200,14 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
                       >
                         ✏️ Editar
                       </button>
-                      {!p.canonica && (
-                        <button
-                          type="button"
-                          className="btn btn-danger btn-sm btn-xs"
-                          onClick={() => handleDelete(p)}
-                          title="Eliminar pregunta"
-                        >
-                          🗑️ Eliminar
-                        </button>
-                      )}
+                      <button
+                        type="button"
+                        className="btn btn-danger btn-sm btn-xs"
+                        onClick={() => handleDelete(p)}
+                        title="Eliminar pregunta"
+                      >
+                        🗑️ Eliminar
+                      </button>
                     </div>
                   </td>
                 </tr>
