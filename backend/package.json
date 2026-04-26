@@ -20,7 +20,8 @@
     "seed:admin": "node db/seedAdmin.js"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=20.0.0",
+    "npm": ">=11.13.0"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

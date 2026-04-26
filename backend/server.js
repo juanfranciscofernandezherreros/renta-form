@@ -86,9 +86,27 @@ function startListening() {
 }
 
 const migrate = require('./db/migrate')
-migrate()
-  .then(startListening)
-  .catch((err) => {
-    console.error('[migrate] Migration failed, aborting startup:', err)
-    process.exit(1)
-  })
+
+// Retry the migration up to MAX_RETRIES times with exponential back-off.
+// On Heroku the database container sometimes isn't fully ready when the dyno
+// first starts, causing a transient ECONNREFUSED that resolves within seconds.
+const MAX_RETRIES = 5
+const RETRY_BASE_MS = 2000
+
+async function migrateWithRetry(attempt = 1) {
+  try {
+    await migrate()
+  } catch (err) {
+    const msg = err.message || err.code || String(err)
+    if (attempt >= MAX_RETRIES) {
+      console.error(`[migrate] Migration failed after ${MAX_RETRIES} attempts, aborting startup:`, err)
+      process.exit(1)
+    }
+    const delay = RETRY_BASE_MS * Math.pow(2, attempt - 1)
+    console.warn(`[migrate] Attempt ${attempt} failed (${msg}). Retrying in ${delay}ms…`)
+    await new Promise((resolve) => setTimeout(resolve, delay))
+    return migrateWithRetry(attempt + 1)
+  }
+}
+
+migrateWithRetry().then(startListening)
