@@ -131,28 +131,6 @@ async function migrate() {
         ADD COLUMN IF NOT EXISTS ingresos_inversiones respuesta_yn
     `)
 
-    // All Sí/No answer columns are now optional — drop legacy NOT NULL
-    // constraints so empty responses are allowed. (DROP NOT NULL on an
-    // already-nullable column is a no-op; we list every YN column for
-    // consistency with init.sql.)
-    await client.query(`
-      ALTER TABLE declaraciones
-        ALTER COLUMN vivienda_alquiler         DROP NOT NULL,
-        ALTER COLUMN alquiler_menos_35         DROP NOT NULL,
-        ALTER COLUMN vivienda_propiedad        DROP NOT NULL,
-        ALTER COLUMN propiedad_antes_2013      DROP NOT NULL,
-        ALTER COLUMN pisos_alquilados_terceros DROP NOT NULL,
-        ALTER COLUMN segunda_residencia        DROP NOT NULL,
-        ALTER COLUMN familia_numerosa          DROP NOT NULL,
-        ALTER COLUMN ayudas_gobierno           DROP NOT NULL,
-        ALTER COLUMN mayores_65_a_cargo        DROP NOT NULL,
-        ALTER COLUMN mayores_conviven          DROP NOT NULL,
-        ALTER COLUMN hijos_menores_26          DROP NOT NULL,
-        ALTER COLUMN hijos_conviven            DROP NOT NULL,
-        ALTER COLUMN ingresos_juego            DROP NOT NULL,
-        ALTER COLUMN ingresos_inversiones      DROP NOT NULL
-    `)
-
   } finally {
     client.release()
   }
