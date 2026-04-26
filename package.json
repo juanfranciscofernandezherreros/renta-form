@@ -15,6 +15,7 @@
     "start:backend": "cd backend && npm start",
     "start:db": "cd backend && npm run start:db",
     "migrate": "cd backend && npm run migrate",
+    "tablas": "cd backend && npm run tablas",
     "seed": "cd backend && npm run seed",
     "db:setup": "cd backend && npm run db:setup",
     "db:setup-all": "cd backend && npm run db:setup-all",
