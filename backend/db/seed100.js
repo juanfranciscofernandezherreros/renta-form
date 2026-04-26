@@ -114,18 +114,18 @@ async function seed100(client) {
     console.log('[seed100] Seeding 14 preguntas...')
     for (const p of PREGUNTAS_14) {
       await client.query(
-        `INSERT INTO preguntas (campo, texto)
+        `INSERT INTO preguntas (id, texto)
          VALUES ($1, $2::jsonb)
-         ON CONFLICT (campo) DO UPDATE SET texto = EXCLUDED.texto`,
-        [p.campo, JSON.stringify(p.texto)]
+         ON CONFLICT (id) DO UPDATE SET texto = EXCLUDED.texto`,
+        [p.id, JSON.stringify(p.texto)]
       )
     }
 
-    // Delete any preguntas whose campo is not in the canonical 14-question list
+    // Delete any preguntas whose id is not in the canonical 14-question list
     // (cleans up rows from previous schemas/seeds).
     await client.query(
-      'DELETE FROM preguntas WHERE campo IS NULL OR NOT (campo = ANY($1::text[]))',
-      [PREGUNTAS_14.map(p => p.campo)]
+      'DELETE FROM preguntas WHERE NOT (id = ANY($1::uuid[]))',
+      [PREGUNTAS_14.map(p => p.id)]
     )
 
     console.log('[seed100] 14 preguntas seeded.')

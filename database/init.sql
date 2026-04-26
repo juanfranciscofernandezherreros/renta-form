@@ -50,12 +50,13 @@ CREATE TABLE IF NOT EXISTS usuarios (
 );
 
 -- 4. Tabla: Preguntas (Traducciones en JSONB)
+-- El identificador estable es la UUID `id`; los seeds insertan UUIDs fijos
+-- definidos en backend/data/preguntas.js, que también mantiene el mapeo
+-- id ↔ campo (camelCase) usado por el API público.
 CREATE TABLE IF NOT EXISTS preguntas (
     id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    campo          VARCHAR(100) NOT NULL,
     texto          JSONB        NOT NULL DEFAULT '{}', -- Estructura: {"es": "", "fr": "", "ca": "", "en": ""}
-    actualizada_en TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    CONSTRAINT uq_preguntas_campo UNIQUE (campo)
+    actualizada_en TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
 
 -- 5. Tabla: Declaraciones

@@ -17,19 +17,19 @@ async function seedPreguntas(client) {
     console.log('[seedPreguntas] Seeding preguntas...')
     for (const p of preguntas) {
       await client.query(
-        `INSERT INTO preguntas (campo, texto)
+        `INSERT INTO preguntas (id, texto)
          VALUES ($1, $2::jsonb)
-         ON CONFLICT (campo) DO UPDATE SET texto = EXCLUDED.texto`,
-        [p.campo, JSON.stringify(p.texto)]
+         ON CONFLICT (id) DO UPDATE SET texto = EXCLUDED.texto`,
+        [p.id, JSON.stringify(p.texto)]
       )
     }
 
-    // Delete any preguntas whose campo is not in the canonical 14-question
+    // Delete any preguntas whose id is not in the canonical 14-question
     // catalogue (cleans up rows from previous schemas/seeds or from manual
     // inserts via the admin UI).
     await client.query(
-      'DELETE FROM preguntas WHERE campo IS NULL OR NOT (campo = ANY($1::text[]))',
-      [preguntas.map(p => p.campo)]
+      'DELETE FROM preguntas WHERE NOT (id = ANY($1::uuid[]))',
+      [preguntas.map(p => p.id)]
     )
 
     console.log(`[seedPreguntas] ${preguntas.length} preguntas seeded.`)

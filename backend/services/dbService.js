@@ -239,25 +239,28 @@ async function changePassword({ dniNie, oldPassword, newPassword }) {
 // ── IRPF preguntas (loaded from DB) ──────────────────────────────────────
 
 // Static catalogue used as the canonical ordering of preguntas.  Each entry
-// has a stable `campo` identifier that is used as the public id of the
-// pregunta (it matches the column name in declaraciones).
+// has a stable UUID `id` (primary key in the DB) and a `campo` identifier
+// (camelCase, matching the column name in declaraciones).  The `campo`
+// column was dropped from the DB; the id↔campo mapping lives only here and
+// is used to translate the DB row id into the public id returned by the API.
 const PREGUNTAS_CATALOGO = require('../data/preguntas')
-const CAMPO_ORDER = new Map(PREGUNTAS_CATALOGO.map((p, idx) => [p.campo, idx]))
+const ID_ORDER = new Map(PREGUNTAS_CATALOGO.map((p, idx) => [p.id, idx]))
+const ID_TO_CAMPO = new Map(PREGUNTAS_CATALOGO.map(p => [p.id, p.campo]))
+const CANONICAL_IDS = PREGUNTAS_CATALOGO.map(p => p.id)
 
 async function getPreguntas(lang) {
   try {
     const { rows } = await pool.query(
-      `SELECT id, campo, texto
-       FROM preguntas`
+      `SELECT id, texto
+       FROM preguntas
+       WHERE id = ANY($1::uuid[])`,
+      [CANONICAL_IDS]
     )
-    // Order rows according to the canonical static catalogue order.  Rows
-    // whose campo is not part of the catalogue are appended at the end,
-    // sorted alphabetically by campo for stability.
+    // Order rows according to the canonical static catalogue order.
     rows.sort((a, b) => {
-      const ai = CAMPO_ORDER.has(a.campo) ? CAMPO_ORDER.get(a.campo) : Number.MAX_SAFE_INTEGER
-      const bi = CAMPO_ORDER.has(b.campo) ? CAMPO_ORDER.get(b.campo) : Number.MAX_SAFE_INTEGER
-      if (ai !== bi) return ai - bi
-      return String(a.campo || '').localeCompare(String(b.campo || ''))
+      const ai = ID_ORDER.has(a.id) ? ID_ORDER.get(a.id) : Number.MAX_SAFE_INTEGER
+      const bi = ID_ORDER.has(b.id) ? ID_ORDER.get(b.id) : Number.MAX_SAFE_INTEGER
+      return ai - bi
     })
     const preguntas = rows.map(r => {
       let textos
@@ -271,7 +274,9 @@ async function getPreguntas(lang) {
       }
       // Use the requested language, fall back to 'es', then any available value
       const texto = (lang && textos[lang]) || textos.es || Object.values(textos)[0] || ''
-      return { id: r.campo ?? r.id, texto, textos }
+      // The public id of the pregunta is its camelCase `campo` (matches the
+      // column name in declaraciones), not the internal UUID.
+      return { id: ID_TO_CAMPO.get(r.id) ?? r.id, texto, textos }
     })
     return { data: { secciones: [{ id: 'general', numero: 1, titulo: '', titulos: {}, preguntas }] }, error: null }
   } catch (err) {
@@ -310,26 +315,25 @@ function rowToPreguntaFormulario(r) {
 
 async function listPreguntasFormulario({ page = 1, limit = 10 } = {}) {
   try {
-    const campos = PREGUNTAS_CATALOGO.map(p => p.campo)
     const countRes = await pool.query(
-      'SELECT COUNT(*) FROM preguntas WHERE campo = ANY($1::text[])',
-      [campos]
+      'SELECT COUNT(*) FROM preguntas WHERE id = ANY($1::uuid[])',
+      [CANONICAL_IDS]
     )
     const total = parseInt(countRes.rows[0].count, 10)
     const offset = (page - 1) * limit
     const { rows } = await pool.query(
-      `SELECT id, campo, texto, actualizada_en
+      `SELECT id, texto, actualizada_en
        FROM preguntas
-       WHERE campo = ANY($1::text[])
-       ORDER BY campo, id
+       WHERE id = ANY($1::uuid[])
+       ORDER BY id
        LIMIT $2 OFFSET $3`,
-      [campos, limit, offset]
+      [CANONICAL_IDS, limit, offset]
     )
     // Order rows according to the canonical static catalogue order so the
     // admin view always lists the 14 simple questions in the expected order.
     rows.sort((a, b) => {
-      const ai = CAMPO_ORDER.has(a.campo) ? CAMPO_ORDER.get(a.campo) : Number.MAX_SAFE_INTEGER
-      const bi = CAMPO_ORDER.has(b.campo) ? CAMPO_ORDER.get(b.campo) : Number.MAX_SAFE_INTEGER
+      const ai = ID_ORDER.has(a.id) ? ID_ORDER.get(a.id) : Number.MAX_SAFE_INTEGER
+      const bi = ID_ORDER.has(b.id) ? ID_ORDER.get(b.id) : Number.MAX_SAFE_INTEGER
       return ai - bi
     })
     return { data: { data: rows.map(rowToPreguntaFormulario), total, page, limit }, error: null }

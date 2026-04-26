@@ -107,12 +107,11 @@ When('el administrador navega a la pestaña de preguntas del formulario', async 
 })
 
 Then('la tabla muestra las preguntas con columna Campo', async function () {
+  // Obsolete: the `campo` column was removed from the preguntas table and
+  // the admin UI no longer exposes a "Campo" column.  Kept as a no-op so
+  // any external feature file that still references this step does not
+  // crash; the matching scenario in features/preguntas.feature was removed.
   await this.page.waitForSelector('table', { timeout: 10000 })
-  const headers = await this.page.locator('table th').allInnerTexts()
-  const hasCampoColumn = headers.some(h => h.toLowerCase().includes('campo'))
-  if (!hasCampoColumn) {
-    throw new Error(`La columna "Campo" no aparece en la tabla. Cabeceras encontradas: ${headers.join(', ')}`)
-  }
 })
 
 When('el administrador edita la primera pregunta con texto {string}', async function (newText) {

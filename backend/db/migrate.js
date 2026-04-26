@@ -37,69 +37,79 @@ async function migrate() {
         DROP COLUMN IF EXISTS seccion_titulos
     `)
 
-    // Ensure preguntas has the campo column (replaces the legacy orden column)
-    await client.query(`ALTER TABLE preguntas ADD COLUMN IF NOT EXISTS campo VARCHAR(100)`)
-
-    // Backfill campo for legacy rows that still rely on the `orden` column
-    // before we drop it.  This mapping mirrors the canonical 14-question
-    // catalogue so that pre-existing rows keep their identity.
-    const ordenExists = await client.query(`
+    // ──────────────────────────────────────────────────────────────────────
+    // Migrate the legacy `campo` column away.  The DB no longer stores the
+    // camelCase `campo` identifier; the canonical mapping campo→UUID lives
+    // in backend/data/preguntas.js and is exposed by the API.  For DBs that
+    // still have a `campo` column, we re-key existing rows to the canonical
+    // UUIDs (so admins keep their localised text), drop any orphan rows,
+    // and finally drop the column + its unique constraint.
+    // ──────────────────────────────────────────────────────────────────────
+    const campoExists = await client.query(`
       SELECT 1 FROM information_schema.columns
        WHERE table_schema = 'public'
          AND table_name = 'preguntas'
-         AND column_name = 'orden'
+         AND column_name = 'campo'
     `)
-    if (ordenExists.rowCount) {
-      const ORDEN_TO_CAMPO = {
-        1:  'viviendaAlquiler',
-        2:  'alquilerMenos35',
-        3:  'viviendaPropiedad',
-        4:  'propiedadAntes2013',
-        5:  'pisosAlquiladosTerceros',
-        6:  'segundaResidencia',
-        7:  'ayudasGobierno',
-        8:  'familiaNumerosa',
-        9:  'mayores65ACargo',
-        10: 'mayoresConviven',
-        11: 'hijosMenores26',
-        12: 'hijosConviven',
-        13: 'ingresosJuego',
-        14: 'ingresosInversiones',
+    if (campoExists.rowCount) {
+      // First, backfill `campo` for legacy rows that still rely on the
+      // even older `orden` column before we look at it.
+      const ordenExists = await client.query(`
+        SELECT 1 FROM information_schema.columns
+         WHERE table_schema = 'public'
+           AND table_name = 'preguntas'
+           AND column_name = 'orden'
+      `)
+      if (ordenExists.rowCount) {
+        const ORDEN_TO_CAMPO = {
+          1:  'viviendaAlquiler',
+          2:  'alquilerMenos35',
+          3:  'viviendaPropiedad',
+          4:  'propiedadAntes2013',
+          5:  'pisosAlquiladosTerceros',
+          6:  'segundaResidencia',
+          7:  'ayudasGobierno',
+          8:  'familiaNumerosa',
+          9:  'mayores65ACargo',
+          10: 'mayoresConviven',
+          11: 'hijosMenores26',
+          12: 'hijosConviven',
+          13: 'ingresosJuego',
+          14: 'ingresosInversiones',
+        }
+        for (const [orden, campo] of Object.entries(ORDEN_TO_CAMPO)) {
+          await client.query(
+            `UPDATE preguntas SET campo = $1 WHERE campo IS NULL AND orden = $2`,
+            [campo, Number(orden)]
+          )
+        }
+        await client.query(`ALTER TABLE preguntas DROP CONSTRAINT IF EXISTS uq_preguntas_orden`)
+        await client.query(`ALTER TABLE preguntas DROP COLUMN IF EXISTS orden`)
       }
-      for (const [orden, campo] of Object.entries(ORDEN_TO_CAMPO)) {
+
+      // Re-key existing rows to the canonical UUIDs from the static
+      // catalogue so the UUID PK becomes the stable identity.
+      const PREGUNTAS_CATALOGO = require('../data/preguntas')
+      for (const p of PREGUNTAS_CATALOGO) {
         await client.query(
-          `UPDATE preguntas SET campo = $1 WHERE campo IS NULL AND orden = $2`,
-          [campo, Number(orden)]
+          `UPDATE preguntas SET id = $1 WHERE campo = $2 AND id <> $1`,
+          [p.id, p.campo]
         )
       }
+
+      // Drop any orphan rows whose campo isn't part of the canonical
+      // 14-question catalogue (these would otherwise pollute the API).
+      await client.query(
+        `DELETE FROM preguntas
+          WHERE campo IS NULL
+             OR NOT (campo = ANY($1::text[]))`,
+        [PREGUNTAS_CATALOGO.map(p => p.campo)]
+      )
+
+      // Finally drop the unique constraint and the column itself.
+      await client.query(`ALTER TABLE preguntas DROP CONSTRAINT IF EXISTS uq_preguntas_campo`)
+      await client.query(`ALTER TABLE preguntas DROP COLUMN IF EXISTS campo`)
     }
-    // Any remaining rows without a campo are orphans from legacy schemas
-    // (they have no mapping to the canonical 14-question catalogue) and
-    // would otherwise pollute the admin/preguntas list.  Drop them.
-    await client.query(
-      `DELETE FROM preguntas WHERE campo IS NULL`
-    )
-
-    // Drop the legacy orden column and its unique constraint if they still exist
-    await client.query(`ALTER TABLE preguntas DROP CONSTRAINT IF EXISTS uq_preguntas_orden`)
-    await client.query(`ALTER TABLE preguntas DROP COLUMN IF EXISTS orden`)
-
-    // Enforce NOT NULL now that all rows have a value
-    await client.query(`ALTER TABLE preguntas ALTER COLUMN campo SET NOT NULL`)
-
-    // Ensure campo is unique so seeding can use ON CONFLICT (campo)
-    await client.query(`
-      DO $$
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_constraint
-          WHERE conname = 'uq_preguntas_campo'
-            AND conrelid = 'preguntas'::regclass
-        ) THEN
-          ALTER TABLE preguntas ADD CONSTRAINT uq_preguntas_campo UNIQUE (campo);
-        END IF;
-      END $$
-    `)
 
     // Create idiomas/traducciones tables if they were not in the original schema
     await client.query(`
