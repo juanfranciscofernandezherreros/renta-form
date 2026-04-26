@@ -60,10 +60,10 @@ const LANG_FLAGS = {
   it: '🇮🇹',
 }
 
-const YesNoField = ({ label, name, value, onChange, indent, t, questionNumber, onAnswer }) => {
+const YesNoField = ({ label, name, value, onChange, t, questionNumber, onAnswer }) => {
   const [ringKey, setRingKey] = useState(null)
   return (
-    <div className={`question-card${indent ? ' indent' : ''}${value ? ' answered' : ''}`} style={{ position: 'relative' }}>
+    <div className={`question-card${value ? ' answered' : ''}`} style={{ position: 'relative' }}>
       {ringKey != null && <div key={ringKey} className={`answer-ring${value === 'no' ? ' no' : ''}`} />}
       <div className="question-card-text">
         {questionNumber != null && (
@@ -556,7 +556,6 @@ export default function App({ editData, onEditDataConsumed }) {
                           value={form[pregunta.id] ?? ''}
                           onChange={handleChange}
                           label={pregunta.textos?.[lang] ?? pregunta.texto}
-                          indent={false}
                           t={t}
                           onAnswer={handleAnswer}
                         />
