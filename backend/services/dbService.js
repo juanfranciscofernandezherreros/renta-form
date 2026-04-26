@@ -515,34 +515,25 @@ async function listDeclaracionesAll({ dniNie, estado, page = 1, limit = 20 }) {
 }
 
 const REQUIRED_TEXT_FIELDS = ['nombre', 'apellidos', 'dniNie', 'telefono']
-const REQUIRED_YN_FIELDS = [
-  'viviendaAlquiler', 'viviendaPropiedad', 'pisosAlquiladosTerceros', 'segundaResidencia',
-  'familiaNumerosa', 'ayudasGobierno', 'mayores65ACargo', 'hijosMenores26',
+// All Sí/No answer fields are optional. They map 1:1 to nullable
+// `respuesta_yn` columns in `declaraciones`; empty/missing values are
+// stored as NULL via `toYN()`.
+const YN_FIELDS = [
+  'viviendaAlquiler', 'alquilerMenos35', 'viviendaPropiedad', 'propiedadAntes2013',
+  'pisosAlquiladosTerceros', 'segundaResidencia', 'familiaNumerosa', 'ayudasGobierno',
+  'mayores65ACargo', 'mayoresConviven', 'hijosMenores26', 'hijosConviven',
   'ingresosJuego', 'ingresosInversiones',
 ]
-const OPTIONAL_YN_FIELDS = ['alquilerMenos35', 'propiedadAntes2013', 'mayoresConviven', 'hijosConviven']
 
 function validateDeclaracionBody(body, { requireAll = false } = {}) {
   if (requireAll) {
     for (const field of REQUIRED_TEXT_FIELDS) {
       if (!body[field]) return `Campo obligatorio: ${field}`
     }
-    for (const field of REQUIRED_YN_FIELDS) {
-      if (body[field] !== 'si' && body[field] !== 'no') {
-        return `El campo '${field}' debe ser 'si' o 'no'`
-      }
-    }
   }
-  for (const field of OPTIONAL_YN_FIELDS) {
+  for (const field of YN_FIELDS) {
     if (body[field] !== undefined && body[field] !== null && body[field] !== '' && body[field] !== 'si' && body[field] !== 'no') {
       return `El campo '${field}' debe ser 'si', 'no' o estar vacío`
-    }
-  }
-  if (!requireAll) {
-    for (const field of REQUIRED_YN_FIELDS) {
-      if (body[field] !== undefined && body[field] !== null && body[field] !== '' && body[field] !== 'si' && body[field] !== 'no') {
-        return `El campo '${field}' debe ser 'si' o 'no'`
-      }
     }
   }
   return null
@@ -591,10 +582,10 @@ async function createDeclaracion(body) {
       ) RETURNING id, estado, creado_en`,
       [
         nombre, apellidos, dniNie, email, telefono,
-        viviendaAlquiler, toYN(alquilerMenos35), viviendaPropiedad, toYN(propiedadAntes2013),
-        pisosAlquiladosTerceros, segundaResidencia,
-        familiaNumerosa, ayudasGobierno, mayores65ACargo, toYN(mayoresConviven),
-        hijosMenores26, toYN(hijosConviven), ingresosJuego, ingresosInversiones,
+        toYN(viviendaAlquiler), toYN(alquilerMenos35), toYN(viviendaPropiedad), toYN(propiedadAntes2013),
+        toYN(pisosAlquiladosTerceros), toYN(segundaResidencia),
+        toYN(familiaNumerosa), toYN(ayudasGobierno), toYN(mayores65ACargo), toYN(mayoresConviven),
+        toYN(hijosMenores26), toYN(hijosConviven), toYN(ingresosJuego), toYN(ingresosInversiones),
       ]
     ))
   } catch (err) {
@@ -674,7 +665,7 @@ async function updateDeclaracion(id, body) {
     ingresosJuego: 'ingresos_juego',
     ingresosInversiones: 'ingresos_inversiones',
   }
-  const ALL_YN_FIELDS = new Set([...REQUIRED_YN_FIELDS, ...OPTIONAL_YN_FIELDS])
+  const ALL_YN_FIELDS = new Set(YN_FIELDS)
   const setClauses = []
   const params = []
   for (const [camel, snake] of Object.entries(FIELD_MAP)) {

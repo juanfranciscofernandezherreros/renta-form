@@ -879,16 +879,6 @@ components:
         - dniNie
         - email
         - telefono
-        - viviendaAlquiler
-        - viviendaPropiedad
-        - pisosAlquiladosTerceros
-        - segundaResidencia
-        - familiaNumerosa
-        - ayudasGobierno
-        - mayores65ACargo
-        - hijosMenores26
-        - ingresosJuego
-        - ingresosInversiones
       properties:
         # 1. Identificación
         nombre:
@@ -1012,16 +1002,6 @@ components:
             - dniNie
             - email
             - telefono
-            - viviendaAlquiler
-            - viviendaPropiedad
-            - pisosAlquiladosTerceros
-            - segundaResidencia
-            - familiaNumerosa
-            - ayudasGobierno
-            - mayores65ACargo
-            - hijosMenores26
-            - ingresosJuego
-            - ingresosInversiones
             - actualizadoEn
             - documentos
           properties:

@@ -71,21 +71,21 @@ CREATE TABLE IF NOT EXISTS declaraciones (
     email                     VARCHAR(254)      NOT NULL,
     telefono                  VARCHAR(20)       NOT NULL,
 
-    -- Respuestas (columnas fijas de la declaración)
-    vivienda_alquiler         respuesta_yn      NOT NULL,
+    -- Respuestas (columnas fijas de la declaración) — todas opcionales
+    vivienda_alquiler         respuesta_yn,
     alquiler_menos_35         respuesta_yn,
-    vivienda_propiedad        respuesta_yn      NOT NULL,
+    vivienda_propiedad        respuesta_yn,
     propiedad_antes_2013      respuesta_yn,
-    pisos_alquilados_terceros respuesta_yn      NOT NULL,
-    segunda_residencia        respuesta_yn      NOT NULL,
-    familia_numerosa          respuesta_yn      NOT NULL,
-    ayudas_gobierno           respuesta_yn      NOT NULL,
-    mayores_65_a_cargo        respuesta_yn      NOT NULL,
+    pisos_alquilados_terceros respuesta_yn,
+    segunda_residencia        respuesta_yn,
+    familia_numerosa          respuesta_yn,
+    ayudas_gobierno           respuesta_yn,
+    mayores_65_a_cargo        respuesta_yn,
     mayores_conviven          respuesta_yn,
-    hijos_menores_26          respuesta_yn      NOT NULL,
+    hijos_menores_26          respuesta_yn,
     hijos_conviven            respuesta_yn,
-    ingresos_juego            respuesta_yn      NOT NULL,
-    ingresos_inversiones      respuesta_yn      NOT NULL,
+    ingresos_juego            respuesta_yn,
+    ingresos_inversiones      respuesta_yn,
 
     CONSTRAINT chk_dni_nie_formato       CHECK (dni_nie ~ '^[0-9XYZ][0-9]{7}[A-Z]$'),
     CONSTRAINT uq_declaraciones_dni_nie  UNIQUE (dni_nie)
