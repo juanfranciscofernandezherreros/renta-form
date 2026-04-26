@@ -1141,10 +1141,6 @@ components:
           example: Ingresos Extraordinarios
         tipoRespuesta:
           $ref: '#/components/schemas/TipoRespuesta'
-        orden:
-          type: integer
-          minimum: 0
-          default: 0
         activa:
           type: boolean
           default: true
@@ -1247,10 +1243,6 @@ components:
           type: string
           description: Nombre de la sección
           example: Ingresos Extraordinarios e Inversiones
-        orden:
-          type: integer
-          minimum: 1
-          default: 1
         activa:
           type: boolean
           default: true

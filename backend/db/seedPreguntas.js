@@ -17,10 +17,10 @@ async function seedPreguntas(client) {
     console.log('[seedPreguntas] Seeding preguntas...')
     for (const p of preguntas) {
       await client.query(
-        `INSERT INTO preguntas (texto, orden)
-         VALUES ($1::jsonb, $2)
-         ON CONFLICT (orden) DO UPDATE SET texto = EXCLUDED.texto`,
-        [JSON.stringify(p.texto), p.orden]
+        `INSERT INTO preguntas (campo, texto)
+         VALUES ($1, $2::jsonb)
+         ON CONFLICT (campo) DO UPDATE SET texto = EXCLUDED.texto`,
+        [p.campo, JSON.stringify(p.texto)]
       )
     }
     console.log(`[seedPreguntas] ${preguntas.length} preguntas seeded.`)

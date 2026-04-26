@@ -37,19 +37,65 @@ async function migrate() {
         DROP COLUMN IF EXISTS seccion_titulos
     `)
 
-    // Remove campo column (replaced by static ORDEN_TO_CAMPO mapping in code)
-    await client.query(`ALTER TABLE preguntas DROP COLUMN IF EXISTS campo`)
+    // Ensure preguntas has the campo column (replaces the legacy orden column)
+    await client.query(`ALTER TABLE preguntas ADD COLUMN IF NOT EXISTS campo VARCHAR(100)`)
 
-    // Ensure orden is unique so seeding can use ON CONFLICT (orden)
+    // Backfill campo for legacy rows that still rely on the `orden` column
+    // before we drop it.  This mapping mirrors the canonical 14-question
+    // catalogue so that pre-existing rows keep their identity.
+    const ordenExists = await client.query(`
+      SELECT 1 FROM information_schema.columns
+       WHERE table_schema = 'public'
+         AND table_name = 'preguntas'
+         AND column_name = 'orden'
+    `)
+    if (ordenExists.rowCount) {
+      const ORDEN_TO_CAMPO = {
+        1:  'viviendaAlquiler',
+        2:  'alquilerMenos35',
+        3:  'viviendaPropiedad',
+        4:  'propiedadAntes2013',
+        5:  'pisosAlquiladosTerceros',
+        6:  'segundaResidencia',
+        7:  'ayudasGobierno',
+        8:  'familiaNumerosa',
+        9:  'mayores65ACargo',
+        10: 'mayoresConviven',
+        11: 'hijosMenores26',
+        12: 'hijosConviven',
+        13: 'ingresosJuego',
+        14: 'ingresosInversiones',
+      }
+      for (const [orden, campo] of Object.entries(ORDEN_TO_CAMPO)) {
+        await client.query(
+          `UPDATE preguntas SET campo = $1 WHERE campo IS NULL AND orden = $2`,
+          [campo, Number(orden)]
+        )
+      }
+    }
+    // Any remaining rows without a campo get a unique synthetic identifier so
+    // the NOT NULL UNIQUE constraint can be enforced.
+    await client.query(
+      `UPDATE preguntas SET campo = 'pregunta_' || id::text WHERE campo IS NULL`
+    )
+
+    // Drop the legacy orden column and its unique constraint if they still exist
+    await client.query(`ALTER TABLE preguntas DROP CONSTRAINT IF EXISTS uq_preguntas_orden`)
+    await client.query(`ALTER TABLE preguntas DROP COLUMN IF EXISTS orden`)
+
+    // Enforce NOT NULL now that all rows have a value
+    await client.query(`ALTER TABLE preguntas ALTER COLUMN campo SET NOT NULL`)
+
+    // Ensure campo is unique so seeding can use ON CONFLICT (campo)
     await client.query(`
       DO $$
       BEGIN
         IF NOT EXISTS (
           SELECT 1 FROM pg_constraint
-          WHERE conname = 'uq_preguntas_orden'
+          WHERE conname = 'uq_preguntas_campo'
             AND conrelid = 'preguntas'::regclass
         ) THEN
-          ALTER TABLE preguntas ADD CONSTRAINT uq_preguntas_orden UNIQUE (orden);
+          ALTER TABLE preguntas ADD CONSTRAINT uq_preguntas_campo UNIQUE (campo);
         END IF;
       END $$
     `)
