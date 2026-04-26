@@ -30,14 +30,6 @@ const INITIAL_STATE = {
   ingresosInversiones: '',
 }
 
-// Set of question campo names that have a corresponding column in `declaraciones`.
-// Only these questions will be shown in the wizard; extra questions in the DB catalog
-// are ignored so the form always asks exactly the right set.
-const ID_FIELDS = new Set(['nombre', 'apellidos', 'dniNie', 'email', 'telefono'])
-const QUESTION_CAMPOS = new Set(
-  Object.keys(INITIAL_STATE).filter(k => !ID_FIELDS.has(k))
-)
-
 const STEP_ICONS = ['👤', '🏠', '👨‍👩‍👧', '💶', '📝', '⭐', '❓']
 
 /**
@@ -270,8 +262,9 @@ export default function App({ editData, onEditDataConsumed }) {
     const steps = [{ type: 'id', key: 'id' }]
     for (const seccion of secciones) {
       for (const pregunta of seccion.preguntas) {
-        // Only include questions that have a matching field in the form state
-        if (!QUESTION_CAMPOS.has(pregunta.id)) continue
+        // Reflect the DB `preguntas` table as-is: include every question
+        // returned by the API.  Conditional questions are still hidden when
+        // their parent answer hasn't enabled them (UX behaviour).
         const cond = CONDITIONAL_QUESTIONS[pregunta.id]
         if (cond && form[cond.dependeDe] !== cond.valor) continue
         steps.push({ type: 'question', key: `q:${pregunta.id}`, seccion, pregunta })
