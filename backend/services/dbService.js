@@ -197,7 +197,7 @@ async function loginAdmin({ username, password }) {
     if (!(await verifyPassword(password, user.password_hash))) {
       return { data: null, error: { message: 'Contraseña incorrecta' } }
     }
-    return { data: { username: normalised, role: user.role, email: user.email, token: signToken({ sub: normalised, role: user.role }) }, error: null }
+    return { data: { username: normalised, role: user.role, email: user.email, token: signToken({ sub: normalised, role: user.role }, 5 * 60) }, error: null }
   } catch (err) {
     console.error('loginAdmin DB error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
