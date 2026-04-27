@@ -62,8 +62,9 @@ function parseCsv(input) {
     i += 1
   }
 
-  // Flush the final field/row.  Skip a trailing empty row produced by a
-  // file that ends with a newline.
+  // Flush the final field/row.  Note we always emit it: the caller is
+  // responsible for filtering out fully-empty rows that come from a
+  // trailing newline.
   if (field.length > 0 || row.length > 0) {
     row.push(field)
     rows.push(row)

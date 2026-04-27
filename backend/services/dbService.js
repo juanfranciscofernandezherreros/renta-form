@@ -1004,10 +1004,10 @@ async function getDeclaracion(id) {
 //   nombre,apellidos,dniNie,email,telefono,<campo1>,<campo2>,...
 //
 // where <campoN> is the `campo` of each pregunta currently configured in
-// the database.  Answer cells must be empty, "si" or "no" (case-insensitive,
-// "sí" with accent and "yes"/"no" / true/false also accepted for resilience).
-// Personal fields (nombre, apellidos, dniNie, telefono) are required;
-// `email` is optional.
+// the database.  Answer cells must be empty, "si" or "no".  For resilience
+// we also accept common variants ("sí", "yes"/"y", "true", "1", "no"/"n",
+// "false", "0", case-insensitive).  Personal fields (nombre, apellidos,
+// dniNie, telefono) are required; `email` is optional.
 
 const PERSONAL_HEADERS = ['nombre', 'apellidos', 'dniNie', 'email', 'telefono']
 

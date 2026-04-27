@@ -312,7 +312,7 @@ export default function AdminPage({ onNavigate }) {
         showToast(`Error al importar: ${apiErr.message}`, 'error')
       } else {
         setImportReport(data)
-        showToast(`Importadas ${data.imported} de ${data.total} declaraciones${data.failed ? ` (${data.failed} con error)` : ''}`,
+        showToast(`Importadas ${data.imported} de ${data.total} declaraciones${data.failed ? ` (${data.failed} ${data.failed === 1 ? 'con error' : 'con errores'})` : ''}`,
           data.failed ? 'error' : 'success')
         refresh()
       }
