@@ -53,5 +53,15 @@ module.exports = function authRoutes(svc) {
     send(res, result)
   })
 
+  // POST /v1/auth/change-email
+  router.post('/change-email', authLimiter, async (req, res) => {
+    const { dniNie, password, newEmail } = req.body ?? {}
+    if (!dniNie || !password || !newEmail) {
+      return res.status(400).json({ error: 'dniNie, password y newEmail son obligatorios' })
+    }
+    const result = await svc.changeEmail({ dniNie, password, newEmail })
+    send(res, result)
+  })
+
   return router
 }
