@@ -108,23 +108,6 @@ export default function App({ editData, onEditDataConsumed }) {
   const [questionShake, setQuestionShake] = useState(false)
   const [confettiPieces, setConfettiPieces] = useState([])
   const xpCounterRef = useRef(0)
-  const autoDownloadedRef = useRef(false)
-
-  // Auto-download the declaration PDF as soon as the success view is shown.
-  // Once downloaded, don't trigger again until the user starts a new declaration.
-  useEffect(() => {
-    if (!submitted) {
-      autoDownloadedRef.current = false
-      return
-    }
-    if (autoDownloadedRef.current) return
-    autoDownloadedRef.current = true
-    try {
-      generateDeclaracionPDF(form, secciones, lang)
-    } catch (err) {
-      console.warn('Auto PDF download failed:', err)
-    }
-  }, [submitted, form, secciones, lang])
 
   useEffect(() => {
     if (!editData) return
