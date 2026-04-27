@@ -367,11 +367,6 @@ export default function AdminPage({ onNavigate }) {
         </ul>
         <ul className="navbar-nav ml-auto">
           <li className="nav-item">
-            <button type="button" className="nav-link" onClick={() => onNavigate('#/')}>
-              📋 Formulario
-            </button>
-          </li>
-          <li className="nav-item">
             <button
               type="button"
               className="nav-link text-danger"
