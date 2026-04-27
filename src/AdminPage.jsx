@@ -10,6 +10,7 @@ import {
   getPreguntas,
   bulkImportDeclaraciones,
   getDeclaracionesImportTemplate,
+  sendEmailDeclaracion,
 } from './apiClient.js'
 import { parseCsv, rowsToCsv, BULK_IMPORT_MAX_ROWS } from './csvUtils.js'
 import { translateYN } from './i18nUtils.js'
@@ -252,6 +253,16 @@ export default function AdminPage({ onNavigate }) {
     setExpanded(null)
     showToast('Declaración eliminada correctamente')
     refresh()
+  }
+
+  const [emailSendingId, setEmailSendingId] = useState(null)
+  const handleSendEmail = async (dec) => {
+    if (!dec?.email) return
+    setEmailSendingId(dec.id)
+    const { data, error: apiErr } = await sendEmailDeclaracion({ path: { id: dec.id } })
+    setEmailSendingId(null)
+    if (apiErr) { showToast(`Error al enviar email: ${apiErr.message}`, 'error'); return }
+    showToast(`Email enviado a ${data?.to ?? dec.email}`)
   }
 
   const openEditModal = (dec) => {
@@ -786,6 +797,17 @@ export default function AdminPage({ onNavigate }) {
                       >
                         📄 Descargar PDF
                       </button>
+                      {dec.email && (
+                        <button
+                          type="button"
+                          className="btn btn-secondary"
+                          onClick={() => handleSendEmail(dec)}
+                          disabled={emailSendingId === dec.id}
+                          title={`Enviar declaración por email a ${dec.email}`}
+                        >
+                          {emailSendingId === dec.id ? '⏳ Enviando…' : '📧 Enviar email'}
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="btn btn-danger"

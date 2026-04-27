@@ -130,6 +130,11 @@ export async function deleteDeclaracion(options) {
   return request('DELETE', `/irpf/declaraciones/${encodeURIComponent(id)}`)
 }
 
+export async function sendEmailDeclaracion(options) {
+  const id = options?.path?.id
+  return request('POST', `/irpf/declaraciones/${encodeURIComponent(id)}/email`, { body: {} })
+}
+
 export async function bulkImportDeclaraciones({ csv } = {}) {
   return request('POST', '/admin/declaraciones/import', { body: { csv } })
 }
