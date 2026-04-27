@@ -66,10 +66,6 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
   const [editando, setEditando] = useState(null)
   const [langs, setLangs] = useState(DEFAULT_LANGS)
   const [form, setForm] = useState(() => makeEmptyForm(DEFAULT_LANGS))
-  // Whether the admin has manually edited `campo`. While false (and we're in
-  // create mode) we keep the field in sync with the slugified ES text so the
-  // user does not need to type anything.
-  const [campoTouched, setCampoTouched] = useState(false)
   const [saving, setSaving] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
 
@@ -115,16 +111,12 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
       textos[code] = pregunta.textos?.[code] ?? ''
     }
     setForm({ campo: pregunta.campo ?? '', orden: pregunta.orden ?? '', textos })
-    // Existing preguntas already have a `campo`; treat it as touched so the
-    // ES text → campo auto-sync does not overwrite it on edit.
-    setCampoTouched(true)
     setEditando(pregunta)
     setModal('edit')
   }
 
   const openCreate = () => {
     setForm(makeEmptyForm(langs))
-    setCampoTouched(false)
     setEditando(null)
     setModal('create')
   }
@@ -133,48 +125,47 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
     setModal(null)
     setEditando(null)
     setForm(makeEmptyForm(langs))
-    setCampoTouched(false)
   }
 
   const handleLangChange = (code, value) => {
-    setForm(prev => {
-      const next = { ...prev, textos: { ...prev.textos, [code]: value } }
-      // Auto-sync `campo` from the ES text while the user has not manually
-      // edited it (only in create mode — on edit we keep the existing campo).
-      if (code === 'es' && modal === 'create' && !campoTouched) {
-        next.campo = slugifyToCampo(value)
-      }
-      return next
-    })
+    setForm(prev => ({ ...prev, textos: { ...prev.textos, [code]: value } }))
   }
 
   const handleCampoChange = (value) => {
-    setCampoTouched(true)
     setForm(prev => ({ ...prev, campo: value }))
   }
 
   const handleSave = async () => {
-    const esText = (form.textos.es || '').trim()
-    if (!esText) {
-      showToast('El texto en español (ES) no puede estar vacío', 'error')
+    // Build textos with trimmed non-empty values. We require at least one
+    // non-empty translation in any language — the application may be running
+    // in any of the configured idiomas, so Spanish is not special here.
+    const textos = {}
+    for (const [code, val] of Object.entries(form.textos)) {
+      const trimmed = (val || '').trim()
+      if (trimmed) textos[code] = trimmed
+    }
+    if (Object.keys(textos).length === 0) {
+      showToast('Debes introducir el texto de la pregunta en al menos un idioma', 'error')
       return
     }
+    // Pick a source text for the auto-generated campo. Prefer ES when present
+    // (keeps existing identifiers stable) and otherwise fall back to the first
+    // language in the configured order that has text.
+    const sourceText = textos.es
+      || (langs.map(l => textos[l.code]).find(Boolean))
+      || ''
+
     let campoTrim = (form.campo || '').trim()
     if (modal === 'create') {
-      // If the admin left the field blank, derive it from the ES text and
-      // make it locally unique against the already-loaded preguntas.
-      if (!campoTrim) {
-        const base = slugifyToCampo(esText)
-        if (!base) {
-          showToast('No se pudo generar un identificador automático a partir del texto', 'error')
-          return
-        }
-        campoTrim = uniqueCampo(base, preguntas.map(p => p.campo).filter(Boolean))
-      }
-      if (!/^[a-z][a-zA-Z0-9]*$/.test(campoTrim)) {
-        showToast('El campo debe ser camelCase (e.g. viviendaAlquiler)', 'error')
+      // In create mode the campo input is hidden — always derive it from the
+      // available translations and make it locally unique against the
+      // already-loaded preguntas.
+      const base = slugifyToCampo(sourceText)
+      if (!base) {
+        showToast('No se pudo generar un identificador automático a partir del texto', 'error')
         return
       }
+      campoTrim = uniqueCampo(base, preguntas.map(p => p.campo).filter(Boolean))
     } else if (campoTrim && !/^[a-z][a-zA-Z0-9]*$/.test(campoTrim)) {
       showToast('El campo debe ser camelCase (e.g. viviendaAlquiler)', 'error')
       return
@@ -186,12 +177,6 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
         showToast('El orden debe ser un número entero', 'error')
         return
       }
-    }
-    // Build textos with trimmed non-empty values; always include ES
-    const textos = {}
-    for (const [code, val] of Object.entries(form.textos)) {
-      const trimmed = (val || '').trim()
-      if (trimmed) textos[code] = trimmed
     }
 
     setSaving(true)
@@ -329,18 +314,20 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 16 }}>
               <div style={{ display: 'flex', gap: 12 }}>
-                <div style={{ flex: 2 }}>
-                  <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>
-                    Campo (camelCase){modal === 'create' ? ' — se genera automáticamente' : ''}
-                  </label>
-                  <input
-                    type="text"
-                    value={form.campo ?? ''}
-                    onChange={e => handleCampoChange(e.target.value)}
-                    style={{ width: '100%', boxSizing: 'border-box', fontFamily: 'monospace' }}
-                    placeholder={modal === 'create' ? 'auto desde el texto ES' : 'viviendaAlquiler'}
-                  />
-                </div>
+                {modal !== 'create' && (
+                  <div style={{ flex: 2 }}>
+                    <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>
+                      Campo (camelCase)
+                    </label>
+                    <input
+                      type="text"
+                      value={form.campo ?? ''}
+                      onChange={e => handleCampoChange(e.target.value)}
+                      style={{ width: '100%', boxSizing: 'border-box', fontFamily: 'monospace' }}
+                      placeholder="viviendaAlquiler"
+                    />
+                  </div>
+                )}
                 <div style={{ flex: 1 }}>
                   <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>Orden</label>
                   <input
@@ -355,7 +342,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
               {langs.map(({ code, label }) => (
                 <div key={code}>
                   <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>
-                    {label} ({code.toUpperCase()}){code === 'es' ? ' *' : ''}
+                    {label} ({code.toUpperCase()})
                   </label>
                   <textarea
                     value={form.textos[code] ?? ''}
