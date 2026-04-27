@@ -2,6 +2,8 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import './App.css'
 import { getPreguntas, createDeclaracion, updateDeclaracion, listDeclaraciones } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
+import { generateDeclaracionPDF } from './pdfUtils.js'
+import { translateYN } from './i18nUtils.js'
 
 
 const INITIAL_STATE = {
@@ -103,6 +105,23 @@ export default function App({ editData, onEditDataConsumed }) {
   const [questionShake, setQuestionShake] = useState(false)
   const [confettiPieces, setConfettiPieces] = useState([])
   const xpCounterRef = useRef(0)
+  const autoDownloadedRef = useRef(false)
+
+  // Auto-download the declaration PDF as soon as the success view is shown.
+  // Once downloaded, don't trigger again until the user starts a new declaration.
+  useEffect(() => {
+    if (!submitted) {
+      autoDownloadedRef.current = false
+      return
+    }
+    if (autoDownloadedRef.current) return
+    autoDownloadedRef.current = true
+    try {
+      generateDeclaracionPDF(form, secciones, lang)
+    } catch (err) {
+      console.warn('Auto PDF download failed:', err)
+    }
+  }, [submitted, form, secciones, lang])
 
   useEffect(() => {
     if (!editData) return
@@ -459,9 +478,73 @@ export default function App({ editData, onEditDataConsumed }) {
                 <div className="ib-success-icon">✓</div>
                 <h2>{t('successTitle')}</h2>
                 <p>{t('successText')}</p>
-                <button type="button" className="ib-btn ib-btn-secondary" onClick={handleLimpiar}>
-                  {t('btnSendAnother')}
-                </button>
+
+                <section className="ib-summary" aria-label={t('summaryTitle')}>
+                  <h3 className="ib-summary-title">{t('summaryTitle')}</h3>
+
+                  <div className="ib-summary-section">
+                    <h4 className="ib-summary-section-title">{t('summaryYourData')}</h4>
+                    <dl className="ib-summary-list">
+                      <div className="ib-summary-row">
+                        <dt>{t('fieldNombre')}</dt>
+                        <dd>{form.nombre || '-'}</dd>
+                      </div>
+                      <div className="ib-summary-row">
+                        <dt>{t('fieldApellidos')}</dt>
+                        <dd>{form.apellidos || '-'}</dd>
+                      </div>
+                      <div className="ib-summary-row">
+                        <dt>{t('fieldDniNie')}</dt>
+                        <dd>{form.dniNie || '-'}</dd>
+                      </div>
+                      {form.email && (
+                        <div className="ib-summary-row">
+                          <dt>{t('fieldEmail')}</dt>
+                          <dd>{form.email}</dd>
+                        </div>
+                      )}
+                      <div className="ib-summary-row">
+                        <dt>{t('fieldTelefono')}</dt>
+                        <dd>{form.telefono || '-'}</dd>
+                      </div>
+                    </dl>
+                  </div>
+
+                  {secciones.map(seccion => {
+                    const preguntasConRespuesta = (seccion.preguntas ?? []).filter(p => {
+                      const v = form[p.id]
+                      return v === 'si' || v === 'no'
+                    })
+                    if (preguntasConRespuesta.length === 0) return null
+                    const seccionTitulo = seccion.titulos?.[lang] ?? seccion.titulo ?? ''
+                    return (
+                      <div key={seccion.id} className="ib-summary-section">
+                        <h4 className="ib-summary-section-title">{seccionTitulo}</h4>
+                        <dl className="ib-summary-list">
+                          {preguntasConRespuesta.map(p => (
+                            <div key={p.id} className="ib-summary-row">
+                              <dt>{p.textos?.[lang] ?? p.texto}</dt>
+                              <dd>{translateYN(form[p.id], t)}</dd>
+                            </div>
+                          ))}
+                        </dl>
+                      </div>
+                    )
+                  })}
+                </section>
+
+                <div className="ib-success-actions">
+                  <button
+                    type="button"
+                    className="ib-btn ib-btn-primary"
+                    onClick={() => generateDeclaracionPDF(form, secciones, lang)}
+                  >
+                    {t('btnDownloadPDF')}
+                  </button>
+                  <button type="button" className="ib-btn ib-btn-secondary" onClick={handleLimpiar}>
+                    {t('btnSendAnother')}
+                  </button>
+                </div>
               </div>
             ) : (
               <>

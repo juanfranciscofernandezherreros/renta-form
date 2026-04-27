@@ -387,6 +387,64 @@
 .ib-success h2 { margin: 0 0 6px; font-size: 1.4rem; color: #111827; }
 .ib-success p  { margin: 0 0 20px; color: #6b7280; }
 
+/* ── Post-submit summary ──────────────────────────────────────────────── */
+.ib-summary {
+  text-align: left;
+  margin: 8px 0 24px;
+  padding: 20px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+.ib-summary-title {
+  margin: 0 0 16px;
+  font-size: 1.1rem;
+  color: #111827;
+}
+.ib-summary-section + .ib-summary-section {
+  margin-top: 18px;
+}
+.ib-summary-section-title {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  color: #1e4078;
+  font-weight: 600;
+}
+.ib-summary-list {
+  margin: 0;
+  padding: 0;
+}
+.ib-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+.ib-summary-row:last-child {
+  border-bottom: 0;
+}
+.ib-summary-row dt {
+  margin: 0;
+  color: #4b5563;
+  flex: 1 1 auto;
+}
+.ib-summary-row dd {
+  margin: 0;
+  color: #111827;
+  font-weight: 600;
+  text-align: right;
+  flex: 0 0 auto;
+}
+.ib-success-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
 /* ── Navigation buttons ───────────────────────────────────────────────── */
 .ib-actions {
   display: flex;
