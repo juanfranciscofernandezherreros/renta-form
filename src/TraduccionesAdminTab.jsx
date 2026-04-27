@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import {
   listIdiomasAdmin,
@@ -6,9 +6,12 @@ import {
   updateIdiomaContent,
   getTraduccionesFaltantes,
 } from './apiClient.js'
+import Pagination from './Pagination.jsx'
 import { useLanguage } from './LanguageContext.jsx'
 
 const TEXTAREA_EXPAND_THRESHOLD = 80
+const IDIOMAS_PAGE_LIMIT = 10
+const KEYS_PAGE_LIMIT = 20
 
 export default function TraduccionesAdminTab({ showToast }) {
   const { reloadTranslations } = useLanguage()
@@ -28,6 +31,8 @@ export default function TraduccionesAdminTab({ showToast }) {
   const [contentSaving, setContentSaving] = useState(false)
   const [contentFilter, setContentFilter] = useState('')
   const [panelOpen, setPanelOpen] = useState(false)
+  const [keysPage, setKeysPage] = useState(1)
+  const [idiomasPage, setIdiomasPage] = useState(1)
 
   // New translation row
   const [newKey, setNewKey] = useState('')
@@ -60,6 +65,7 @@ export default function TraduccionesAdminTab({ showToast }) {
     setContentFilter('')
     setNewKey('')
     setNewValue('')
+    setKeysPage(1)
     setPanelOpen(true)
     setContentLoading(true)
     const { data, error: apiErr } = await getIdiomaContent({ path: { id: idioma.id } })
@@ -130,6 +136,28 @@ export default function TraduccionesAdminTab({ showToast }) {
     String(content[k]).toLowerCase().includes(contentFilter.toLowerCase())
   )
 
+  // Paginated slice of filteredKeys for the keys datatable.
+  const keysTotalPages = Math.max(1, Math.ceil(filteredKeys.length / KEYS_PAGE_LIMIT))
+  const safeKeysPage = Math.min(keysPage, keysTotalPages)
+  const pagedKeys = filteredKeys.slice(
+    (safeKeysPage - 1) * KEYS_PAGE_LIMIT,
+    safeKeysPage * KEYS_PAGE_LIMIT
+  )
+
+  // Reset keys page to 1 when the filter changes so the user always sees results.
+  useEffect(() => { setKeysPage(1) }, [contentFilter])
+
+  // Paginated slice of idiomas for the idiomas datatable.
+  const idiomasTotalPages = Math.max(1, Math.ceil(idiomas.length / IDIOMAS_PAGE_LIMIT))
+  const safeIdiomasPage = Math.min(idiomasPage, idiomasTotalPages)
+  const pagedIdiomas = useMemo(
+    () => idiomas.slice(
+      (safeIdiomasPage - 1) * IDIOMAS_PAGE_LIMIT,
+      safeIdiomasPage * IDIOMAS_PAGE_LIMIT
+    ),
+    [idiomas, safeIdiomasPage]
+  )
+
   return (
     <div ref={containerRef} style={{ position: 'relative' }}>
       <p style={{ fontSize: '.82rem', color: '#666', marginBottom: 16 }}>
@@ -157,37 +185,71 @@ export default function TraduccionesAdminTab({ showToast }) {
         </div>
       )}
 
-      {/* Idioma cards */}
+      {/* Idiomas datatable */}
       {!idiomasLoading && !idiomasError && idiomas.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-          {idiomas.map(idioma => {
-            const missingCount = faltantesData?.faltantes?.[idioma.code]?.length ?? null
-            return (
-              <button
-                key={idioma.id}
-                type="button"
-                onClick={() => openPanel(idioma)}
-                className={`traduccion-idioma-card${selected?.id === idioma.id && panelOpen ? ' selected' : ''}`}
-              >
-                <span className="traduccion-idioma-code">{idioma.code}</span>
-                <span className="traduccion-idioma-label">{idioma.label}</span>
-                {!idioma.activo && (
-                  <span className="estado-badge badge-inactiva" style={{ fontSize: '.65rem', marginTop: 4 }}>Inactivo</span>
-                )}
-                {missingCount !== null && missingCount > 0 && (
-                  <span className="estado-badge badge-inactiva" style={{ fontSize: '.65rem', marginTop: 4 }}>
-                    ⚠️ {missingCount} faltante{missingCount !== 1 ? 's' : ''}
-                  </span>
-                )}
-                {missingCount === 0 && (
-                  <span className="estado-badge badge-activa" style={{ fontSize: '.65rem', marginTop: 4 }}>
-                    ✓ Completo
-                  </span>
-                )}
-              </button>
-            )
-          })}
-        </div>
+        <>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="preguntas-table">
+              <thead>
+                <tr>
+                  <th style={{ whiteSpace: 'nowrap' }}>Código</th>
+                  <th>Etiqueta</th>
+                  <th style={{ whiteSpace: 'nowrap' }}>Estado</th>
+                  <th style={{ whiteSpace: 'nowrap' }}>Traducciones</th>
+                  <th style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pagedIdiomas.map(idioma => {
+                  const missingCount = faltantesData?.faltantes?.[idioma.code]?.length ?? null
+                  const isSelected = selected?.id === idioma.id && panelOpen
+                  return (
+                    <tr
+                      key={idioma.id}
+                      style={isSelected ? { background: '#f3eeff' } : undefined}
+                    >
+                      <td style={{ fontFamily: 'monospace', fontWeight: 600 }}>{idioma.code}</td>
+                      <td>{idioma.label}</td>
+                      <td>
+                        <span className={`estado-badge ${idioma.activo ? 'badge-activa' : 'badge-inactiva'}`}>
+                          {idioma.activo ? 'Activo' : 'Inactivo'}
+                        </span>
+                      </td>
+                      <td style={{ whiteSpace: 'nowrap' }}>
+                        {missingCount === null ? (
+                          <span style={{ color: '#888', fontSize: '.85em' }}>—</span>
+                        ) : missingCount > 0 ? (
+                          <span className="estado-badge badge-inactiva">
+                            ⚠️ {missingCount} faltante{missingCount !== 1 ? 's' : ''}
+                          </span>
+                        ) : (
+                          <span className="estado-badge badge-activa">✓ Completo</span>
+                        )}
+                      </td>
+                      <td>
+                        <div className="pregunta-actions" style={{ justifyContent: 'flex-end' }}>
+                          <button
+                            type="button"
+                            className={`btn btn-sm btn-xs ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
+                            onClick={() => openPanel(idioma)}
+                            title="Editar traducciones de este idioma"
+                          >
+                            ✏️ Editar traducciones
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          <Pagination
+            page={safeIdiomasPage}
+            totalPages={idiomasTotalPages}
+            onPageChange={setIdiomasPage}
+          />
+        </>
       )}
 
       {/* Absolutely positioned content panel */}
@@ -256,7 +318,7 @@ export default function TraduccionesAdminTab({ showToast }) {
                         </td>
                       </tr>
                     )}
-                    {filteredKeys.map(key => (
+                    {pagedKeys.map(key => (
                       <tr key={key}>
                         <td style={{ fontFamily: 'monospace', fontSize: '.78rem', color: '#555', verticalAlign: 'top', paddingTop: 10 }}>
                           {key}
@@ -318,6 +380,12 @@ export default function TraduccionesAdminTab({ showToast }) {
                   </tbody>
                 </table>
               </div>
+
+              <Pagination
+                page={safeKeysPage}
+                totalPages={keysTotalPages}
+                onPageChange={setKeysPage}
+              />
 
               {/* Footer actions */}
               <div className="btn-row" style={{ marginTop: 12, flexShrink: 0 }}>
