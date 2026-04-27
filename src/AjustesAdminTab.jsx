@@ -124,11 +124,6 @@ export default function AjustesAdminTab({ showToast }) {
 
   return (
     <div>
-      <div className="field" style={{ maxWidth: 360, marginBottom: 20 }}>
-        <label>{t('tokenResultDni')}</label>
-        <input type="text" value={user?.dniNie ?? ''} readOnly disabled />
-      </div>
-
       <div className="section-title">{t('emailEnvioTitle')}</div>
 
       {emailEnvioSaved && (
