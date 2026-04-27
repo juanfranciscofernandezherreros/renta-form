@@ -12,6 +12,7 @@ const mailer = require('./mailer')
 const pdfGenerator = require('./pdfGenerator')
 const { signToken } = require('../middleware/auth')
 const { encryptDni, decryptDni, hashDni } = require('../utils/dniEncryption')
+const { parseCsv, rowsToCsv } = require('../utils/csv')
 
 const BCRYPT_ROUNDS = 12
 const ADMIN_SESSION_TTL_SECONDS = 5 * 60 // 5 minutes
@@ -996,6 +997,158 @@ async function getDeclaracion(id) {
   }
 }
 
+// ── Bulk import (CSV) ────────────────────────────────────────────────────
+//
+// CSV format expected (one declaration per row):
+//
+//   nombre,apellidos,dniNie,email,telefono,<campo1>,<campo2>,...
+//
+// where <campoN> is the `campo` of each pregunta currently configured in
+// the database.  Answer cells must be empty, "si" or "no".  For resilience
+// we also accept common variants ("sí", "yes"/"y", "true", "1", "no"/"n",
+// "false", "0", case-insensitive).  Personal fields (nombre, apellidos,
+// dniNie, telefono) are required; `email` is optional.
+
+const PERSONAL_HEADERS = ['nombre', 'apellidos', 'dniNie', 'email', 'telefono']
+const BULK_IMPORT_MAX_ROWS = 30
+
+function normaliseAnswerCell(raw) {
+  if (raw === null || raw === undefined) return ''
+  const s = String(raw).trim().toLowerCase()
+  if (s === '') return ''
+  if (s === 'si' || s === 'sí' || s === 'yes' || s === 'y' || s === 'true' || s === '1') return 'si'
+  if (s === 'no' || s === 'n' || s === 'false' || s === '0') return 'no'
+  return null // invalid sentinel
+}
+
+/**
+ * Builds a CSV template with a header row that includes the personal-data
+ * columns followed by every pregunta `campo` currently configured in the DB,
+ * in the same order returned by `getPreguntas()`.  No example row is
+ * included so the admin can simply append data rows below the header.
+ */
+async function getDeclaracionesImportTemplate() {
+  try {
+    const { rows } = await pool.query(
+      `SELECT campo FROM preguntas ORDER BY orden NULLS LAST, actualizada_en, campo`
+    )
+    const campos = rows.map(r => r.campo)
+    const header = [...PERSONAL_HEADERS, ...campos]
+    return { data: rowsToCsv([header]), error: null }
+  } catch (err) {
+    console.error('getDeclaracionesImportTemplate DB error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+}
+
+/**
+ * Imports many declarations from a CSV string.  Each row is processed
+ * inside its own transaction (via createDeclaracion) so a failed row does
+ * not abort the import.  Returns a per-row report so the admin can correct
+ * and re-upload.
+ */
+async function bulkImportDeclaraciones(csvText) {
+  if (typeof csvText !== 'string' || csvText.trim() === '') {
+    return { data: null, error: { message: 'CSV vacío' }, status: 400 }
+  }
+
+  let rows
+  try {
+    rows = parseCsv(csvText)
+  } catch (err) {
+    return { data: null, error: { message: `CSV inválido: ${err.message}` }, status: 400 }
+  }
+  // Drop fully-empty rows (e.g. trailing blank lines)
+  rows = rows.filter(r => r.some(c => String(c ?? '').trim() !== ''))
+  if (rows.length < 2) {
+    return { data: null, error: { message: 'CSV debe tener cabecera y al menos una fila' }, status: 400 }
+  }
+
+  const header = rows[0].map(h => String(h ?? '').trim())
+  const dataRows = rows.slice(1)
+
+  if (dataRows.length > BULK_IMPORT_MAX_ROWS) {
+    return {
+      data: null,
+      error: { message: `Se permiten como máximo ${BULK_IMPORT_MAX_ROWS} declaraciones por importación (recibidas ${dataRows.length})` },
+      status: 400,
+    }
+  }
+
+  for (const required of REQUIRED_TEXT_FIELDS) {
+    if (!header.includes(required)) {
+      return { data: null, error: { message: `Cabecera CSV: falta la columna obligatoria '${required}'` }, status: 400 }
+    }
+  }
+
+  let campoToId
+  try {
+    campoToId = await loadCampoToPreguntaId()
+  } catch (err) {
+    console.error('bulkImportDeclaraciones preguntas error:', err.message)
+    return { data: null, error: { message: 'Error verificando configuración de preguntas' }, status: 503 }
+  }
+  if (campoToId.size === 0) {
+    return { data: null, error: { message: 'No hay preguntas configuradas. Contacta con el administrador.' }, status: 422 }
+  }
+
+  const knownPersonal = new Set(PERSONAL_HEADERS)
+  const headerKinds = header.map(h => {
+    if (knownPersonal.has(h)) return { kind: 'personal', key: h }
+    if (campoToId.has(h)) return { kind: 'pregunta', key: h }
+    return { kind: 'unknown', key: h }
+  })
+  const unknownHeaders = headerKinds.filter(h => h.kind === 'unknown').map(h => h.key)
+
+  const report = {
+    total: dataRows.length,
+    imported: 0,
+    failed: 0,
+    unknownHeaders,
+    rows: [],
+  }
+
+  for (let r = 0; r < dataRows.length; r += 1) {
+    const csvLine = r + 2 // +1 for header, +1 for 1-based humans
+    const cells = dataRows[r]
+
+    const body = {}
+    let invalidAnswerErr = null
+    for (let c = 0; c < headerKinds.length; c += 1) {
+      const meta = headerKinds[c]
+      const raw = cells[c]
+      if (meta.kind === 'unknown') continue
+      if (meta.kind === 'personal') {
+        body[meta.key] = raw === undefined || raw === null ? '' : String(raw).trim()
+        continue
+      }
+      const v = normaliseAnswerCell(raw)
+      if (v === null) {
+        invalidAnswerErr = `Valor inválido para '${meta.key}': '${raw}'. Usa 'si', 'no' o vacío`
+        break
+      }
+      if (v !== '') body[meta.key] = v
+    }
+
+    if (invalidAnswerErr) {
+      report.failed += 1
+      report.rows.push({ line: csvLine, ok: false, error: invalidAnswerErr })
+      continue
+    }
+
+    const result = await createDeclaracion(body)
+    if (result.error) {
+      report.failed += 1
+      report.rows.push({ line: csvLine, ok: false, error: result.error.message })
+    } else {
+      report.imported += 1
+      report.rows.push({ line: csvLine, ok: true, id: result.data?.id })
+    }
+  }
+
+  return { data: report, error: null, status: 200 }
+}
+
 async function getDeclaracionByToken(token) {
   if (!token) return { data: null, error: { message: 'Token requerido' } }
   try {
@@ -1836,6 +1989,8 @@ module.exports = {
   listDeclaraciones,
   listDeclaracionesAll,
   createDeclaracion,
+  bulkImportDeclaraciones,
+  getDeclaracionesImportTemplate,
   getDeclaracion,
   getDeclaracionByToken,
   updateEstadoDeclaracion,
