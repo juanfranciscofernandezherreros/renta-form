@@ -476,7 +476,7 @@
 
 /* ── Mobile (≤ 600px) ─────────────────────────────────────────────────── */
 @media (max-width: 600px) {
-  .ib-sidebar { padding: 16px 14px 6px; }
+  .ib-sidebar { padding: 16px 18px 6px; }
   .ib-brand { margin-bottom: 12px; gap: 8px; }
   .ib-brand-icon { width: 26px; height: 26px; }
   .ib-brand-name { font-size: .95rem; }
@@ -485,60 +485,80 @@
   .ib-step-tag { font-size: .65rem; }
   .ib-step-title { font-size: .75rem; }
 
-  .ib-topbar { padding: 12px 14px 0; gap: 10px; }
+  .ib-topbar { padding: 14px 18px 0; gap: 10px; }
   .ib-langs {
     flex-wrap: wrap;
     max-width: 100%;
   }
   .ib-lang-btn { padding: 5px 8px; font-size: .72rem; }
 
-  .ib-content { padding: 16px 14px 40px; }
+  .ib-content { padding: 22px 20px 48px; }
   .ib-content-inner { max-width: 100%; }
 
   .ib-progress { font-size: .72rem; gap: 8px; margin-bottom: 14px; }
 
-  .ib-title { font-size: 1.25rem; }
-  .ib-subtitle { font-size: .88rem; margin-bottom: 20px; }
+  /* Consistent left alignment & safe wrapping for long copy on mobile */
+  .ib-title,
+  .ib-subtitle,
+  .ib-question-text,
+  .ib-info,
+  .ib-error-banner > span,
+  .ib-field > label {
+    text-align: left;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
 
-  .ib-form { gap: 16px; }
+  .ib-title { font-size: 1.25rem; padding: 0 2px; }
+  .ib-subtitle { font-size: .88rem; margin-bottom: 22px; padding: 0 2px; }
+
+  .ib-form { gap: 18px; }
   .ib-row { gap: 16px; }
   .ib-input,
-  .ib-select { height: 44px; font-size: 1rem; padding: 0 12px; }
+  .ib-select { height: 44px; font-size: 1rem; padding: 0 14px; }
   .ib-field > label { font-size: .72rem; }
 
-  .ib-question { padding: 20px 16px; border-radius: 12px; }
-  .ib-question-head { gap: 10px; margin-bottom: 16px; }
+  .ib-question { padding: 22px 18px; border-radius: 12px; }
+  .ib-question-head { gap: 10px; margin-bottom: 18px; }
   .ib-question-num { width: 24px; height: 24px; font-size: .72rem; }
   .ib-question-text { font-size: .95rem; }
 
-  .ib-yesno { gap: 10px; }
-  .ib-yesno-btn { padding: 12px 12px; font-size: .9rem; }
+  .ib-yesno { gap: 12px; }
+  .ib-yesno-btn { padding: 13px 14px; font-size: .9rem; }
 
-  .ib-info { padding: 12px 14px; font-size: .82rem; border-radius: 10px; }
+  .ib-info {
+    padding: 14px 16px;
+    font-size: .82rem;
+    border-radius: 10px;
+    line-height: 1.55;
+  }
 
-  .ib-success { padding: 36px 20px; border-radius: 14px; }
+  .ib-error-banner { padding: 12px 16px; gap: 12px; }
+
+  .ib-success { padding: 40px 22px; border-radius: 14px; }
   .ib-success-icon { width: 56px; height: 56px; font-size: 1.7rem; }
   .ib-success h2 { font-size: 1.2rem; }
 
-  .ib-actions { gap: 10px; margin-top: 22px; }
-  .ib-btn { padding: 0 16px; height: 42px; font-size: .88rem; }
+  .ib-actions { gap: 10px; margin-top: 24px; }
+  .ib-btn { padding: 0 18px; height: 44px; font-size: .9rem; }
 }
 
 /* ── Small mobile (≤ 400px) ───────────────────────────────────────────── */
 @media (max-width: 400px) {
-  .ib-sidebar { padding: 14px 10px 4px; }
+  .ib-sidebar { padding: 14px 14px 4px; }
   .ib-step { min-width: 84px; }
   .ib-step-title { font-size: .7rem; }
 
-  .ib-topbar { padding: 10px 12px 0; }
-  .ib-content { padding: 14px 12px 36px; }
+  .ib-topbar { padding: 12px 16px 0; }
+  .ib-content { padding: 18px 16px 40px; }
 
   .ib-title { font-size: 1.1rem; }
-  .ib-subtitle { font-size: .82rem; }
+  .ib-subtitle { font-size: .82rem; margin-bottom: 18px; }
 
-  .ib-question { padding: 16px 14px; }
+  .ib-question { padding: 18px 16px; }
   .ib-question-text { font-size: .9rem; }
-  .ib-yesno-btn { padding: 11px 10px; font-size: .85rem; }
+  .ib-info { padding: 12px 14px; }
+  .ib-yesno-btn { padding: 12px 12px; font-size: .88rem; }
 
   /* Stack navigation buttons full-width for easier thumb reach */
   .ib-actions {
