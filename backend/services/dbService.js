@@ -1024,8 +1024,8 @@ function normaliseAnswerCell(raw) {
 /**
  * Builds a CSV template with a header row that includes the personal-data
  * columns followed by every pregunta `campo` currently configured in the DB,
- * in the same order returned by `getPreguntas()`.  Adds an example row so
- * the admin sees the expected shape.
+ * in the same order returned by `getPreguntas()`.  No example row is
+ * included so the admin can simply append data rows below the header.
  */
 async function getDeclaracionesImportTemplate() {
   try {
