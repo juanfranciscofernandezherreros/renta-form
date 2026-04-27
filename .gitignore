@@ -25,3 +25,9 @@ backend/.env
 *.njsproj
 *.sln
 *.sw?
+
+# Test artifacts
+coverage/
+.v8-coverage/
+cucumber-report.html
+screenshots/
