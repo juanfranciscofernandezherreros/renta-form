@@ -7,9 +7,10 @@
 //  but verified with a single shared HMAC secret.  No external dependency is
 //  used – we rely on Node's built-in `crypto` module.
 //
-//  The secret comes from `AUTH_SECRET`.  In development a deterministic
-//  fallback is used so the app still boots, but a warning is logged on
-//  startup and the value is intentionally NOT considered safe for production.
+//  The secret comes from `AUTH_SECRET`.  In development a random per-process
+//  secret is generated (so all sessions are invalidated on restart) and a
+//  warning is logged on startup.  The dev fallback is intentionally NOT
+//  considered safe for production.
 // ---------------------------------------------------------------------------
 
 const crypto = require('crypto')
