@@ -44,13 +44,36 @@ CREATE TABLE IF NOT EXISTS usuarios (
     apellidos            VARCHAR(200) NOT NULL DEFAULT '',
     email                VARCHAR(254) NOT NULL,
     telefono             VARCHAR(20)  NOT NULL DEFAULT '',
-    role                 VARCHAR(20)  NOT NULL DEFAULT 'user',
     password_hash        TEXT         NOT NULL,
     bloqueado            BOOLEAN      NOT NULL DEFAULT false,
     denunciado           BOOLEAN      NOT NULL DEFAULT false,
     preguntas_asignadas  JSONB        NOT NULL DEFAULT '[]',
     creado_en            TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
+
+-- 3.b Tabla: Roles (catálogo de roles del sistema)
+CREATE TABLE IF NOT EXISTS roles (
+    id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre         VARCHAR(50)  NOT NULL UNIQUE,
+    descripcion    TEXT         NOT NULL DEFAULT '',
+    creado_en      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    actualizado_en TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+-- 3.c Tabla pivote: Relación many-to-many entre usuarios y roles.
+CREATE TABLE IF NOT EXISTS usuarios_roles (
+    usuario_id UUID         NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    rol_id     UUID         NOT NULL REFERENCES roles(id)    ON DELETE CASCADE,
+    creado_en  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (usuario_id, rol_id)
+);
+CREATE INDEX IF NOT EXISTS idx_usuarios_roles_rol ON usuarios_roles (rol_id);
+
+-- Roles por defecto del sistema (idempotente).
+INSERT INTO roles (nombre, descripcion) VALUES
+    ('admin', 'Administrador del sistema'),
+    ('user',  'Usuario estándar')
+    ON CONFLICT (nombre) DO NOTHING;
 -- Partial unique index: NULL hashes (legacy plain-text rows) are excluded so
 -- existing data is not affected when this migration runs on a live database.
 CREATE UNIQUE INDEX IF NOT EXISTS uq_usuarios_dni_nie_hash
@@ -166,6 +189,9 @@ CREATE OR REPLACE TRIGGER trg_declaraciones_actualizado_en
 
 CREATE OR REPLACE TRIGGER trg_idiomas_actualizado_en
     BEFORE UPDATE ON idiomas FOR EACH ROW EXECUTE FUNCTION fn_set_actualizado_en();
+
+CREATE OR REPLACE TRIGGER trg_roles_actualizado_en
+    BEFORE UPDATE ON roles FOR EACH ROW EXECUTE FUNCTION fn_set_actualizado_en();
 
 CREATE OR REPLACE TRIGGER trg_preguntas_actualizada_en
     BEFORE UPDATE ON preguntas FOR EACH ROW EXECUTE FUNCTION fn_set_actualizada_en();

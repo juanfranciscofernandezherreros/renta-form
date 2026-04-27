@@ -43,11 +43,12 @@ export default function AdminLoginPage() {
       setErrors({ global: error.message })
       return
     }
-    if (data.role !== 'admin') {
+    const roles = Array.isArray(data.roles) ? data.roles : (data.role ? [data.role] : [])
+    if (!roles.includes('admin')) {
       setErrors({ global: 'No tienes permisos de administrador' })
       return
     }
-    login({ dniNie: data.username, role: data.role, email: data.email ?? '', token: data.token })
+    login({ dniNie: data.username, roles, email: data.email ?? '', token: data.token })
   }
 
   return (

@@ -37,17 +37,31 @@ async function seedAdmin() {
     console.log('[seedAdmin] Hashing password…')
     const passwordHash = await bcrypt.hash(PASSWORD, SALT_ROUNDS)
 
-    await client.query(
-      `INSERT INTO usuarios (dni_nie, dni_nie_hash, nombre, apellidos, email, telefono, role, password_hash)
-       VALUES ($1, $2, $3, $4, $5, $6, 'admin', $7)
+    const { rows } = await client.query(
+      `INSERT INTO usuarios (dni_nie, dni_nie_hash, nombre, apellidos, email, telefono, password_hash)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT (dni_nie_hash) WHERE dni_nie_hash IS NOT NULL DO UPDATE SET
          nombre        = EXCLUDED.nombre,
          apellidos     = EXCLUDED.apellidos,
          email         = EXCLUDED.email,
          telefono      = EXCLUDED.telefono,
-         role          = 'admin',
-         password_hash = EXCLUDED.password_hash`,
+         password_hash = EXCLUDED.password_hash
+       RETURNING id`,
       [encryptDni(DNI_NIE), hashDni(DNI_NIE), NOMBRE, APELLIDOS, EMAIL, TELEFONO, passwordHash]
+    )
+    const usuarioId = rows[0].id
+
+    // Asegura el rol 'admin' existe y vincula el usuario.
+    await client.query(
+      `INSERT INTO roles (nombre, descripcion)
+       VALUES ('admin', 'Administrador del sistema')
+       ON CONFLICT (nombre) DO NOTHING`
+    )
+    await client.query(
+      `INSERT INTO usuarios_roles (usuario_id, rol_id)
+       SELECT $1, r.id FROM roles r WHERE r.nombre = 'admin'
+       ON CONFLICT (usuario_id, rol_id) DO NOTHING`,
+      [usuarioId]
     )
 
     console.log(`[seedAdmin] ✅  Usuario administrador listo: ${DNI_NIE} / ${EMAIL}`)

@@ -20,6 +20,8 @@ DROP TABLE IF EXISTS traducciones           CASCADE;
 DROP TABLE IF EXISTS idiomas                CASCADE;
 DROP TABLE IF EXISTS declaraciones          CASCADE;
 DROP TABLE IF EXISTS preguntas              CASCADE;
+DROP TABLE IF EXISTS usuarios_roles         CASCADE;
+DROP TABLE IF EXISTS roles                  CASCADE;
 DROP TABLE IF EXISTS usuarios               CASCADE;
 
 -- Tipos ENUM

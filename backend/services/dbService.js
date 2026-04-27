@@ -174,12 +174,33 @@ function rowToUser(row) {
     apellidos: row.apellidos,
     email: row.email,
     telefono: row.telefono ?? '',
-    role: row.role,
+    roles: Array.isArray(row.roles) ? row.roles.filter(Boolean) : [],
     bloqueado: row.bloqueado ?? false,
     denunciado: row.denunciado ?? false,
     preguntasAsignadas: row.preguntas_asignadas ?? [],
     creadoEn: row.creado_en,
   }
+}
+
+// SQL fragment that aggregates the role names of each user as a TEXT[].
+// Use as `${USER_SELECT_WITH_ROLES} FROM usuarios u ${USER_ROLES_JOIN} ...`.
+const USER_SELECT_WITH_ROLES =
+  `SELECT u.*, COALESCE(ARRAY_AGG(r.nombre) FILTER (WHERE r.nombre IS NOT NULL), '{}') AS roles`
+const USER_ROLES_JOIN =
+  `LEFT JOIN usuarios_roles ur ON ur.usuario_id = u.id
+   LEFT JOIN roles r           ON r.id = ur.rol_id`
+
+async function loadRolesForDniNie(dniNie) {
+  const { rows } = await pool.query(
+    `SELECT COALESCE(ARRAY_AGG(r.nombre) FILTER (WHERE r.nombre IS NOT NULL), '{}') AS roles
+       FROM usuarios u
+       LEFT JOIN usuarios_roles ur ON ur.usuario_id = u.id
+       LEFT JOIN roles r           ON r.id = ur.rol_id
+      WHERE u.dni_nie_hash = $1
+      GROUP BY u.id`,
+    [hashDni(dniNie)]
+  )
+  return rows.length ? rows[0].roles : null
 }
 
 // ── Auth ───────────────────────────────────────────────────────────────────
@@ -188,17 +209,29 @@ async function loginAdmin({ username, password }) {
   try {
     const normalised = (username ?? '').trim().toUpperCase()
     const { rows } = await pool.query(
-      'SELECT password_hash, role, bloqueado, email FROM usuarios WHERE dni_nie_hash = $1',
+      `${USER_SELECT_WITH_ROLES}
+         FROM usuarios u ${USER_ROLES_JOIN}
+        WHERE u.dni_nie_hash = $1
+        GROUP BY u.id`,
       [hashDni(normalised)]
     )
     if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
     const user = rows[0]
-    if (user.role !== 'admin') return { data: null, error: { message: 'No tienes permisos de administrador' } }
+    const roles = (user.roles || []).filter(Boolean)
+    if (!roles.includes('admin')) return { data: null, error: { message: 'No tienes permisos de administrador' } }
     if (user.bloqueado) return { data: null, error: { message: 'USER_BLOCKED' } }
     if (!(await verifyPassword(password, user.password_hash))) {
       return { data: null, error: { message: 'Contraseña incorrecta' } }
     }
-    return { data: { username: normalised, role: user.role, email: user.email, token: signToken({ sub: normalised, role: user.role }, ADMIN_SESSION_TTL_SECONDS) }, error: null }
+    return {
+      data: {
+        username: normalised,
+        roles,
+        email: user.email,
+        token: signToken({ sub: normalised, roles }, ADMIN_SESSION_TTL_SECONDS),
+      },
+      error: null,
+    }
   } catch (err) {
     console.error('loginAdmin DB error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
@@ -209,7 +242,10 @@ async function loginUser({ dniNie, password }) {
   try {
     const normalised = (dniNie ?? '').trim().toUpperCase()
     const { rows } = await pool.query(
-      'SELECT password_hash, role, bloqueado FROM usuarios WHERE dni_nie_hash = $1',
+      `${USER_SELECT_WITH_ROLES}
+         FROM usuarios u ${USER_ROLES_JOIN}
+        WHERE u.dni_nie_hash = $1
+        GROUP BY u.id`,
       [hashDni(normalised)]
     )
     if (!rows.length) return { data: null, error: { message: 'DNI/NIE no encontrado' } }
@@ -218,7 +254,8 @@ async function loginUser({ dniNie, password }) {
     if (!(await verifyPassword(password, user.password_hash))) {
       return { data: null, error: { message: 'Contraseña incorrecta' } }
     }
-    return { data: { dniNie: normalised, role: user.role, token: signToken({ sub: normalised, role: user.role }) }, error: null }
+    const roles = (user.roles || []).filter(Boolean)
+    return { data: { dniNie: normalised, roles, token: signToken({ sub: normalised, roles }) }, error: null }
   } catch (err) {
     console.error('loginUser DB error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
@@ -254,13 +291,17 @@ async function changeEmail({ dniNie, newEmail }) {
     }
     const normalised = (dniNie ?? '').trim().toUpperCase()
     const { rows } = await pool.query(
-      'SELECT role, email FROM usuarios WHERE dni_nie_hash = $1',
+      `SELECT u.email,
+              COALESCE(ARRAY_AGG(r.nombre) FILTER (WHERE r.nombre IS NOT NULL), '{}') AS roles
+         FROM usuarios u ${USER_ROLES_JOIN}
+        WHERE u.dni_nie_hash = $1
+        GROUP BY u.id`,
       [hashDni(normalised)]
     )
     if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
     const user = rows[0]
     // Only admins can change their own email through this endpoint.
-    if (user.role !== 'admin') {
+    if (!Array.isArray(user.roles) || !user.roles.includes('admin')) {
       return { data: null, error: { message: 'No tienes permisos para cambiar el email' }, status: 403 }
     }
     if (user.email === trimmedEmail) {
@@ -771,7 +812,13 @@ async function notifyAdminsOfDeclaracion(dec, attachments) {
       return
     }
     const { rows } = await pool.query(
-      "SELECT email FROM usuarios WHERE role = 'admin' AND email IS NOT NULL AND email <> ''"
+      `SELECT DISTINCT u.email
+         FROM usuarios u
+         JOIN usuarios_roles ur ON ur.usuario_id = u.id
+         JOIN roles r           ON r.id = ur.rol_id
+        WHERE r.nombre = 'admin'
+          AND u.email IS NOT NULL
+          AND u.email <> ''`
     )
     const recipients = rows.map((r) => r.email).filter(Boolean)
     if (recipients.length === 0) {
@@ -1116,22 +1163,27 @@ async function listUsersAdmin({ bloqueado, denunciado, search, page = 1, limit =
   try {
     const conditions = []
     const params = []
-    if (bloqueado !== undefined) { conditions.push(`bloqueado = $${params.length + 1}`); params.push(bloqueado) }
-    if (denunciado !== undefined) { conditions.push(`denunciado = $${params.length + 1}`); params.push(denunciado) }
+    if (bloqueado !== undefined) { conditions.push(`u.bloqueado = $${params.length + 1}`); params.push(bloqueado) }
+    if (denunciado !== undefined) { conditions.push(`u.denunciado = $${params.length + 1}`); params.push(denunciado) }
     if (search) {
       const escaped = search.replace(/[%_\\]/g, '\\$&')
       const like = `%${escaped}%`
       const hashedSearch = hashDni(search)
-      conditions.push(`(nombre ILIKE $${params.length + 1} OR apellidos ILIKE $${params.length + 2} OR email ILIKE $${params.length + 3} OR dni_nie_hash = $${params.length + 4})`)
+      conditions.push(`(u.nombre ILIKE $${params.length + 1} OR u.apellidos ILIKE $${params.length + 2} OR u.email ILIKE $${params.length + 3} OR u.dni_nie_hash = $${params.length + 4})`)
       params.push(like, like, like, hashedSearch)
     }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
-    const countRes = await pool.query(`SELECT COUNT(*) FROM usuarios ${where}`, params)
+    const countRes = await pool.query(`SELECT COUNT(*) FROM usuarios u ${where}`, params)
     const total = parseInt(countRes.rows[0].count, 10)
     const offset = (page - 1) * limit
     params.push(limit, offset)
     const { rows } = await pool.query(
-      `SELECT * FROM usuarios ${where} ORDER BY creado_en DESC LIMIT $${params.length - 1} OFFSET $${params.length}`,
+      `${USER_SELECT_WITH_ROLES}
+         FROM usuarios u ${USER_ROLES_JOIN}
+         ${where}
+        GROUP BY u.id
+        ORDER BY u.creado_en DESC
+        LIMIT $${params.length - 1} OFFSET $${params.length}`,
       params
     )
     return { data: { data: rows.map(rowToUser), total, page, limit }, error: null }
@@ -1171,9 +1223,9 @@ async function reportUser(dniNie, denunciado) {
 
 async function deleteUser(dniNie) {
   try {
-    const { rows } = await pool.query('SELECT role FROM usuarios WHERE dni_nie_hash = $1', [hashDni(dniNie)])
-    if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
-    if (rows[0].role === 'admin') {
+    const roles = await loadRolesForDniNie(dniNie)
+    if (roles === null) return { data: null, error: { message: 'Usuario no encontrado' } }
+    if (roles.includes('admin')) {
       return { data: null, error: { message: 'No se pueden eliminar usuarios administradores' }, status: 403 }
     }
     await pool.query('DELETE FROM declaraciones WHERE dni_nie_hash = $1', [hashDni(dniNie)])
@@ -1193,14 +1245,24 @@ async function assignUserAccount({ dniNie, password, declaracionId }) {
     const decCheck = await pool.query('SELECT nombre, apellidos, email, telefono FROM declaraciones WHERE id = $1', [declaracionId])
     if (!decCheck.rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
     const dec = decCheck.rows[0]
-    const existing = await pool.query('SELECT dni_nie FROM usuarios WHERE dni_nie_hash = $1', [hashDni(dniNie)])
+    const existing = await pool.query('SELECT id FROM usuarios WHERE dni_nie_hash = $1', [hashDni(dniNie)])
     const isNew = !existing.rows.length
     const hashed = await hashPassword(password)
+    let usuarioId
     if (isNew) {
-      await pool.query(
-        `INSERT INTO usuarios (dni_nie, dni_nie_hash, nombre, apellidos, email, telefono, role, password_hash)
-         VALUES ($1, $2, $3, $4, $5, $6, 'user', $7)`,
+      const { rows: insertedRows } = await pool.query(
+        `INSERT INTO usuarios (dni_nie, dni_nie_hash, nombre, apellidos, email, telefono, password_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id`,
         [encryptDni(dniNie), hashDni(dniNie), dec.nombre, dec.apellidos, dec.email, dec.telefono ?? '', hashed]
+      )
+      usuarioId = insertedRows[0].id
+      // Assign default 'user' role to the newly created account.
+      await pool.query(
+        `INSERT INTO usuarios_roles (usuario_id, rol_id)
+         SELECT $1, r.id FROM roles r WHERE r.nombre = 'user'
+         ON CONFLICT (usuario_id, rol_id) DO NOTHING`,
+        [usuarioId]
       )
     } else {
       await pool.query('UPDATE usuarios SET password_hash = $1 WHERE dni_nie_hash = $2', [hashed, hashDni(dniNie)])
@@ -1214,11 +1276,200 @@ async function assignUserAccount({ dniNie, password, declaracionId }) {
 
 async function getUserByDniNie(dniNie) {
   try {
-    const { rows } = await pool.query('SELECT * FROM usuarios WHERE dni_nie_hash = $1', [hashDni(dniNie)])
+    const { rows } = await pool.query(
+      `${USER_SELECT_WITH_ROLES}
+         FROM usuarios u ${USER_ROLES_JOIN}
+        WHERE u.dni_nie_hash = $1
+        GROUP BY u.id`,
+      [hashDni(dniNie)]
+    )
     return { data: rows.length ? rowToUser(rows[0]) : null, error: null }
   } catch (err) {
     console.error('getUserByDniNie DB error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+}
+
+// ── Admin: Roles & asignación usuario↔rol (many-to-many) ───────────────────
+
+const RESERVED_ROLE_NAMES = new Set(['admin', 'user'])
+const ROLE_NAME_REGEX = /^[a-zA-Z0-9_-]{2,50}$/
+
+function rowToRole(row) {
+  if (!row) return null
+  return {
+    id: row.id,
+    nombre: row.nombre,
+    descripcion: row.descripcion ?? '',
+    creadoEn: row.creado_en,
+    actualizadoEn: row.actualizado_en,
+    usuarios: typeof row.usuarios === 'string' ? parseInt(row.usuarios, 10) : (row.usuarios ?? 0),
+  }
+}
+
+async function listRolesAdmin() {
+  try {
+    const { rows } = await pool.query(
+      `SELECT r.id, r.nombre, r.descripcion, r.creado_en, r.actualizado_en,
+              COUNT(ur.usuario_id)::int AS usuarios
+         FROM roles r
+         LEFT JOIN usuarios_roles ur ON ur.rol_id = r.id
+        GROUP BY r.id
+        ORDER BY r.nombre ASC`
+    )
+    return { data: rows.map(rowToRole), error: null }
+  } catch (err) {
+    console.error('listRolesAdmin DB error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+}
+
+async function createRoleAdmin({ nombre, descripcion } = {}) {
+  const name = (nombre ?? '').trim()
+  if (!ROLE_NAME_REGEX.test(name)) {
+    return { data: null, error: { message: 'El nombre del rol no es válido (2-50 caracteres alfanuméricos, guión o guión bajo)' } }
+  }
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO roles (nombre, descripcion)
+       VALUES ($1, $2)
+       RETURNING id, nombre, descripcion, creado_en, actualizado_en`,
+      [name, (descripcion ?? '').trim()]
+    )
+    return { data: { ...rowToRole(rows[0]), usuarios: 0 }, status: 201, error: null }
+  } catch (err) {
+    if (err.code === '23505') {
+      return { data: null, error: { message: 'Ya existe un rol con ese nombre' }, status: 409 }
+    }
+    console.error('createRoleAdmin DB error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+}
+
+async function updateRoleAdmin(id, { nombre, descripcion } = {}) {
+  try {
+    const { rows: existingRows } = await pool.query('SELECT nombre FROM roles WHERE id = $1', [id])
+    if (!existingRows.length) return { data: null, error: { message: 'Rol no encontrado' }, status: 404 }
+    const currentName = existingRows[0].nombre
+
+    const fields = []
+    const params = []
+    if (nombre !== undefined) {
+      const name = (nombre ?? '').trim()
+      if (!ROLE_NAME_REGEX.test(name)) {
+        return { data: null, error: { message: 'El nombre del rol no es válido (2-50 caracteres alfanuméricos, guión o guión bajo)' } }
+      }
+      // Reserved roles cannot be renamed (they are referenced by name in code).
+      if (RESERVED_ROLE_NAMES.has(currentName) && name !== currentName) {
+        return { data: null, error: { message: 'Los roles reservados del sistema no se pueden renombrar' }, status: 403 }
+      }
+      params.push(name)
+      fields.push(`nombre = $${params.length}`)
+    }
+    if (descripcion !== undefined) {
+      params.push(String(descripcion ?? '').trim())
+      fields.push(`descripcion = $${params.length}`)
+    }
+    if (!fields.length) {
+      return { data: null, error: { message: 'No hay campos para actualizar' } }
+    }
+    params.push(id)
+    const { rows } = await pool.query(
+      `UPDATE roles SET ${fields.join(', ')} WHERE id = $${params.length}
+       RETURNING id, nombre, descripcion, creado_en, actualizado_en`,
+      params
+    )
+    return { data: rowToRole(rows[0]), error: null }
+  } catch (err) {
+    if (err.code === '23505') {
+      return { data: null, error: { message: 'Ya existe un rol con ese nombre' }, status: 409 }
+    }
+    console.error('updateRoleAdmin DB error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+}
+
+async function deleteRoleAdmin(id) {
+  try {
+    const { rows } = await pool.query('SELECT nombre FROM roles WHERE id = $1', [id])
+    if (!rows.length) return { data: null, error: { message: 'Rol no encontrado' }, status: 404 }
+    if (RESERVED_ROLE_NAMES.has(rows[0].nombre)) {
+      return { data: null, error: { message: 'Los roles reservados del sistema no se pueden eliminar' }, status: 403 }
+    }
+    // ON DELETE CASCADE on usuarios_roles removes any assignments.
+    await pool.query('DELETE FROM roles WHERE id = $1', [id])
+    return { data: null, status: 204, error: null }
+  } catch (err) {
+    console.error('deleteRoleAdmin DB error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+}
+
+async function getUserRolesAdmin(dniNie) {
+  try {
+    const { rows } = await pool.query(
+      `SELECT r.id, r.nombre, r.descripcion, r.creado_en, r.actualizado_en
+         FROM usuarios u
+         JOIN usuarios_roles ur ON ur.usuario_id = u.id
+         JOIN roles r           ON r.id = ur.rol_id
+        WHERE u.dni_nie_hash = $1
+        ORDER BY r.nombre ASC`,
+      [hashDni(dniNie)]
+    )
+    // 404 if the user does not exist at all.
+    const exists = await pool.query('SELECT 1 FROM usuarios WHERE dni_nie_hash = $1', [hashDni(dniNie)])
+    if (!exists.rowCount) return { data: null, error: { message: 'Usuario no encontrado' }, status: 404 }
+    return { data: rows.map(rowToRole), error: null }
+  } catch (err) {
+    console.error('getUserRolesAdmin DB error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+}
+
+async function setUserRolesAdmin(dniNie, { roles } = {}) {
+  if (!Array.isArray(roles)) {
+    return { data: null, error: { message: 'El campo "roles" debe ser un array de nombres de rol' } }
+  }
+  const wantedNames = [...new Set(roles.map(r => String(r ?? '').trim()).filter(Boolean))]
+  const client = await pool.connect()
+  try {
+    const userRes = await client.query('SELECT id FROM usuarios WHERE dni_nie_hash = $1', [hashDni(dniNie)])
+    if (!userRes.rows.length) {
+      return { data: null, error: { message: 'Usuario no encontrado' }, status: 404 }
+    }
+    const usuarioId = userRes.rows[0].id
+
+    let rolIds = []
+    if (wantedNames.length) {
+      const { rows: roleRows } = await client.query(
+        `SELECT id, nombre FROM roles WHERE nombre = ANY($1::text[])`,
+        [wantedNames]
+      )
+      const foundNames = new Set(roleRows.map(r => r.nombre))
+      const missing = wantedNames.filter(n => !foundNames.has(n))
+      if (missing.length) {
+        return { data: null, error: { message: `Roles desconocidos: ${missing.join(', ')}` } }
+      }
+      rolIds = roleRows.map(r => r.id)
+    }
+
+    await client.query('BEGIN')
+    await client.query('DELETE FROM usuarios_roles WHERE usuario_id = $1', [usuarioId])
+    if (rolIds.length) {
+      await client.query(
+        `INSERT INTO usuarios_roles (usuario_id, rol_id)
+         SELECT $1, UNNEST($2::uuid[])`,
+        [usuarioId, rolIds]
+      )
+    }
+    await client.query('COMMIT')
+    return { data: { dniNie, roles: wantedNames }, error: null }
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {})
+    console.error('setUserRolesAdmin DB error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  } finally {
+    client.release()
   }
 }
 
@@ -1605,6 +1856,12 @@ module.exports = {
   deleteUser,
   assignUserAccount,
   getUserByDniNie,
+  listRolesAdmin,
+  createRoleAdmin,
+  updateRoleAdmin,
+  deleteRoleAdmin,
+  getUserRolesAdmin,
+  setUserRolesAdmin,
   getIdiomas,
   getTraducciones,
   listIdiomasAdmin,

@@ -90,6 +90,51 @@ async function migrate() {
     // Drop any orphan rows that still have a NULL campo (cannot be exposed).
     await client.query(`DELETE FROM preguntas WHERE campo IS NULL`)
 
+    // ── Roles: migrate legacy `usuarios.role` column → tabla pivote `usuarios_roles` ──
+    // init.sql already creates the `roles` and `usuarios_roles` tables and
+    // seeds the canonical 'admin'/'user' roles.  If we are upgrading from a
+    // legacy schema where each user had a single `role` VARCHAR column, we
+    // must copy each user's role into the new pivot table before dropping
+    // the column.
+    if (await columnExists(client, 'usuarios', 'role')) {
+      console.log('[migrate] Migrating legacy usuarios.role → usuarios_roles ...')
+      // Make sure every distinct legacy role exists as a row in `roles`
+      // (keeps custom roles a previous deployment may have introduced).
+      await client.query(`
+        INSERT INTO roles (nombre)
+        SELECT DISTINCT TRIM(role) FROM usuarios
+         WHERE role IS NOT NULL AND TRIM(role) <> ''
+        ON CONFLICT (nombre) DO NOTHING
+      `)
+      // Copy the (usuario, role) pairs into the pivot table.
+      await client.query(`
+        INSERT INTO usuarios_roles (usuario_id, rol_id)
+        SELECT u.id, r.id
+          FROM usuarios u
+          JOIN roles    r ON r.nombre = TRIM(u.role)
+         WHERE u.role IS NOT NULL AND TRIM(u.role) <> ''
+        ON CONFLICT (usuario_id, rol_id) DO NOTHING
+      `)
+      // Finally drop the legacy column.
+      await client.query(`ALTER TABLE usuarios DROP COLUMN role`)
+      console.log('[migrate] usuarios.role removed; relation usuarios↔roles is now many-to-many.')
+    }
+
+    // Ensure every existing user has at least one role assigned: anyone
+    // without an explicit role gets the default 'user' role so the
+    // application never has to deal with a "roleless" account.
+    await client.query(`
+      INSERT INTO usuarios_roles (usuario_id, rol_id)
+      SELECT u.id, r.id
+        FROM usuarios u
+        CROSS JOIN roles r
+       WHERE r.nombre = 'user'
+         AND NOT EXISTS (
+           SELECT 1 FROM usuarios_roles ur WHERE ur.usuario_id = u.id
+         )
+      ON CONFLICT (usuario_id, rol_id) DO NOTHING
+    `)
+
     // ── 5. Ensure `configuracion` table exists and has the default settings ─
     await client.query(`
       CREATE TABLE IF NOT EXISTS configuracion (
