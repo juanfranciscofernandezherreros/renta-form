@@ -20,7 +20,7 @@
 const bcrypt = require('bcrypt')
 const pool = require('./pool')
 const migrate = require('./migrate')
-const { encryptDni } = require('../utils/dniEncryption')
+const { encryptDni, hashDni } = require('../utils/dniEncryption')
 
 const SALT_ROUNDS = 10
 
@@ -38,16 +38,16 @@ async function seedAdmin() {
     const passwordHash = await bcrypt.hash(PASSWORD, SALT_ROUNDS)
 
     await client.query(
-      `INSERT INTO usuarios (dni_nie, nombre, apellidos, email, telefono, role, password_hash)
-       VALUES ($1, $2, $3, $4, $5, 'admin', $6)
-       ON CONFLICT (dni_nie) DO UPDATE SET
+      `INSERT INTO usuarios (dni_nie, dni_nie_hash, nombre, apellidos, email, telefono, role, password_hash)
+       VALUES ($1, $2, $3, $4, $5, $6, 'admin', $7)
+       ON CONFLICT (dni_nie_hash) DO UPDATE SET
          nombre        = EXCLUDED.nombre,
          apellidos     = EXCLUDED.apellidos,
          email         = EXCLUDED.email,
          telefono      = EXCLUDED.telefono,
          role          = 'admin',
          password_hash = EXCLUDED.password_hash`,
-      [encryptDni(DNI_NIE), NOMBRE, APELLIDOS, EMAIL, TELEFONO, passwordHash]
+      [encryptDni(DNI_NIE), hashDni(DNI_NIE), NOMBRE, APELLIDOS, EMAIL, TELEFONO, passwordHash]
     )
 
     console.log(`[seedAdmin] ✅  Usuario administrador listo: ${DNI_NIE} / ${EMAIL}`)

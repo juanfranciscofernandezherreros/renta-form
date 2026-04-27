@@ -9,7 +9,7 @@ const bcrypt = require('bcrypt')
 const pool = require('./pool')
 const migrate = require('./migrate')
 const seedPreguntas = require('./seedPreguntas')
-const { encryptDni } = require('../utils/dniEncryption')
+const { encryptDni, hashDni } = require('../utils/dniEncryption')
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -118,14 +118,14 @@ async function seed100(client) {
     for (const u of usuarios) {
       const passwordHash = await bcrypt.hash(u.password, SALT_ROUNDS)
       await client.query(
-        `INSERT INTO usuarios (dni_nie, nombre, apellidos, email, telefono, role, password_hash)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         ON CONFLICT (dni_nie) DO UPDATE SET
+        `INSERT INTO usuarios (dni_nie, dni_nie_hash, nombre, apellidos, email, telefono, role, password_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ON CONFLICT (dni_nie_hash) DO UPDATE SET
            nombre = EXCLUDED.nombre,
            apellidos = EXCLUDED.apellidos,
            email = EXCLUDED.email,
            telefono = EXCLUDED.telefono`,
-        [encryptDni(u.dni_nie), u.nombre, u.apellidos, u.email, u.telefono, u.role, passwordHash]
+        [encryptDni(u.dni_nie), hashDni(u.dni_nie), u.nombre, u.apellidos, u.email, u.telefono, u.role, passwordHash]
       )
     }
     console.log('[seed100] 100 usuarios seeded.')
@@ -137,17 +137,17 @@ async function seed100(client) {
       const d = declaraciones[i]
       const { rows: insertRows } = await client.query(
         `INSERT INTO declaraciones (
-           nombre, apellidos, dni_nie, email, telefono, estado
+           nombre, apellidos, dni_nie, dni_nie_hash, email, telefono, estado
          ) VALUES (
-           $1, $2, $3, $4, $5, $6::estado_expediente
+           $1, $2, $3, $4, $5, $6, $7::estado_expediente
          )
-         ON CONFLICT (dni_nie) DO UPDATE SET
+         ON CONFLICT (dni_nie_hash) DO UPDATE SET
            nombre = EXCLUDED.nombre,
            apellidos = EXCLUDED.apellidos,
            email = EXCLUDED.email,
            estado = EXCLUDED.estado
          RETURNING id`,
-        [d.nombre, d.apellidos, encryptDni(d.dni_nie), d.email, d.telefono, d.estado]
+        [d.nombre, d.apellidos, encryptDni(d.dni_nie), hashDni(d.dni_nie), d.email, d.telefono, d.estado]
       )
       const declId = insertRows[0].id
 

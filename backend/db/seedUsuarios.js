@@ -7,7 +7,7 @@
 const bcrypt = require('bcrypt')
 const pool = require('./pool')
 const migrate = require('./migrate')
-const { encryptDni } = require('../utils/dniEncryption')
+const { encryptDni, hashDni } = require('../utils/dniEncryption')
 
 const SALT_ROUNDS = 10
 
@@ -67,16 +67,16 @@ async function seedUsuarios(client) {
     console.log('[seedUsuarios] Seeding admin user...')
     const adminHash = await bcrypt.hash(ADMIN_PASSWORD, SALT_ROUNDS)
     await client.query(
-      `INSERT INTO usuarios (dni_nie, nombre, apellidos, email, telefono, role, password_hash)
-       VALUES ($1, $2, $3, $4, $5, 'admin', $6)
-       ON CONFLICT (dni_nie) DO UPDATE SET
+      `INSERT INTO usuarios (dni_nie, dni_nie_hash, nombre, apellidos, email, telefono, role, password_hash)
+       VALUES ($1, $2, $3, $4, $5, $6, 'admin', $7)
+       ON CONFLICT (dni_nie_hash) DO UPDATE SET
          nombre        = EXCLUDED.nombre,
          apellidos     = EXCLUDED.apellidos,
          email         = EXCLUDED.email,
          telefono      = EXCLUDED.telefono,
          role          = 'admin',
          password_hash = EXCLUDED.password_hash`,
-      [encryptDni(ADMIN_DNI), 'Admin', 'Sistema', ADMIN_EMAIL, '', adminHash]
+      [encryptDni(ADMIN_DNI), hashDni(ADMIN_DNI), 'Admin', 'Sistema', ADMIN_EMAIL, '', adminHash]
     )
 
     console.log('[seedUsuarios] Seeding 100 usuarios...')
@@ -84,14 +84,14 @@ async function seedUsuarios(client) {
     const userPasswordHash = await bcrypt.hash(DEFAULT_USER_PASSWORD, SALT_ROUNDS)
     for (const u of usuarios) {
       await client.query(
-        `INSERT INTO usuarios (dni_nie, nombre, apellidos, email, telefono, role, password_hash)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         ON CONFLICT (dni_nie) DO UPDATE SET
+        `INSERT INTO usuarios (dni_nie, dni_nie_hash, nombre, apellidos, email, telefono, role, password_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         ON CONFLICT (dni_nie_hash) DO UPDATE SET
            nombre = EXCLUDED.nombre,
            apellidos = EXCLUDED.apellidos,
            email = EXCLUDED.email,
            telefono = EXCLUDED.telefono`,
-        [encryptDni(u.dni_nie), u.nombre, u.apellidos, u.email, u.telefono, u.role, userPasswordHash]
+        [encryptDni(u.dni_nie), hashDni(u.dni_nie), u.nombre, u.apellidos, u.email, u.telefono, u.role, userPasswordHash]
       )
     }
     console.log('[seedUsuarios] Usuarios seeded.')

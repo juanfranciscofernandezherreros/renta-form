@@ -10,7 +10,7 @@ const bcrypt = require('bcrypt')
 const pool = require('../db/pool')
 const mailer = require('./mailer')
 const pdfGenerator = require('./pdfGenerator')
-const { encryptDni, decryptDni, normalise: normaliseDni } = require('../utils/dniEncryption')
+const { encryptDni, decryptDni, hashDni, normalise: normaliseDni } = require('../utils/dniEncryption')
 
 const BCRYPT_ROUNDS = 12
 
@@ -184,8 +184,8 @@ async function loginAdmin({ username, password }) {
   try {
     const normalised = (username ?? '').trim().toUpperCase()
     const { rows } = await pool.query(
-      'SELECT password_hash, role, bloqueado, email FROM usuarios WHERE dni_nie = $1',
-      [encryptDni(normalised)]
+      'SELECT password_hash, role, bloqueado, email FROM usuarios WHERE dni_nie_hash = $1',
+      [hashDni(normalised)]
     )
     if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
     const user = rows[0]
@@ -205,8 +205,8 @@ async function loginUser({ dniNie, password }) {
   try {
     const normalised = (dniNie ?? '').trim().toUpperCase()
     const { rows } = await pool.query(
-      'SELECT password_hash, role, bloqueado FROM usuarios WHERE dni_nie = $1',
-      [encryptDni(normalised)]
+      'SELECT password_hash, role, bloqueado FROM usuarios WHERE dni_nie_hash = $1',
+      [hashDni(normalised)]
     )
     if (!rows.length) return { data: null, error: { message: 'DNI/NIE no encontrado' } }
     const user = rows[0]
@@ -224,15 +224,15 @@ async function loginUser({ dniNie, password }) {
 async function changePassword({ dniNie, oldPassword, newPassword }) {
   try {
     const { rows } = await pool.query(
-      'SELECT password_hash FROM usuarios WHERE dni_nie = $1',
-      [encryptDni(dniNie)]
+      'SELECT password_hash FROM usuarios WHERE dni_nie_hash = $1',
+      [hashDni(dniNie)]
     )
     if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
     if (!(await verifyPassword(oldPassword, rows[0].password_hash))) {
       return { data: null, error: { message: 'La contraseña actual es incorrecta' } }
     }
     const hashed = await hashPassword(newPassword)
-    await pool.query('UPDATE usuarios SET password_hash = $1 WHERE dni_nie = $2', [hashed, encryptDni(dniNie)])
+    await pool.query('UPDATE usuarios SET password_hash = $1 WHERE dni_nie_hash = $2', [hashed, hashDni(dniNie)])
     return { data: { success: true }, error: null }
   } catch (err) {
     console.error('changePassword DB error:', err.message)
@@ -250,8 +250,8 @@ async function changeEmail({ dniNie, newEmail }) {
     }
     const normalised = (dniNie ?? '').trim().toUpperCase()
     const { rows } = await pool.query(
-      'SELECT role, email FROM usuarios WHERE dni_nie = $1',
-      [encryptDni(normalised)]
+      'SELECT role, email FROM usuarios WHERE dni_nie_hash = $1',
+      [hashDni(normalised)]
     )
     if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
     const user = rows[0]
@@ -262,7 +262,7 @@ async function changeEmail({ dniNie, newEmail }) {
     if (user.email === trimmedEmail) {
       return { data: { success: true, email: user.email }, error: null }
     }
-    await pool.query('UPDATE usuarios SET email = $1 WHERE dni_nie = $2', [trimmedEmail, encryptDni(normalised)])
+    await pool.query('UPDATE usuarios SET email = $1 WHERE dni_nie_hash = $2', [trimmedEmail, hashDni(normalised)])
     return { data: { success: true, email: trimmedEmail }, error: null }
   } catch (err) {
     console.error('changeEmail DB error:', err.message)
@@ -675,7 +675,7 @@ async function listDeclaraciones({ dniNie, estado, page = 1, limit = 10 }) {
   try {
     const conditions = []
     const params = []
-    if (dniNie) { conditions.push(`dni_nie = $${params.length + 1}`); params.push(encryptDni(dniNie)) }
+    if (dniNie) { conditions.push(`dni_nie_hash = $${params.length + 1}`); params.push(hashDni(dniNie)) }
     if (estado) { conditions.push(`estado = $${params.length + 1}`); params.push(estado) }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
     const countRes = await pool.query(`SELECT COUNT(*) FROM declaraciones ${where}`, params)
@@ -700,8 +700,8 @@ async function listDeclaracionesAll({ dniNie, estado, page = 1, limit = 20 }) {
     const conditions = []
     const params = []
     if (dniNie) {
-      conditions.push(`dni_nie = $${params.length + 1}`)
-      params.push(encryptDni(dniNie))
+      conditions.push(`dni_nie_hash = $${params.length + 1}`)
+      params.push(hashDni(dniNie))
     }
     if (estado) { conditions.push(`estado = $${params.length + 1}`); params.push(estado) }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
@@ -846,10 +846,10 @@ async function createDeclaracion(body) {
     await client.query('BEGIN')
 
     const { rows } = await client.query(
-      `INSERT INTO declaraciones (nombre, apellidos, dni_nie, email, telefono)
-       VALUES ($1,$2,$3,$4,$5)
+      `INSERT INTO declaraciones (nombre, apellidos, dni_nie, dni_nie_hash, email, telefono)
+       VALUES ($1,$2,$3,$4,$5,$6)
        RETURNING id, estado, creado_en`,
-      [nombre, apellidos, encryptDni(dniNie), email, telefono]
+      [nombre, apellidos, encryptDni(dniNie), hashDni(dniNie), email, telefono]
     )
     const row = rows[0]
     const declaracionId = row.id
@@ -958,6 +958,11 @@ async function updateDeclaracion(id, body) {
     if (body[camel] !== undefined) {
       params.push(camel === 'dniNie' ? encryptDni(body[camel]) : body[camel])
       setClauses.push(`${snake} = $${params.length}`)
+      // Keep the hash column in sync whenever dni_nie changes.
+      if (camel === 'dniNie') {
+        params.push(hashDni(body[camel]))
+        setClauses.push(`dni_nie_hash = $${params.length}`)
+      }
     }
   }
 
@@ -1066,8 +1071,8 @@ async function listUsersAdmin({ bloqueado, denunciado, search, page = 1, limit =
     if (search) {
       const escaped = search.replace(/[%_\\]/g, '\\$&')
       const like = `%${escaped}%`
-      const encryptedSearch = encryptDni(search)
-      conditions.push(`(nombre ILIKE $${params.length + 1} OR apellidos ILIKE $${params.length + 2} OR email ILIKE $${params.length + 3} OR dni_nie = $${params.length + 4})`)
+      const encryptedSearch = hashDni(search)
+      conditions.push(`(nombre ILIKE $${params.length + 1} OR apellidos ILIKE $${params.length + 2} OR email ILIKE $${params.length + 3} OR dni_nie_hash = $${params.length + 4})`)
       params.push(like, like, like, encryptedSearch)
     }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
@@ -1089,8 +1094,8 @@ async function listUsersAdmin({ bloqueado, denunciado, search, page = 1, limit =
 async function blockUser(dniNie, bloqueado) {
   try {
     const { rowCount } = await pool.query(
-      'UPDATE usuarios SET bloqueado = $1 WHERE dni_nie = $2',
-      [!!bloqueado, encryptDni(dniNie)]
+      'UPDATE usuarios SET bloqueado = $1 WHERE dni_nie_hash = $2',
+      [!!bloqueado, hashDni(dniNie)]
     )
     if (!rowCount) return { data: null, error: { message: 'Usuario no encontrado' } }
     return { data: { success: true }, error: null }
@@ -1103,8 +1108,8 @@ async function blockUser(dniNie, bloqueado) {
 async function reportUser(dniNie, denunciado) {
   try {
     const { rowCount } = await pool.query(
-      'UPDATE usuarios SET denunciado = $1 WHERE dni_nie = $2',
-      [!!denunciado, encryptDni(dniNie)]
+      'UPDATE usuarios SET denunciado = $1 WHERE dni_nie_hash = $2',
+      [!!denunciado, hashDni(dniNie)]
     )
     if (!rowCount) return { data: null, error: { message: 'Usuario no encontrado' } }
     return { data: { success: true }, error: null }
@@ -1116,13 +1121,13 @@ async function reportUser(dniNie, denunciado) {
 
 async function deleteUser(dniNie) {
   try {
-    const { rows } = await pool.query('SELECT role FROM usuarios WHERE dni_nie = $1', [encryptDni(dniNie)])
+    const { rows } = await pool.query('SELECT role FROM usuarios WHERE dni_nie_hash = $1', [hashDni(dniNie)])
     if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
     if (rows[0].role === 'admin') {
       return { data: null, error: { message: 'No se pueden eliminar usuarios administradores' }, status: 403 }
     }
-    await pool.query('DELETE FROM declaraciones WHERE dni_nie = $1', [encryptDni(dniNie)])
-    await pool.query('DELETE FROM usuarios WHERE dni_nie = $1', [encryptDni(dniNie)])
+    await pool.query('DELETE FROM declaraciones WHERE dni_nie_hash = $1', [hashDni(dniNie)])
+    await pool.query('DELETE FROM usuarios WHERE dni_nie_hash = $1', [hashDni(dniNie)])
     return { data: { success: true }, error: null }
   } catch (err) {
     console.error('deleteUser DB error:', err.message)
@@ -1138,17 +1143,17 @@ async function assignUserAccount({ dniNie, password, declaracionId }) {
     const decCheck = await pool.query('SELECT nombre, apellidos, email, telefono FROM declaraciones WHERE id = $1', [declaracionId])
     if (!decCheck.rows.length) return { data: null, error: { message: 'Declaración no encontrada' } }
     const dec = decCheck.rows[0]
-    const existing = await pool.query('SELECT dni_nie FROM usuarios WHERE dni_nie = $1', [encryptDni(dniNie)])
+    const existing = await pool.query('SELECT dni_nie FROM usuarios WHERE dni_nie_hash = $1', [hashDni(dniNie)])
     const isNew = !existing.rows.length
     const hashed = await hashPassword(password)
     if (isNew) {
       await pool.query(
-        `INSERT INTO usuarios (dni_nie, nombre, apellidos, email, telefono, role, password_hash)
-         VALUES ($1, $2, $3, $4, $5, 'user', $6)`,
-        [encryptDni(dniNie), dec.nombre, dec.apellidos, dec.email, dec.telefono ?? '', hashed]
+        `INSERT INTO usuarios (dni_nie, dni_nie_hash, nombre, apellidos, email, telefono, role, password_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, 'user', $7)`,
+        [encryptDni(dniNie), hashDni(dniNie), dec.nombre, dec.apellidos, dec.email, dec.telefono ?? '', hashed]
       )
     } else {
-      await pool.query('UPDATE usuarios SET password_hash = $1 WHERE dni_nie = $2', [hashed, encryptDni(dniNie)])
+      await pool.query('UPDATE usuarios SET password_hash = $1 WHERE dni_nie_hash = $2', [hashed, hashDni(dniNie)])
     }
     return { data: { created: isNew, dniNie }, error: null }
   } catch (err) {
@@ -1159,7 +1164,7 @@ async function assignUserAccount({ dniNie, password, declaracionId }) {
 
 async function getUserByDniNie(dniNie) {
   try {
-    const { rows } = await pool.query('SELECT * FROM usuarios WHERE dni_nie = $1', [encryptDni(dniNie)])
+    const { rows } = await pool.query('SELECT * FROM usuarios WHERE dni_nie_hash = $1', [hashDni(dniNie)])
     return { data: rows.length ? rowToUser(rows[0]) : null, error: null }
   } catch (err) {
     console.error('getUserByDniNie DB error:', err.message)
@@ -1513,7 +1518,7 @@ async function sendEmailToUser({ dniNie }) {
   }
   // Verify the user exists before responding
   try {
-    const { rows } = await pool.query('SELECT dni_nie FROM usuarios WHERE dni_nie = $1', [encryptDni(dniNie)])
+    const { rows } = await pool.query('SELECT dni_nie FROM usuarios WHERE dni_nie_hash = $1', [hashDni(dniNie)])
     if (!rows.length) {
       return { data: null, error: { message: 'Usuario no encontrado' }, status: 404 }
     }
