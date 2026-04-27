@@ -1949,17 +1949,63 @@ async function sendEmailDeclaracion({ declaracionId }) {
   if (!declaracionId) {
     return { data: null, error: { message: 'declaracionId es obligatorio' }, status: 400 }
   }
-  // Verify the declaration exists before responding
+
+  // Load the full declaration (with respuestas spread) so we can build the
+  // PDF attachment exactly like the auto-notification on creation does.
+  let dec
   try {
-    const { rows } = await pool.query('SELECT id FROM declaraciones WHERE id = $1', [declaracionId])
-    if (!rows.length) {
+    const result = await getDeclaracion(declaracionId)
+    if (result.error) return result
+    dec = result.data
+    if (!dec) {
       return { data: null, error: { message: 'Declaración no encontrada' }, status: 404 }
     }
   } catch (err) {
-    console.error('sendEmailDeclaracion DB error:', err.message)
+    console.error('sendEmailDeclaracion lookup error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
-  return { data: null, error: { message: 'El envío de correo no está configurado en este servidor' }, status: 501 }
+
+  const to = (dec.email || '').trim()
+  if (!to) {
+    return { data: null, error: { message: 'La declaración no tiene email asociado' }, status: 400 }
+  }
+
+  if (!(await isEmailEnvioActivo())) {
+    return { data: null, error: { message: 'El envío de correo está desactivado en la configuración' }, status: 503 }
+  }
+  if (!mailer.isConfigured()) {
+    return { data: null, error: { message: 'El envío de correo no está configurado en este servidor' }, status: 501 }
+  }
+
+  const attachments = await buildDeclaracionPdfAttachment(dec)
+  const subject = 'Tu cuestionario de la Renta 2025'
+  const nombre = (dec.nombre || '').trim()
+  const greeting = nombre ? `Hola ${nombre},` : 'Hola,'
+  const lines = [
+    greeting,
+    '',
+    'Te enviamos de nuevo el cuestionario para la Campaña de la Renta 2025 que has facilitado.',
+    'Adjunto a este correo encontrarás el PDF con las respuestas registradas.',
+    '',
+    'Si necesitas modificar algún dato, ponte en contacto con nosotros.',
+    '',
+    'Un saludo,',
+    'NH Gestión Integral',
+  ]
+  const result = await mailer.sendMail({
+    to,
+    subject,
+    text: lines.join('\n'),
+    attachments,
+  })
+  if (!result.sent) {
+    return {
+      data: null,
+      error: { message: result.error || 'No se pudo enviar el email' },
+      status: 502,
+    }
+  }
+  return { data: { sent: true, to, messageId: result.messageId }, error: null }
 }
 
 async function sendEmailToUser({ dniNie }) {
