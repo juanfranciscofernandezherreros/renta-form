@@ -125,6 +125,54 @@ paths:
                 en:
                   headerTitle: 'Tax Filing Questionnaire'
 
+  /public/declaraciones:
+    post:
+      operationId: createDeclaracionPublic
+      tags: [Declaraciones]
+      summary: Envía un cuestionario fiscal completo (endpoint público)
+      description: |
+        Variante pública del endpoint de creación de declaraciones. No
+        requiere autenticación bajo ninguna circunstancia: el frontend la
+        usa para que un ciudadano anónimo pueda enviar su declaración aunque
+        no exista una sesión válida.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeclaracionInput'
+      responses:
+        '201':
+          description: Declaración creada correctamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeclaracionCreada'
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorValidacion'
+        '422':
+          description: Entidad no procesable (restricciones de negocio)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Demasiadas peticiones
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '503':
+          description: Servicio no disponible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /irpf/declaraciones:
     post:
       operationId: createDeclaracion
