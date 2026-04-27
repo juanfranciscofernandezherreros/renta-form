@@ -105,11 +105,9 @@ export default function TraduccionesAdminTab({ showToast }) {
 
   // Union of all keys across idiomas + required keys from faltantesData so the
   // user can see and fill them in even if no idioma has them yet.
-  // Keys with missing values (empty in some idioma) are listed first, so the
-  // admin can focus on completing untranslated entries. The ordering is
-  // computed from `originalContents` (the last loaded/saved snapshot) so rows
-  // don't reorder while the user is typing; the order refreshes after save or
-  // reload. Within the same missing-count bucket, keys are sorted alphabetically.
+  // Keys with at least one empty value across the idiomas are listed first
+  // (sorted alphabetically within that group), so the admin can quickly spot
+  // and fill in untranslated entries.
   const allKeys = useMemo(() => {
     const set = new Set()
     for (const id of Object.keys(contents)) {
@@ -118,22 +116,30 @@ export default function TraduccionesAdminTab({ showToast }) {
     if (faltantesData?.claves_requeridas) {
       for (const k of faltantesData.claves_requeridas) set.add(k)
     }
-    const idiomaIds = Object.keys(originalContents)
-    const missingCount = (key) => {
-      if (idiomaIds.length === 0) return 0
-      let count = 0
-      for (const id of idiomaIds) {
-        const value = originalContents[id]?.[key]
-        if (value === undefined || value === null || value === '') count++
+    const idiomaIds = Object.keys(contents)
+    // Precompute "missing" status per key once (O(n*m)) instead of inside the
+    // sort comparator (which would be O(n*m*log(n))).
+    const missing = new Set()
+    for (const key of set) {
+      if (idiomaIds.length === 0) {
+        missing.add(key)
+        continue
       }
-      return count
+      for (const id of idiomaIds) {
+        const v = contents[id]?.[key]
+        if (v === undefined || v === null || String(v).trim() === '') {
+          missing.add(key)
+          break
+        }
+      }
     }
     return Array.from(set).sort((a, b) => {
-      const diff = missingCount(b) - missingCount(a)
-      if (diff !== 0) return diff
+      const am = missing.has(a)
+      const bm = missing.has(b)
+      if (am !== bm) return am ? -1 : 1
       return a.localeCompare(b)
     })
-  }, [contents, originalContents, faltantesData])
+  }, [contents, faltantesData])
 
   const filteredKeys = useMemo(() => {
     const f = filter.trim().toLowerCase()
