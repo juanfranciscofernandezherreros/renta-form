@@ -144,6 +144,8 @@ function downloadDeclaracionPdf(dec, preguntasSecciones, t) {
   setTimeout(() => win.print(), 400)
 }
 
+const PAGE_SIZE_OPTIONS = [5, 10, 15, 20]
+
 export default function AdminPage({ onNavigate }) {
   const { user, logout } = useAuth()
   const { t } = useLanguage()
@@ -159,7 +161,7 @@ export default function AdminPage({ onNavigate }) {
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [page, setPage] = useState(1)
-  const limit = 10
+  const [limit, setLimit] = useState(10)
 
   // Edit declaration modal
   const [editModal, setEditModal] = useState(null) // declaration object being edited
@@ -210,7 +212,7 @@ export default function AdminPage({ onNavigate }) {
       .catch(err => { if (!cancelled) setError(err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [filtroEstado, filtroDni, page, refreshKey])
+  }, [filtroEstado, filtroDni, page, limit, refreshKey])
 
   const handleEstadoChange = async (dec, nuevoEstado) => {
     const { error: apiErr } = await updateEstadoDeclaracion({
@@ -454,6 +456,17 @@ export default function AdminPage({ onNavigate }) {
               <option value="">Todos los estados</option>
               {ESTADOS.map(e => (
                 <option key={e} value={e}>{t(ESTADO_T_KEYS[e] ?? e)}</option>
+              ))}
+            </select>
+            <select
+              className="admin-filter-select"
+              value={limit}
+              onChange={e => { setLimit(Number(e.target.value)); setPage(1) }}
+              title="Elementos por página"
+              aria-label="Elementos por página"
+            >
+              {PAGE_SIZE_OPTIONS.map(n => (
+                <option key={n} value={n}>{n} / página</option>
               ))}
             </select>
           </div>
