@@ -29,7 +29,18 @@ DATABASE_URL=postgresql://<usuario>:<contraseña>@<host>/<bbdd>?sslmode=require
 # PGPASSWORD=postgres
 
 CORS_ORIGIN=http://localhost:5173
+
+# Envío de correo (opcional). Si no están definidas, el envío de correo se
+# omite con un log informativo y la API sigue funcionando con normalidad.
+# SMTP_HOST=smtp.gmail.com
+# SMTP_PORT=587
+# SMTP_SECURE=false
+# SMTP_USER=tu-usuario
+# SMTP_PASS=tu-contraseña
+# MAIL_FROM="Renta Form <noreply@example.com>"
 ```
+
+> Cuando una declaración se guarda correctamente (`POST /v1/irpf/declaraciones`), se notifica por correo a todos los usuarios con `role = 'admin'` cuyo `email` esté informado en la tabla `usuarios`. El envío es asíncrono (no bloquea la respuesta) y, si el SMTP no está configurado, se omite silenciosamente.
 
 ### 3. Inicializar la base de datos
 
