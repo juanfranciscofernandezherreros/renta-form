@@ -489,8 +489,9 @@ async function updatePreguntaFormulario(id, { campo, orden, texto, textos } = {}
       )
       const maxo = maxRows[0].maxo
       // Target position is clamped to the current valid range [1, maxo]
-      // since we are not adding a new row.
-      nextOrden = Math.min(requestedOrden, Math.max(maxo, 1))
+      // since we are not adding a new row. (maxo >= 1 because the target
+      // row was just located above.)
+      nextOrden = Math.min(requestedOrden, maxo)
 
       if (nextOrden < oldOrden) {
         // Moving up: shift down rows in [nextOrden, oldOrden - 1] except self.
