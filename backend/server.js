@@ -7,7 +7,6 @@
 const fs = require('fs')
 const path = require('path')
 const express = require('express')
-const cors = require('cors')
 const config = require('./config')
 
 // ── Service layer ──────────────────────────────────────────────────────────
@@ -19,13 +18,6 @@ const app = express()
 // Trust Heroku's load balancer / reverse proxy so that rate limiters and
 // IP-detection middleware (express-rate-limit) work correctly.
 app.set('trust proxy', 1)
-
-app.use(
-  cors({
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-)
 
 app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true, limit: '10mb' }))
