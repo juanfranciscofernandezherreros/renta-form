@@ -1,0 +1,598 @@
+/*
+ * AdminLTE 3 themed styles for the admin panel.
+ * Inspired by https://adminlte.io/themes/v3/ — colors, spacing, sidebar /
+ * navbar / content-wrapper structure replicated using plain CSS so we can
+ * reuse it from React without depending on jQuery / Bootstrap / AdminLTE JS.
+ *
+ * Scope: every rule lives under `.adminlte-wrapper` so the public form keeps
+ * its existing look untouched.
+ */
+
+/* ------------------------------------------------------------------ *
+ * Layout / wrapper                                                    *
+ * ------------------------------------------------------------------ */
+.adminlte-wrapper {
+  --adminlte-sidebar-bg: #343a40;
+  --adminlte-sidebar-bg-hover: #494e54;
+  --adminlte-sidebar-color: #c2c7d0;
+  --adminlte-sidebar-active-bg: #007bff;
+  --adminlte-sidebar-active-color: #ffffff;
+  --adminlte-content-bg: #f4f6f9;
+  --adminlte-card-border: #dee2e6;
+  --adminlte-text: #212529;
+  --adminlte-muted: #6c757d;
+  --adminlte-primary: #007bff;
+  --adminlte-success: #28a745;
+  --adminlte-info: #17a2b8;
+  --adminlte-warning: #ffc107;
+  --adminlte-danger: #dc3545;
+  --adminlte-sidebar-width: 250px;
+
+  position: relative;
+  min-height: 100vh;
+  background: var(--adminlte-content-bg);
+  color: var(--adminlte-text);
+  font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+}
+
+/* The admin layout owns its own header markup; if a stray top-level <header>
+   is rendered as a sibling of the wrapper (legacy layouts), hide it. */
+.adminlte-wrapper > header {
+  display: none;
+}
+
+.adminlte-wrapper *,
+.adminlte-wrapper *::before,
+.adminlte-wrapper *::after {
+  box-sizing: border-box;
+}
+
+/* ------------------------------------------------------------------ *
+ * Top navbar (.main-header)                                           *
+ * ------------------------------------------------------------------ */
+.adminlte-wrapper .main-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 57px;
+  background: #ffffff;
+  border-bottom: 1px solid var(--adminlte-card-border);
+  display: flex;
+  align-items: center;
+  padding: 0 1rem;
+  z-index: 1030;
+}
+.adminlte-wrapper .main-header .navbar-nav {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+}
+.adminlte-wrapper .main-header .navbar-nav.ml-auto {
+  margin-left: auto;
+}
+.adminlte-wrapper .main-header .nav-item {
+  display: flex;
+}
+.adminlte-wrapper .main-header .nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  color: #495057;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color .15s ease;
+}
+.adminlte-wrapper .main-header .nav-link:hover {
+  background: #f4f6f9;
+  color: var(--adminlte-primary);
+}
+.adminlte-wrapper .main-header .nav-link.text-danger:hover {
+  color: var(--adminlte-danger);
+}
+.adminlte-wrapper .main-header .navbar-toggler {
+  background: transparent;
+  border: none;
+  color: #495057;
+  padding: 6px 10px;
+  font-size: 1.1rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.adminlte-wrapper .main-header .navbar-toggler:hover { background: #f4f6f9; }
+
+/* ------------------------------------------------------------------ *
+ * Sidebar (.main-sidebar)                                             *
+ * ------------------------------------------------------------------ */
+.adminlte-wrapper .main-sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: var(--adminlte-sidebar-width);
+  background: var(--adminlte-sidebar-bg);
+  color: var(--adminlte-sidebar-color);
+  z-index: 1040;
+  display: flex;
+  flex-direction: column;
+  transition: margin-left .25s ease;
+  overflow-y: auto;
+}
+.adminlte-wrapper .main-sidebar .brand-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #ffffff;
+  text-decoration: none;
+  border-bottom: 1px solid #4b545c;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.adminlte-wrapper .main-sidebar .brand-link .brand-image {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+.adminlte-wrapper .main-sidebar .sidebar {
+  padding: 12px 8px;
+  flex: 1;
+}
+.adminlte-wrapper .nav-sidebar {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.adminlte-wrapper .nav-sidebar .nav-header {
+  padding: 14px 12px 6px;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: .04em;
+  color: #868e96;
+  font-weight: 600;
+}
+.adminlte-wrapper .nav-sidebar .nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--adminlte-sidebar-color);
+  font-size: 0.95rem;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color .15s ease, color .15s ease;
+}
+.adminlte-wrapper .nav-sidebar .nav-link:hover {
+  background: var(--adminlte-sidebar-bg-hover);
+  color: #ffffff;
+}
+.adminlte-wrapper .nav-sidebar .nav-link.active {
+  background: var(--adminlte-sidebar-active-bg);
+  color: var(--adminlte-sidebar-active-color);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, .1);
+}
+.adminlte-wrapper .nav-sidebar .nav-icon {
+  width: 20px;
+  text-align: center;
+  font-size: 1rem;
+}
+
+/* Collapsed sidebar (mobile / toggled). */
+.adminlte-wrapper.sidebar-collapsed .main-sidebar {
+  margin-left: calc(var(--adminlte-sidebar-width) * -1);
+}
+.adminlte-wrapper.sidebar-collapsed .content-wrapper,
+.adminlte-wrapper.sidebar-collapsed .main-header,
+.adminlte-wrapper.sidebar-collapsed .main-footer {
+  margin-left: 0;
+}
+
+/* ------------------------------------------------------------------ *
+ * Content wrapper                                                     *
+ * ------------------------------------------------------------------ */
+.adminlte-wrapper .content-wrapper {
+  margin-left: var(--adminlte-sidebar-width);
+  padding-top: 57px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: margin-left .25s ease;
+}
+.adminlte-wrapper .content-header {
+  padding: 16px 1.5rem 0;
+}
+.adminlte-wrapper .content-header h1 {
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: #343a40;
+  margin: 0 0 4px;
+}
+.adminlte-wrapper .breadcrumb {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--adminlte-muted);
+}
+.adminlte-wrapper .breadcrumb li + li::before {
+  content: '/';
+  color: #adb5bd;
+  margin-right: 6px;
+}
+.adminlte-wrapper .breadcrumb a { color: var(--adminlte-primary); text-decoration: none; }
+.adminlte-wrapper .content {
+  padding: 16px 1.5rem;
+  flex: 1;
+}
+
+/* ------------------------------------------------------------------ *
+ * Cards (replaces the global `.card` look only inside the wrapper)    *
+ * ------------------------------------------------------------------ */
+.adminlte-wrapper .card {
+  background: #ffffff;
+  border: 0;
+  border-radius: 4px;
+  box-shadow: 0 0 1px rgba(0, 0, 0, .125), 0 1px 3px rgba(0, 0, 0, .12);
+  margin: 0 0 20px;
+  padding: 0;
+  overflow: hidden;
+  max-width: none;
+}
+.adminlte-wrapper .card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 1.25rem;
+  background: transparent;
+  border-bottom: 1px solid #f4f4f4;
+}
+.adminlte-wrapper .card-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 400;
+  color: #343a40;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.adminlte-wrapper .card-tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.adminlte-wrapper .card-body {
+  padding: 1.25rem;
+}
+.adminlte-wrapper .card.card-primary { border-top: 3px solid var(--adminlte-primary); }
+.adminlte-wrapper .card.card-info    { border-top: 3px solid var(--adminlte-info); }
+.adminlte-wrapper .card.card-success { border-top: 3px solid var(--adminlte-success); }
+
+/* Small-info boxes (top of dashboard, optional). */
+.adminlte-wrapper .small-box {
+  background: #ffffff;
+  color: #ffffff;
+  border-radius: 4px;
+  padding: 16px 18px;
+  position: relative;
+  margin-bottom: 20px;
+  box-shadow: 0 0 1px rgba(0, 0, 0, .125), 0 1px 3px rgba(0, 0, 0, .12);
+}
+.adminlte-wrapper .small-box.bg-info    { background: var(--adminlte-info); }
+.adminlte-wrapper .small-box.bg-success { background: var(--adminlte-success); }
+.adminlte-wrapper .small-box.bg-warning { background: #ffc107; color: #1f2d3d; }
+.adminlte-wrapper .small-box.bg-danger  { background: var(--adminlte-danger); }
+.adminlte-wrapper .small-box .inner h3 {
+  font-size: 2rem;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1;
+}
+.adminlte-wrapper .small-box .inner p {
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+}
+.adminlte-wrapper .small-box .icon {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 2.4rem;
+  opacity: .35;
+}
+
+/* ------------------------------------------------------------------ *
+ * Footer                                                              *
+ * ------------------------------------------------------------------ */
+.adminlte-wrapper .main-footer {
+  margin-left: var(--adminlte-sidebar-width);
+  padding: 12px 1.5rem;
+  background: #ffffff;
+  border-top: 1px solid var(--adminlte-card-border);
+  font-size: 0.85rem;
+  color: var(--adminlte-muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.adminlte-wrapper .main-footer strong { color: var(--adminlte-text); }
+
+/* ------------------------------------------------------------------ *
+ * Responsive: collapse sidebar under 992px                            *
+ * ------------------------------------------------------------------ */
+@media (max-width: 991.98px) {
+  .adminlte-wrapper .main-sidebar {
+    margin-left: calc(var(--adminlte-sidebar-width) * -1);
+  }
+  .adminlte-wrapper .content-wrapper,
+  .adminlte-wrapper .main-header,
+  .adminlte-wrapper .main-footer {
+    margin-left: 0;
+  }
+  .adminlte-wrapper.sidebar-open .main-sidebar {
+    margin-left: 0;
+    box-shadow: 0 0 16px rgba(0, 0, 0, .25);
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Existing app overrides (only inside the wrapper)                    *
+ *                                                                     *
+ * The original styles use a purple gradient and rounded cards; here   *
+ * we tone them down to the AdminLTE flat / muted palette while still  *
+ * reusing the existing class names so we don't have to rewrite every  *
+ * tab.                                                                *
+ * ------------------------------------------------------------------ */
+.adminlte-wrapper .section-title {
+  background: #f4f6f9;
+  color: #343a40;
+  padding: 10px 14px;
+  border-left: 3px solid var(--adminlte-primary);
+  border-radius: 0;
+  margin: 16px 0 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.adminlte-wrapper .info-box {
+  background: #d1ecf1;
+  color: #0c5460;
+  border: 1px solid #bee5eb;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin: 0 0 16px;
+}
+.adminlte-wrapper .info-box-error {
+  background: #f8d7da;
+  color: #721c24;
+  border-color: #f5c6cb;
+}
+
+.adminlte-wrapper .btn {
+  border-radius: 4px;
+  font-weight: 400;
+  padding: 6px 14px;
+  font-size: 0.9rem;
+  box-shadow: none;
+  transition: background-color .15s ease, border-color .15s ease;
+}
+.adminlte-wrapper .btn:hover { transform: none; box-shadow: none; opacity: 1; }
+.adminlte-wrapper .btn-primary {
+  background: var(--adminlte-primary);
+  color: #fff;
+  border: 1px solid #006fe6;
+}
+.adminlte-wrapper .btn-primary:hover { background: #006fe6; }
+.adminlte-wrapper .btn-secondary {
+  background: #6c757d;
+  color: #fff;
+  border: 1px solid #6c757d;
+}
+.adminlte-wrapper .btn-secondary:hover { background: #5a6268; border-color: #545b62; }
+.adminlte-wrapper .btn-success {
+  background: var(--adminlte-success);
+  color: #fff;
+  border: 1px solid var(--adminlte-success);
+}
+.adminlte-wrapper .btn-danger {
+  background: var(--adminlte-danger);
+  color: #fff;
+  border: 1px solid var(--adminlte-danger);
+}
+.adminlte-wrapper .btn-danger:hover { background: #c82333; border-color: #bd2130; }
+.adminlte-wrapper .btn-sm { padding: 4px 10px; font-size: 0.8rem; }
+.adminlte-wrapper .btn-xs { padding: 2px 8px; font-size: 0.75rem; }
+
+.adminlte-wrapper .estado-badge {
+  background: #6c757d;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.72rem;
+  padding: 3px 8px;
+  border-radius: 10px;
+  border: 0;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+}
+.adminlte-wrapper .estado-badge.badge-blue   { background: var(--adminlte-primary); }
+.adminlte-wrapper .estado-badge.badge-yellow { background: var(--adminlte-warning); color: #1f2d3d; }
+.adminlte-wrapper .estado-badge.badge-orange { background: #fd7e14; }
+.adminlte-wrapper .estado-badge.badge-green  { background: var(--adminlte-success); }
+.adminlte-wrapper .estado-badge.badge-gray   { background: #6c757d; }
+
+.adminlte-wrapper .declaracion-card {
+  background: #ffffff;
+  border: 1px solid var(--adminlte-card-border);
+  border-radius: 4px;
+  margin-bottom: 10px;
+  box-shadow: none;
+}
+.adminlte-wrapper .declaracion-header {
+  background: #ffffff;
+}
+.adminlte-wrapper .declaracion-header:hover { background: #f8f9fa; }
+.adminlte-wrapper .declaracion-id { color: var(--adminlte-primary); }
+
+.adminlte-wrapper .respuestas-table {
+  background: #ffffff;
+  border: 1px solid var(--adminlte-card-border);
+  border-radius: 4px;
+}
+.adminlte-wrapper .respuestas-table tr td { padding: 8px 12px; }
+.adminlte-wrapper .respuestas-table tr:nth-child(even) td { background: #f8f9fa; }
+
+.adminlte-wrapper .admin-toolbar {
+  background: transparent;
+  padding: 0 0 12px;
+  border: 0;
+}
+.adminlte-wrapper .admin-stat-badge {
+  background: var(--adminlte-info);
+  color: #ffffff;
+  border-radius: 10px;
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.adminlte-wrapper .admin-filter-input,
+.adminlte-wrapper .admin-filter-select,
+.adminlte-wrapper .admin-estado-select {
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 6px 10px;
+  font-size: 0.9rem;
+  background: #ffffff;
+}
+.adminlte-wrapper .admin-filter-input:focus,
+.adminlte-wrapper .admin-filter-select:focus,
+.adminlte-wrapper .admin-estado-select:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 .2rem rgba(0, 123, 255, .25);
+  outline: none;
+}
+
+.adminlte-wrapper .field input,
+.adminlte-wrapper .field select,
+.adminlte-wrapper .field textarea {
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  background: #ffffff;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+}
+.adminlte-wrapper .field input:focus,
+.adminlte-wrapper .field select:focus,
+.adminlte-wrapper .field textarea:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 .2rem rgba(0, 123, 255, .25);
+}
+.adminlte-wrapper .field label {
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.85rem;
+}
+
+/* ------------------------------------------------------------------ *
+ * Login page                                                          *
+ * ------------------------------------------------------------------ */
+.adminlte-login-page {
+  min-height: 100vh;
+  background: #e9ecef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-family: 'Source Sans Pro', -apple-system, BlinkMacSystemFont,
+    'Segoe UI', Roboto, sans-serif;
+}
+.adminlte-login-page .login-box {
+  width: 100%;
+  max-width: 360px;
+}
+.adminlte-login-page .login-logo {
+  text-align: center;
+  margin-bottom: 16px;
+  font-size: 1.6rem;
+  font-weight: 300;
+  color: #495057;
+}
+.adminlte-login-page .login-logo a { color: inherit; text-decoration: none; }
+.adminlte-login-page .login-card-body {
+  background: #ffffff;
+  border-radius: 4px;
+  padding: 24px;
+  box-shadow: 0 0 1px rgba(0, 0, 0, .125), 0 1px 3px rgba(0, 0, 0, .12);
+}
+.adminlte-login-page .login-box-msg {
+  text-align: center;
+  margin: 0 0 16px;
+  color: var(--adminlte-muted, #6c757d);
+}
+.adminlte-login-page .login-card-body .field { margin-bottom: 12px; }
+.adminlte-login-page .login-card-body .field input {
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 0.95rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+.adminlte-login-page .login-card-body .field input:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 .2rem rgba(0, 123, 255, .25);
+  outline: none;
+}
+.adminlte-login-page .login-card-body .btn {
+  width: 100%;
+  background: #007bff;
+  border: 1px solid #006fe6;
+  color: #ffffff;
+  padding: 8px 14px;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.adminlte-login-page .login-card-body .btn:disabled { opacity: .65; cursor: not-allowed; }
+.adminlte-login-page .info-box,
+.adminlte-login-page .info-box-error {
+  border-radius: 4px;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+}
+.adminlte-login-page .info-box-error {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+.adminlte-login-page .field-error {
+  display: block;
+  color: var(--adminlte-danger, #dc3545);
+  font-size: 0.8rem;
+  margin-top: 4px;
+}

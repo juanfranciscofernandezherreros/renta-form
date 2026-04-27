@@ -19,6 +19,7 @@ import UsuariosAdminTab from './UsuariosAdminTab.jsx'
 import IdiomasAdminTab from './IdiomasAdminTab.jsx'
 import TraduccionesAdminTab from './TraduccionesAdminTab.jsx'
 import Pagination from './Pagination.jsx'
+import './adminlte.css'
 
 
 const ESTADOS = ['recibido', 'en_revision', 'documentacion_pendiente', 'completado', 'archivado']
@@ -150,6 +151,7 @@ export default function AdminPage({ onNavigate }) {
   const { user, logout } = useAuth()
   const { t } = useLanguage()
   const [activeTab, setActiveTab] = useState('declaraciones')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [declaraciones, setDeclaraciones] = useState([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -338,61 +340,91 @@ export default function AdminPage({ onNavigate }) {
     }
   }
 
+  const SIDEBAR_ITEMS = [
+    { key: 'declaraciones', icon: '📋', label: 'Declaraciones' },
+    { key: 'preguntas',     icon: '❓', label: 'Preguntas' },
+    { key: 'usuarios',      icon: '👥', label: 'Usuarios' },
+    { key: 'idiomas',       icon: '🌐', label: 'Idiomas' },
+    { key: 'traducciones',  icon: '📝', label: 'Traducciones' },
+  ]
+  const activeMeta = SIDEBAR_ITEMS.find(it => it.key === activeTab) ?? SIDEBAR_ITEMS[0]
+
   return (
-    <>
-      <header>
-        <div className="header-inner">
-          <div className="logo">{t('logoText')}</div>
-          <nav className="header-nav">
-            <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/')}>
+    <div className={`adminlte-wrapper${sidebarOpen ? ' sidebar-open' : ''}`}>
+      {/* Top navbar */}
+      <nav className="main-header">
+        <ul className="navbar-nav">
+          <li className="nav-item">
+            <button
+              type="button"
+              className="navbar-toggler"
+              onClick={() => setSidebarOpen(o => !o)}
+              aria-label="Mostrar / ocultar el menú lateral"
+            >
+              ☰
+            </button>
+          </li>
+        </ul>
+        <ul className="navbar-nav ml-auto">
+          <li className="nav-item">
+            <button type="button" className="nav-link" onClick={() => onNavigate('#/')}>
               📋 Formulario
             </button>
-            <button type="button" className="btn btn-danger btn-sm" onClick={() => { logout(); onNavigate('#/backend_admin') }}>
+          </li>
+          <li className="nav-item">
+            <button
+              type="button"
+              className="nav-link text-danger"
+              onClick={() => { logout(); onNavigate('#/backend_admin') }}
+            >
               🚪 Cerrar sesión
             </button>
-          </nav>
-        </div>
-      </header>
+          </li>
+        </ul>
+      </nav>
 
-      <div className="card">
-        {/* Tabs */}
-        <div className="admin-tabs">
-          <button
-            type="button"
-            className={`admin-tab${activeTab === 'declaraciones' ? ' active' : ''}`}
-            onClick={() => setActiveTab('declaraciones')}
-          >
-            📋 Declaraciones
-          </button>
-          <button
-            type="button"
-            className={`admin-tab${activeTab === 'preguntas' ? ' active' : ''}`}
-            onClick={() => setActiveTab('preguntas')}
-          >
-            ❓ Preguntas
-          </button>
-          <button
-            type="button"
-            className={`admin-tab${activeTab === 'usuarios' ? ' active' : ''}`}
-            onClick={() => setActiveTab('usuarios')}
-          >
-            👥 Usuarios
-          </button>
-          <button
-            type="button"
-            className={`admin-tab${activeTab === 'idiomas' ? ' active' : ''}`}
-            onClick={() => setActiveTab('idiomas')}
-          >
-            🌐 Idiomas
-          </button>
-          <button
-            type="button"
-            className={`admin-tab${activeTab === 'traducciones' ? ' active' : ''}`}
-            onClick={() => setActiveTab('traducciones')}
-          >
-            📝 Traducciones
-          </button>
+      {/* Sidebar */}
+      <aside className="main-sidebar">
+        <a href="#/backend_admin" className="brand-link">
+          <span className="brand-image" aria-hidden="true">🏛️</span>
+          <span className="brand-text">{t('logoText')}</span>
+        </a>
+        <div className="sidebar">
+          <ul className="nav-sidebar">
+            <li className="nav-header">PANEL</li>
+            {SIDEBAR_ITEMS.map(item => (
+              <li className="nav-item" key={item.key}>
+                <button
+                  type="button"
+                  className={`nav-link${activeTab === item.key ? ' active' : ''}`}
+                  onClick={() => { setActiveTab(item.key); setSidebarOpen(false) }}
+                >
+                  <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+                  <span>{item.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
+      </aside>
+
+      {/* Content wrapper */}
+      <div className="content-wrapper">
+        <div className="content-header">
+          <h1>{activeMeta.icon} {activeMeta.label}</h1>
+          <ul className="breadcrumb">
+            <li><a href="#/backend_admin">Inicio</a></li>
+            <li>{activeMeta.label}</li>
+          </ul>
+        </div>
+
+        <section className="content">
+          <div className="card card-primary">
+            <div className="card-header">
+              <h3 className="card-title">{activeMeta.icon} {activeMeta.label}</h3>
+            </div>
+            <div className="card-body">
+
 
         {activeTab === 'preguntas' && (
           <>
@@ -667,6 +699,14 @@ export default function AdminPage({ onNavigate }) {
         />
           </>
         )}
+            </div>
+          </div>
+        </section>
+
+        <footer className="main-footer">
+          <strong>{t('logoText')}</strong>
+          <span>Panel de administración</span>
+        </footer>
       </div>
 
       {/* Delete confirmation modal */}
@@ -816,6 +856,6 @@ export default function AdminPage({ onNavigate }) {
         <div className={`toast ${toast.type}`} role="alert">{toast.msg}</div>,
         document.body
       )}
-    </>
+    </div>
   )
 }

@@ -92,7 +92,7 @@ Given('el administrador accede al panel de administracion', async function () {
     await this.page.fill('input[name="dniNie"], input[type="text"]', 'ADMIN')
     await this.page.fill('input[name="password"], input[type="password"]', 'admin1234')
     await this.page.click('button[type="submit"]')
-    await this.page.waitForSelector('.admin-tabs, .admin-panel, [class*="admin"]', { timeout: 10000 })
+    await this.page.waitForSelector('.adminlte-wrapper, .admin-tabs, .admin-panel, [class*="admin"]', { timeout: 10000 })
   }
 })
 

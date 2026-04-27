@@ -138,8 +138,8 @@ Then('la respuesta de traducciones tiene el formato correcto', async function ()
 // ── Steps: admin pestaña de idiomas ─────────────────────────────────────────
 
 Then('la pestaña de idiomas está visible en el panel de administración', async function () {
-  await this.page.waitForSelector('.admin-tabs', { timeout: 10000 })
-  const tab = this.page.locator('.admin-tabs button:has-text("Idiomas"), .admin-tabs [role="tab"]:has-text("Idiomas")')
+  await this.page.waitForSelector('.adminlte-wrapper, .admin-tabs', { timeout: 10000 })
+  const tab = this.page.locator('.nav-sidebar button:has-text("Idiomas"), .admin-tabs button:has-text("Idiomas"), [role="tab"]:has-text("Idiomas")')
   const count = await tab.count()
   if (count === 0) {
     throw new Error('La pestaña de idiomas no está visible en el panel de administración')
@@ -147,7 +147,7 @@ Then('la pestaña de idiomas está visible en el panel de administración', asyn
 })
 
 When('el administrador navega a la pestaña de idiomas', async function () {
-  const tab = this.page.locator('.admin-tabs button:has-text("Idiomas")').first()
+  const tab = this.page.locator('.nav-sidebar button:has-text("Idiomas"), .admin-tabs button:has-text("Idiomas")').first()
   await tab.waitFor({ state: 'visible', timeout: 10000 })
   await tab.click()
   // Wait for the idiomas section content to appear
@@ -213,7 +213,7 @@ Then('la tabla de idiomas muestra el idioma recién creado', async function () {
 // ── Steps: admin pestaña de traducciones ─────────────────────────────────────
 
 When('el administrador navega a la pestaña de traducciones', async function () {
-  const tab = this.page.locator('.admin-tabs button:has-text("Traducciones"), .admin-tabs [role="tab"]:has-text("Traducciones")').first()
+  const tab = this.page.locator('.nav-sidebar button:has-text("Traducciones"), .admin-tabs button:has-text("Traducciones"), [role="tab"]:has-text("Traducciones")').first()
   await tab.waitFor({ state: 'visible', timeout: 10000 })
   await tab.click()
   await this.page.waitForSelector('.info-box, .traduccion-idioma-card', { timeout: 10000 })
