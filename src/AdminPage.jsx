@@ -148,6 +148,27 @@ export default function AdminPage({ onNavigate }) {
   const { t } = useLanguage()
   const [activeTab, setActiveTab] = useState('declaraciones')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // Auto-close the mobile sidebar when the viewport grows back to desktop and
+  // lock body scroll while the off-canvas sidebar is open on mobile.
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined
+    const mql = window.matchMedia('(min-width: 992px)')
+    const handle = (e) => { if (e.matches) setSidebarOpen(false) }
+    if (mql.addEventListener) mql.addEventListener('change', handle)
+    else mql.addListener(handle)
+    return () => {
+      if (mql.removeEventListener) mql.removeEventListener('change', handle)
+      else mql.removeListener(handle)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined
+    const prev = document.body.style.overflow
+    if (sidebarOpen) document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [sidebarOpen])
   const [declaraciones, setDeclaraciones] = useState([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -316,6 +337,14 @@ export default function AdminPage({ onNavigate }) {
           </ul>
         </div>
       </aside>
+
+      {/* Mobile backdrop: tap to close the off-canvas sidebar */}
+      <div
+        className="sidebar-backdrop"
+        role="presentation"
+        onClick={() => setSidebarOpen(false)}
+        aria-hidden={!sidebarOpen}
+      />
 
       {/* Content wrapper */}
       <div className="content-wrapper">

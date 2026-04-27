@@ -62,7 +62,7 @@
   display: flex;
   align-items: center;
   padding: 0 1rem;
-  z-index: 1030;
+  z-index: 1050;
 }
 .adminlte-wrapper .main-header .navbar-nav {
   list-style: none;
@@ -343,9 +343,21 @@
 /* ------------------------------------------------------------------ *
  * Responsive: collapse sidebar under 992px                            *
  * ------------------------------------------------------------------ */
+.adminlte-wrapper .sidebar-backdrop {
+  display: none;
+}
+
 @media (max-width: 991.98px) {
   .adminlte-wrapper .main-sidebar {
+    /* Sit below the fixed top navbar so the ☰ toggle stays clickable
+       while the off-canvas sidebar is open. */
+    top: 57px;
     margin-left: calc(var(--adminlte-sidebar-width) * -1);
+    width: min(var(--adminlte-sidebar-width), 85vw);
+  }
+  .adminlte-wrapper .main-sidebar .brand-link {
+    /* Header already shows the brand area; avoid duplicating it on mobile. */
+    display: none;
   }
   .adminlte-wrapper .content-wrapper,
   .adminlte-wrapper .main-header,
@@ -355,6 +367,22 @@
   .adminlte-wrapper.sidebar-open .main-sidebar {
     margin-left: 0;
     box-shadow: 0 0 16px rgba(0, 0, 0, .25);
+  }
+  .adminlte-wrapper.sidebar-open .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    top: 57px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, .45);
+    z-index: 1035;
+  }
+  .adminlte-wrapper .content-header {
+    padding: 12px 1rem 0;
+  }
+  .adminlte-wrapper .content {
+    padding: 12px 1rem;
   }
 }
 
