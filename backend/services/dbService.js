@@ -1533,7 +1533,7 @@ async function updateAjustes({ emailEnabled }) {
   }
 }
 
-/** Returns true when the email_enabled setting is on (defaults to true). */
+/** Internal helper: returns true when the email_enabled setting is on (defaults to true). */
 async function isEmailEnabled() {
   try {
     const { rows } = await pool.query(`SELECT valor FROM ajustes WHERE clave = 'email_enabled'`)
