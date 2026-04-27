@@ -15,6 +15,8 @@ const EMPTY_FORM = { code: '', label: '', activo: true }
 
 /** Número de caracteres a partir del cual el textarea de traducción se expande a 3 filas. */
 const TEXTAREA_EXPAND_THRESHOLD = 80
+/** Número de claves de traducción mostradas por página en el editor de contenido. */
+const CONTENT_KEYS_PAGE_LIMIT = 20
 
 function formatFecha(iso) {
   if (!iso) return '—'
@@ -43,6 +45,7 @@ export default function IdiomasAdminTab({ showToast }) {
   const [contentLoading, setContentLoading] = useState(false)
   const [contentSaving, setContentSaving] = useState(false)
   const [contentFilter, setContentFilter] = useState('')
+  const [contentKeysPage, setContentKeysPage] = useState(1)
 
   const refresh = useCallback(() => setRefreshKey(k => k + 1), [])
 
@@ -122,6 +125,7 @@ export default function IdiomasAdminTab({ showToast }) {
   const openContent = async (idioma) => {
     setContentModal(idioma)
     setContentFilter('')
+    setContentKeysPage(1)
     setContentLoading(true)
     const { data, error: apiErr } = await getIdiomaContent({ path: { id: idioma.id } })
     setContentLoading(false)
@@ -153,6 +157,20 @@ export default function IdiomasAdminTab({ showToast }) {
     k.toLowerCase().includes(contentFilter.toLowerCase()) ||
     String(content[k]).toLowerCase().includes(contentFilter.toLowerCase())
   )
+
+  // Client-side pagination for the content keys datatable.
+  const contentKeysTotalPages = Math.max(
+    1,
+    Math.ceil(filteredKeys.length / CONTENT_KEYS_PAGE_LIMIT)
+  )
+  const safeContentKeysPage = Math.min(contentKeysPage, contentKeysTotalPages)
+  const pagedContentKeys = filteredKeys.slice(
+    (safeContentKeysPage - 1) * CONTENT_KEYS_PAGE_LIMIT,
+    safeContentKeysPage * CONTENT_KEYS_PAGE_LIMIT
+  )
+
+  // Reset to first page whenever the filter text changes.
+  useEffect(() => { setContentKeysPage(1) }, [contentFilter])
 
   return (
     <div>
@@ -350,7 +368,7 @@ export default function IdiomasAdminTab({ showToast }) {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredKeys.map(key => (
+                        {pagedContentKeys.map(key => (
                           <tr key={key}>
                             <td style={{ fontFamily: 'monospace', fontSize: '.8rem', color: '#555', verticalAlign: 'top', paddingTop: 10 }}>
                               {key}
@@ -369,6 +387,12 @@ export default function IdiomasAdminTab({ showToast }) {
                     </table>
                   )}
                 </div>
+
+                <Pagination
+                  page={safeContentKeysPage}
+                  totalPages={contentKeysTotalPages}
+                  onPageChange={setContentKeysPage}
+                />
 
                 <div className="btn-row" style={{ marginTop: 16 }}>
                   <button type="button" className="btn btn-secondary" onClick={closeContentModal}>
