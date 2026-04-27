@@ -98,7 +98,7 @@ module.exports = function irpfRoutes(svc) {
   router.delete('/declaraciones/bulk', adminLimiter, requireAdmin, async (req, res) => {
     const { ids } = req.body ?? {}
     if (!Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({ error: 'El campo "ids" debe ser un array no vacío' })
+      return res.status(400).json({ error: 'El campo "ids" debe ser una lista no vacía de identificadores' })
     }
     const result = await svc.bulkDeleteDeclaraciones(ids)
     send(res, result)

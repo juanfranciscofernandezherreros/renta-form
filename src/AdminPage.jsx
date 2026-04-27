@@ -201,6 +201,13 @@ export default function AdminPage({ onNavigate }) {
   // Bulk selection
   const [selectedIds, setSelectedIds] = useState(new Set())
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
+  const selectAllRef = useRef(null)
+
+  useEffect(() => {
+    const el = selectAllRef.current
+    if (!el) return
+    el.indeterminate = selectedIds.size > 0 && selectedIds.size < declaraciones.length
+  }, [selectedIds, declaraciones])
 
   const [preguntasSecciones, setPreguntasSecciones] = useState([])
 
@@ -687,8 +694,8 @@ export default function AdminPage({ onNavigate }) {
               <label className="bulk-select-all">
                 <input
                   type="checkbox"
+                  ref={selectAllRef}
                   checked={selectedIds.size === declaraciones.length}
-                  ref={el => { if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < declaraciones.length }}
                   onChange={e => {
                     if (e.target.checked) {
                       setSelectedIds(new Set(declaraciones.map(d => d.id)))
