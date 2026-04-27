@@ -10,6 +10,7 @@ const bcrypt = require('bcrypt')
 const pool = require('../db/pool')
 const mailer = require('./mailer')
 const pdfGenerator = require('./pdfGenerator')
+const { signToken } = require('../middleware/auth')
 
 const BCRYPT_ROUNDS = 12
 
@@ -18,12 +19,9 @@ const BCRYPT_ROUNDS = 12
 // calls in the src/ directory.  Used by getMissingTranslations so the endpoint
 // can report gaps for every language without needing a base/reference language.
 const ALL_REQUIRED_KEYS = [
-  'ajustesEmailTitle',
-  'ajustesEmailLabel',
-  'ajustesEmailDesc',
-  'ajustesSaved',
-  'btnSaveAjustes',
-  'btnSavingAjustes',
+  'emailEnvioTitle',
+  'emailEnvioLabel',
+  'emailEnvioSaved',
   'btnAdmin',
   'btnBack',
   'btnClear',
@@ -108,6 +106,9 @@ const ALL_REQUIRED_KEYS = [
   'profileUpdated',
   'pwSuccess',
   'emailSuccess',
+  'emailEnvioTitle',
+  'emailEnvioLabel',
+  'emailEnvioSaved',
   'rentaPdfBtn',
   'rentaPdfBtnTitle',
   'section1',
@@ -199,7 +200,7 @@ async function loginAdmin({ username, password }) {
     if (!(await verifyPassword(password, user.password_hash))) {
       return { data: null, error: { message: 'Contraseña incorrecta' } }
     }
-    return { data: { username: normalised, role: user.role, email: user.email }, error: null }
+    return { data: { username: normalised, role: user.role, email: user.email, token: signToken({ sub: normalised, role: user.role }) }, error: null }
   } catch (err) {
     console.error('loginAdmin DB error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
@@ -219,7 +220,7 @@ async function loginUser({ dniNie, password }) {
     if (!(await verifyPassword(password, user.password_hash))) {
       return { data: null, error: { message: 'Contraseña incorrecta' } }
     }
-    return { data: { dniNie: normalised, role: user.role }, error: null }
+    return { data: { dniNie: normalised, role: user.role, token: signToken({ sub: normalised, role: user.role }) }, error: null }
   } catch (err) {
     console.error('loginUser DB error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
@@ -727,10 +728,48 @@ async function listDeclaracionesAll({ dniNie, estado, page = 1, limit = 20 }) {
   }
 }
 
+async function isEmailEnvioActivo() {
+  try {
+    const { rows } = await pool.query(
+      `SELECT valor FROM configuracion WHERE clave = 'email_envio_activo'`
+    )
+    if (rows.length === 0) return true
+    return rows[0].valor !== 'false'
+  } catch (err) {
+    console.error('isEmailEnvioActivo DB error:', err.message)
+    return true
+  }
+}
+
+async function getConfiguracion() {
+  try {
+    const { rows } = await pool.query('SELECT clave, valor FROM configuracion ORDER BY clave')
+    const data = Object.fromEntries(rows.map(r => [r.clave, r.valor]))
+    return { data, error: null }
+  } catch (err) {
+    console.error('getConfiguracion DB error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+}
+
+async function updateConfiguracion(clave, valor) {
+  try {
+    await pool.query(
+      `INSERT INTO configuracion (clave, valor) VALUES ($1, $2)
+       ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor`,
+      [clave, String(valor)]
+    )
+    return { data: { clave, valor: String(valor) }, error: null }
+  } catch (err) {
+    console.error('updateConfiguracion DB error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+}
+
 async function notifyAdminsOfDeclaracion(dec, attachments) {
   try {
-    if (!(await isEmailEnabled())) {
-      console.info('[mailer] Email sending disabled; skipping admin notification')
+    if (!(await isEmailEnvioActivo())) {
+      console.info('[mailer] Email sending disabled by configuration; skipping admin notification')
       return
     }
     const { rows } = await pool.query(
@@ -766,8 +805,8 @@ async function notifyAdminsOfDeclaracion(dec, attachments) {
 
 async function notifyClientOfDeclaracion(dec, attachments) {
   try {
-    if (!(await isEmailEnabled())) {
-      console.info('[mailer] Email sending disabled; skipping client notification')
+    if (!(await isEmailEnvioActivo())) {
+      console.info('[mailer] Email sending disabled by configuration; skipping client notification')
       return
     }
     const to = (dec.email || '').trim()
@@ -1497,53 +1536,6 @@ async function getMissingTranslations(ref = 'static') {
   }
 }
 
-// ── Admin: Ajustes ─────────────────────────────────────────────────────────
-
-async function getAjustes() {
-  try {
-    const { rows } = await pool.query('SELECT clave, valor FROM ajustes ORDER BY clave')
-    const data = {}
-    for (const r of rows) data[r.clave] = r.valor
-    // Expose booleans as proper types
-    return {
-      data: {
-        emailEnabled: data.email_enabled !== 'false',
-      },
-      error: null,
-    }
-  } catch (err) {
-    console.error('getAjustes DB error:', err.message)
-    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
-  }
-}
-
-async function updateAjustes({ emailEnabled }) {
-  try {
-    if (emailEnabled !== undefined) {
-      await pool.query(
-        `INSERT INTO ajustes (clave, valor) VALUES ('email_enabled', $1)
-         ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor`,
-        [emailEnabled ? 'true' : 'false']
-      )
-    }
-    return getAjustes()
-  } catch (err) {
-    console.error('updateAjustes DB error:', err.message)
-    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
-  }
-}
-
-/** Internal helper: returns true when the email_enabled setting is on (defaults to true). */
-async function isEmailEnabled() {
-  try {
-    const { rows } = await pool.query(`SELECT valor FROM ajustes WHERE clave = 'email_enabled'`)
-    if (!rows.length) return true
-    return rows[0].valor !== 'false'
-  } catch {
-    return true
-  }
-}
-
 // ── Email stubs ────────────────────────────────────────────────────────────
 // Email delivery is not configured in this deployment.  These stubs keep the
 // API surface consistent (no unhandled TypeErrors in the routes) and return
@@ -1621,6 +1613,6 @@ module.exports = {
   ALL_REQUIRED_KEYS,
   sendEmailDeclaracion,
   sendEmailToUser,
-  getAjustes,
-  updateAjustes,
+  getConfiguracion,
+  updateConfiguracion,
 }

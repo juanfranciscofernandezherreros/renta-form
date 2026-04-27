@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from './AuthContext.jsx'
 import { useLanguage } from './LanguageContext.jsx'
-import { changePassword, changeEmail, getAjustes, updateAjustes } from './apiClient.js'
+import { changePassword, changeEmail, getConfiguracion, updateConfiguracion } from './apiClient.js'
 
 const MIN_PASSWORD_LENGTH = 6
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -19,25 +19,40 @@ export default function AjustesAdminTab({ showToast }) {
   const [emailSuccess, setEmailSuccess] = useState(false)
   const [emailLoading, setEmailLoading] = useState(false)
 
-  const [emailEnabled, setEmailEnabled] = useState(true)
-  const [ajustesSaving, setAjustesSaving] = useState(false)
-  const [ajustesSuccess, setAjustesSuccess] = useState(false)
-  const [ajustesError, setAjustesError] = useState(null)
+  const [emailEnvioActivo, setEmailEnvioActivo] = useState(true)
+  const [emailEnvioLoading, setEmailEnvioLoading] = useState(false)
+  const [emailEnvioSaved, setEmailEnvioSaved] = useState(false)
+  const [emailEnvioError, setEmailEnvioError] = useState(null)
+
+  useEffect(() => {
+    getConfiguracion().then(({ data, error }) => {
+      if (error) return
+      if (data && data.email_envio_activo !== undefined) {
+        setEmailEnvioActivo(data.email_envio_activo !== 'false')
+      }
+    })
+  }, [])
 
   // Keep the email field in sync if the user's email loads/changes after mount.
   useEffect(() => {
     setEmailForm(prev => (prev.newEmail ? prev : { ...prev, newEmail: user?.email ?? '' }))
   }, [user?.email])
 
-  // Load current settings on mount
-  useEffect(() => {
-    let cancelled = false
-    getAjustes().then(({ data, error }) => {
-      if (cancelled || error || !data) return
-      setEmailEnabled(data.emailEnabled !== false)
-    })
-    return () => { cancelled = true }
-  }, [])
+  const handleEmailEnvioToggle = async (newValue) => {
+    setEmailEnvioLoading(true)
+    setEmailEnvioSaved(false)
+    setEmailEnvioError(null)
+    const { error: apiError } = await updateConfiguracion({ clave: 'email_envio_activo', valor: String(newValue) })
+    setEmailEnvioLoading(false)
+    if (apiError) {
+      setEmailEnvioError(apiError.message)
+      if (showToast) showToast(apiError.message, 'error')
+      return
+    }
+    setEmailEnvioActivo(newValue)
+    setEmailEnvioSaved(true)
+    if (showToast) showToast(t('emailEnvioSaved'))
+  }
 
   const handlePwChange = e => {
     const { name, value } = e.target
@@ -103,22 +118,6 @@ export default function AjustesAdminTab({ showToast }) {
     if (showToast) showToast(t('emailSuccess'))
   }
 
-  const handleAjustesSubmit = async e => {
-    e.preventDefault()
-    setAjustesSaving(true)
-    setAjustesSuccess(false)
-    setAjustesError(null)
-    const { error: apiError } = await updateAjustes({ emailEnabled })
-    setAjustesSaving(false)
-    if (apiError) {
-      setAjustesError(apiError.message)
-      if (showToast) showToast(apiError.message, 'error')
-      return
-    }
-    setAjustesSuccess(true)
-    if (showToast) showToast(t('ajustesSaved'))
-  }
-
   return (
     <div>
       <div className="field" style={{ maxWidth: 360, marginBottom: 20 }}>
@@ -126,36 +125,27 @@ export default function AjustesAdminTab({ showToast }) {
         <input type="text" value={user?.dniNie ?? ''} readOnly disabled />
       </div>
 
-      <div className="section-title">{t('ajustesEmailTitle')}</div>
+      <div className="section-title">{t('emailEnvioTitle')}</div>
 
-      {ajustesSuccess && (
-        <div className="info-box">{t('ajustesSaved')}</div>
+      {emailEnvioSaved && (
+        <div className="info-box">{t('emailEnvioSaved')}</div>
       )}
-      {ajustesError && (
-        <div className="info-box info-box-error">❌ {ajustesError}</div>
+      {emailEnvioError && (
+        <div className="info-box info-box-error">❌ {emailEnvioError}</div>
       )}
 
-      <form onSubmit={handleAjustesSubmit} noValidate>
-        <div className="form-grid">
-          <div className="field" style={{ gridColumn: '1 / -1' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-              <input
-                type="checkbox"
-                checked={emailEnabled}
-                onChange={e => { setEmailEnabled(e.target.checked); setAjustesSuccess(false) }}
-                style={{ width: 18, height: 18 }}
-              />
-              {t('ajustesEmailLabel')}
-            </label>
-            <p style={{ marginTop: 6, color: '#666', fontSize: '0.9em' }}>{t('ajustesEmailDesc')}</p>
-          </div>
+      <div className="form-grid" style={{ marginBottom: 20 }}>
+        <div className="field" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <label style={{ margin: 0 }}>{t('emailEnvioLabel')}</label>
+          <input
+            type="checkbox"
+            checked={emailEnvioActivo}
+            disabled={emailEnvioLoading}
+            onChange={e => handleEmailEnvioToggle(e.target.checked)}
+            style={{ width: 'auto', cursor: 'pointer' }}
+          />
         </div>
-        <div className="btn-row">
-          <button type="submit" className="btn btn-primary" disabled={ajustesSaving}>
-            {ajustesSaving ? t('btnSavingAjustes') : t('btnSaveAjustes')}
-          </button>
-        </div>
-      </form>
+      </div>
 
       <div className="section-title">{t('changeEmailTitle')}</div>
 
