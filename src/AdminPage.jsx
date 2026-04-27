@@ -15,8 +15,6 @@ import {
 import { parseCsv, rowsToCsv, BULK_IMPORT_MAX_ROWS } from './csvUtils.js'
 import { translateYN } from './i18nUtils.js'
 import PreguntasFormularioAdminTab from './PreguntasFormularioAdminTab.jsx'
-import UsuariosAdminTab from './UsuariosAdminTab.jsx'
-import RolesAdminTab from './RolesAdminTab.jsx'
 import IdiomasAdminTab from './IdiomasAdminTab.jsx'
 import TraduccionesAdminTab from './TraduccionesAdminTab.jsx'
 import AjustesAdminTab from './AjustesAdminTab.jsx'
@@ -398,8 +396,6 @@ export default function AdminPage({ onNavigate }) {
   const SIDEBAR_ITEMS = [
     { key: 'declaraciones', icon: '📋', label: 'Declaraciones' },
     { key: 'preguntas',     icon: '❓', label: 'Preguntas' },
-    { key: 'usuarios',      icon: '👥', label: 'Usuarios' },
-    { key: 'roles',         icon: '🛡️', label: 'Roles' },
     { key: 'idiomas',       icon: '🌐', label: 'Idiomas' },
     { key: 'traducciones',  icon: '📝', label: 'Traducciones' },
     { key: 'ajustes',       icon: '⚙️', label: 'Ajustes' },
@@ -495,22 +491,6 @@ export default function AdminPage({ onNavigate }) {
               Gestiona las preguntas que aparecen en el formulario de declaración de la renta.
             </p>
             <PreguntasFormularioAdminTab showToast={showToast} />
-          </>
-        )}
-
-        {activeTab === 'usuarios' && (
-          <UsuariosAdminTab showToast={showToast} preguntasSecciones={preguntasSecciones} />
-        )}
-
-        {activeTab === 'roles' && (
-          <>
-            <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: '0 0 4px', color: '#333' }}>
-              🛡️ Roles
-            </h2>
-            <p style={{ fontSize: '.82rem', color: '#666', margin: '0 0 16px' }}>
-              Gestiona los roles del sistema. Los usuarios pueden tener varios roles asignados (relación many-to-many).
-            </p>
-            <RolesAdminTab showToast={showToast} />
           </>
         )}
 
