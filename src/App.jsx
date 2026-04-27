@@ -16,8 +16,6 @@ const INITIAL_STATE = {
 
 const ID_FIELDS = ['nombre', 'apellidos', 'dniNie', 'email', 'telefono']
 
-const STEP_ICONS = ['👤', '🏠', '👨‍👩‍👧', '💶', '📝', '⭐', '❓']
-
 const LANG_FLAGS = {
   es: '🇪🇸',
   fr: '🇫🇷',
@@ -25,54 +23,53 @@ const LANG_FLAGS = {
   de: '🇩🇪',
   pt: '🇵🇹',
   it: '🇮🇹',
+  ca: '🏳️',
 }
 
-const YesNoField = ({ label, name, value, onChange, t, questionNumber, onAnswer }) => {
-  const [ringKey, setRingKey] = useState(null)
+const BrandIcon = () => (
+  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" width="28" height="28">
+    <path d="M12 3l8 4.5v9L12 21 4 16.5v-9L12 3z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+    <path d="M4 7.5L12 12l8-4.5M12 12v9" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+  </svg>
+)
+
+const CheckIcon = () => (
+  <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14" aria-hidden="true">
+    <path fillRule="evenodd" d="M16.7 5.3a1 1 0 010 1.4l-7.5 7.5a1 1 0 01-1.4 0l-3.5-3.5a1 1 0 011.4-1.4L8.5 12.1l6.8-6.8a1 1 0 011.4 0z" clipRule="evenodd" />
+  </svg>
+)
+
+const YesNoField = ({ label, name, value, onChange, t, questionNumber, onAnswer, shake }) => {
   return (
-    <div className={`question-card${value ? ' answered' : ''}`} style={{ position: 'relative' }}>
-      {ringKey != null && <div key={ringKey} className={`answer-ring${value === 'no' ? ' no' : ''}`} />}
-      <div className="question-card-text">
+    <div className={`ib-question${shake ? ' shake' : ''}`}>
+      <div className="ib-question-head">
         {questionNumber != null && (
-          <span style={{
-            background: 'linear-gradient(135deg, #6c11c8, #9b23e8)',
-            color: '#fff',
-            borderRadius: '50%',
-            width: '28px',
-            height: '28px',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '.8rem',
-            fontWeight: '900',
-            flexShrink: 0,
-            marginRight: '4px',
-          }}>{questionNumber}</span>
+          <span className="ib-question-num">{questionNumber}</span>
         )}
-        {label}
+        <span className="ib-question-text">{label}</span>
       </div>
-      <div className="yesno-buttons">
+      <div className="ib-yesno">
         <button
           type="button"
-          className={`yesno-btn${value === 'si' ? ' selected yes' : ''}`}
+          className={`ib-yesno-btn is-yes${value === 'si' ? ' is-selected' : ''}`}
           onClick={() => {
             const isNew = value !== 'si'
             onChange({ target: { name, value: 'si' } })
-            if (isNew) { onAnswer?.(); setRingKey(Date.now()) }
+            if (isNew) onAnswer?.()
           }}
         >
-          <span className="yesno-icon">✅</span> {t('yes')}
+          <span aria-hidden="true">✅</span> {t('yes')}
         </button>
         <button
           type="button"
-          className={`yesno-btn${value === 'no' ? ' selected no' : ''}`}
+          className={`ib-yesno-btn is-no${value === 'no' ? ' is-selected' : ''}`}
           onClick={() => {
             const isNew = value !== 'no'
             onChange({ target: { name, value: 'no' } })
-            if (isNew) { onAnswer?.(); setRingKey(Date.now()) }
+            if (isNew) onAnswer?.()
           }}
         >
-          <span className="yesno-icon">❌</span> {t('no')}
+          <span aria-hidden="true">❌</span> {t('no')}
         </button>
       </div>
     </div>
@@ -95,7 +92,7 @@ export default function App({ editData, onEditDataConsumed }) {
   const [loadingPreguntas, setLoadingPreguntas] = useState(true)
   const [errorPreguntas, setErrorPreguntas] = useState(null)
   const [currentStep, setCurrentStep] = useState(0)
-  const [stepDirection, setStepDirection] = useState('forward')
+  const [_stepDirection, setStepDirection] = useState('forward')
   const [fieldErrors, setFieldErrors] = useState({})
   const topRef = useRef(null)
   const formRef = useRef(null)
@@ -357,131 +354,196 @@ export default function App({ editData, onEditDataConsumed }) {
     }
   }
 
+  // ── Sidebar stepper: 1 step for ID + 1 step per sección ──
+  const sidebarSteps = useMemo(() => {
+    const steps = [{ key: 'id', title: t('section1') }]
+    for (const seccion of secciones) {
+      steps.push({
+        key: `s:${seccion.id}`,
+        title: seccion.titulos?.[lang] ?? seccion.titulo ?? `Sección ${seccion.numero ?? ''}`.trim(),
+        seccionId: seccion.id,
+      })
+    }
+    return steps
+  }, [secciones, lang, t])
+
+  // Index of the active sidebar step based on the current wizard step
+  const activeSidebarIndex = useMemo(() => {
+    if (!currentStepInfo) return 0
+    if (currentStepInfo.type === 'id') return 0
+    const idx = secciones.findIndex(s => s.id === currentStepInfo.seccion?.id)
+    return idx >= 0 ? idx + 1 : 0
+  }, [currentStepInfo, secciones])
+
+  // Active question text/subtitle for the main header
+  const mainHeading = useMemo(() => {
+    if (!currentStepInfo) return { title: t('section1'), subtitle: t('step1Subtitle') }
+    if (currentStepInfo.type === 'id') {
+      return { title: t('section1'), subtitle: t('step1Subtitle') }
+    }
+    const sec = currentStepInfo.seccion
+    const title = sec?.titulos?.[lang] ?? sec?.titulo ?? t('section1')
+    return { title, subtitle: t('instructionsTitle') }
+  }, [currentStepInfo, lang, t])
+
   return (
-    <>
-      <header ref={topRef}>
-        <div className="header-inner">
-          <div className="logo">{t('logoText')}</div>
-          <nav className="header-nav">
-            <div className="lang-flags-top" role="group" aria-label={t('langLabel')}>
-              {availableLanguages.map(l => (
-                <button
-                  key={l.code}
-                  type="button"
-                  className={`lang-flag-btn${lang === l.code ? ' active' : ''}`}
-                  onClick={() => setLang(l.code)}
-                  aria-label={l.label}
-                  title={l.label}
-                >
-                  <span className="lang-flag-emoji">{LANG_FLAGS[l.code] ?? '🌐'}</span>
-                  <span className="lang-flag-code">{l.code.toUpperCase()}</span>
-                </button>
-              ))}
-            </div>
-          </nav>
+    <div className="ib-shell">
+      {/* ── Sidebar with stepper ───────────────────────────────────── */}
+      <aside className="ib-sidebar">
+        <div className="ib-brand">
+          <span className="ib-brand-icon"><BrandIcon /></span>
+          <span className="ib-brand-name">{t('logoText')}</span>
         </div>
-      </header>
-
-      <div className="card">
-        {/* Quiz progress bar */}
-        {!submitted && !loadingPreguntas && !errorPreguntas && totalSteps > 0 && (
-          <div className="quiz-progress-header">
-            <div className="quiz-progress-top">
-              <div className="quiz-counter">{safeStep + 1} <span>/ {totalSteps}</span></div>
-            </div>
-            <div className="quiz-linear-bar-wrap">
-              <div
-                className="quiz-linear-bar"
-                style={{ width: `${totalSteps > 0 ? ((safeStep + 1) / totalSteps) * 100 : 0}%` }}
-              />
-            </div>
-          </div>
+        {sidebarSteps.length > 0 && (
+          <ol className="ib-stepper">
+            {sidebarSteps.map((step, idx) => {
+              const status =
+                idx < activeSidebarIndex ? 'is-done'
+                  : idx === activeSidebarIndex ? 'is-active'
+                  : 'is-pending'
+              return (
+                <li key={step.key} className={`ib-step ${status}`}>
+                  <div className="ib-step-bullet-col">
+                    <span className="ib-step-bullet">
+                      {status === 'is-done' ? <CheckIcon /> : (idx + 1)}
+                    </span>
+                    {idx < sidebarSteps.length - 1 && <span className="ib-step-line" />}
+                  </div>
+                  <div className="ib-step-label">
+                    <span className="ib-step-tag">{`${idx + 1} / ${sidebarSteps.length}`}</span>
+                    <span className="ib-step-title">{step.title}</span>
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
         )}
-        {submitted && (
-          <div className="quiz-progress-header">
-            <div className="quiz-progress-top">
-              <span className="quiz-section-badge">🎉 {t('successTitle')}</span>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <div className="quiz-counter">✓</div>
+      </aside>
+
+      {/* ── Main content ──────────────────────────────────────────── */}
+      <main className="ib-main">
+        <div className="ib-topbar">
+          <div className="ib-langs" role="group" aria-label={t('langLabel')}>
+            {availableLanguages.map(l => (
+              <button
+                key={l.code}
+                type="button"
+                className={`ib-lang-btn${lang === l.code ? ' is-active' : ''}`}
+                onClick={() => setLang(l.code)}
+                aria-label={l.label}
+                title={l.label}
+              >
+                <span aria-hidden="true">{LANG_FLAGS[l.code] ?? '🌐'}</span>
+                <span>{l.code.toUpperCase()}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="ib-content" ref={topRef}>
+          <div className="ib-content-inner">
+            {!submitted && !loadingPreguntas && !errorPreguntas && totalSteps > 0 && (
+              <div className="ib-progress">
+                <span>{safeStep + 1} / {totalSteps}</span>
+                <span className="ib-progress-bar">
+                  <span
+                    className="ib-progress-fill"
+                    style={{ width: `${totalSteps > 0 ? ((safeStep + 1) / totalSteps) * 100 : 0}%` }}
+                  />
+                </span>
               </div>
-            </div>
-            <div className="quiz-linear-bar-wrap">
-              <div className="quiz-linear-bar" style={{ width: '100%' }} />
-            </div>
-          </div>
-        )}
-
-        {submitted ? (
-          <div className="success-panel">
-            <div className="success-icon">✅</div>
-            <h2>{t('successTitle')}</h2>
-            <p>{t('successText')}</p>
-            <button type="button" className="btn btn-secondary" onClick={handleLimpiar}>{t('btnSendAnother')}</button>
-          </div>
-        ) : (
-          <>
-            {loadingPreguntas && <div className="info-box">{t('loadingQuestions')}</div>}
-            {errorPreguntas && <div className="info-box">{t('errorQuestions')}{errorPreguntas}</div>}
-            {!loadingPreguntas && !errorPreguntas && visibleSteps.length === 0 && (
-              <div className="info-box">{t('noQuestions')}</div>
             )}
 
-            {!loadingPreguntas && !errorPreguntas && visibleSteps.length > 0 && (
-              <form ref={formRef} onSubmit={handleSubmit} noValidate>
-                {/* Animated wizard step container – key change triggers CSS animation */}
-                <div
-                  key={`step-${currentStep}`}
-                  className={`wizard-step${stepDirection === 'backward' ? ' reverse' : ''}${questionShake ? ' shake' : ''}`}
-                >
+            {submitted ? (
+              <div className="ib-success">
+                <div className="ib-success-icon">✓</div>
+                <h2>{t('successTitle')}</h2>
+                <p>{t('successText')}</p>
+                <button type="button" className="ib-btn ib-btn-secondary" onClick={handleLimpiar}>
+                  {t('btnSendAnother')}
+                </button>
+              </div>
+            ) : (
+              <>
+                <h1 className="ib-title">{mainHeading.title}</h1>
+                <p className="ib-subtitle">{mainHeading.subtitle}</p>
 
-                  {/* ── Step: Identification ── */}
-                  {currentStepInfo?.type === 'id' && (
-                    <>
-                      <div className="info-box">
-                        <strong>{t('instructionsTitle')}</strong>
-                        {t('instructionsText')}<em>{t('campaignName')}</em>{t('instructionsText2')}
-                      </div>
-                      <div className="wizard-step-header">
-                        <div className="wizard-step-icon">👤</div>
-                        <div>
-                          <div className="wizard-step-title">{t('section1')}</div>
-                          <div className="wizard-step-subtitle">{t('step1Subtitle')}</div>
-                        </div>
-                      </div>
-                      <div className="form-grid">
-                        <div className="field">
-                          <label>{t('fieldNombre')}</label>
-                          <input type="text" name="nombre" value={form.nombre} onChange={handleChange} placeholder={t('fieldNombre')} required className={fieldErrors.nombre ? 'is-invalid' : ''} />
-                          {fieldErrors.nombre && <span className="field-error">{fieldErrors.nombre}</span>}
-                        </div>
-                        <div className="field">
-                          <label>{t('fieldApellidos')}</label>
-                          <input type="text" name="apellidos" value={form.apellidos} onChange={handleChange} placeholder={t('fieldApellidosPlaceholder')} required className={fieldErrors.apellidos ? 'is-invalid' : ''} />
-                          {fieldErrors.apellidos && <span className="field-error">{fieldErrors.apellidos}</span>}
-                        </div>
-                        <div className="field">
-                          <label>{t('fieldDniNie')}</label>
-                          <input type="text" name="dniNie" value={form.dniNie} onChange={handleChange} placeholder="00000000A" maxLength={9} required className={fieldErrors.dniNie ? 'is-invalid' : ''} />
-                          {fieldErrors.dniNie && <span className="field-error">{fieldErrors.dniNie}</span>}
-                        </div>
-                        <div className="field">
-                          <label>{t('fieldEmail')} <span className="field-optional">{t('fieldEmailOptional')}</span></label>
-                          <input type="email" name="email" value={form.email} onChange={handleChange} placeholder={t('fieldEmailPlaceholder')} />
-                        </div>
-                        <div className="field">
-                          <label>{t('fieldTelefono')}</label>
-                          <input type="tel" name="telefono" value={form.telefono} onChange={handleChange} placeholder={t('fieldTelefonoPlaceholder')} required className={fieldErrors.telefono ? 'is-invalid' : ''} />
-                          {fieldErrors.telefono && <span className="field-error">{fieldErrors.telefono}</span>}
-                        </div>
-                      </div>
-                    </>
-                  )}
+                {loadingPreguntas && <div className="ib-empty">{t('loadingQuestions')}</div>}
+                {errorPreguntas && <div className="ib-empty">{t('errorQuestions')}{errorPreguntas}</div>}
+                {!loadingPreguntas && !errorPreguntas && visibleSteps.length === 0 && (
+                  <div className="ib-empty">{t('noQuestions')}</div>
+                )}
 
-                  {/* ── Step: Single question (quiz style) ── */}
-                  {currentStepInfo?.type === 'question' && (() => {
-                    const { pregunta } = currentStepInfo
-                    return (
-                      <div className="quiz-single-question">
+                {!loadingPreguntas && !errorPreguntas && visibleSteps.length > 0 && (
+                  <form ref={formRef} onSubmit={handleSubmit} noValidate className="ib-form">
+                    {currentStepInfo?.type === 'id' && (
+                      <>
+                        <div className="ib-info">
+                          <strong>{t('instructionsTitle')}</strong>
+                          {t('instructionsText')}<em>{t('campaignName')}</em>{t('instructionsText2')}
+                        </div>
+                        <div className="ib-field">
+                          <label htmlFor="ib-nombre">{t('fieldNombre')}</label>
+                          <input
+                            id="ib-nombre"
+                            className={`ib-input${fieldErrors.nombre ? ' is-invalid' : ''}`}
+                            type="text" name="nombre" value={form.nombre}
+                            onChange={handleChange} placeholder={t('fieldNombre')} required
+                          />
+                          {fieldErrors.nombre && <span className="ib-field-error">{fieldErrors.nombre}</span>}
+                        </div>
+                        <div className="ib-row">
+                          <div className="ib-field">
+                            <label htmlFor="ib-apellidos">{t('fieldApellidos')}</label>
+                            <input
+                              id="ib-apellidos"
+                              className={`ib-input${fieldErrors.apellidos ? ' is-invalid' : ''}`}
+                              type="text" name="apellidos" value={form.apellidos}
+                              onChange={handleChange} placeholder={t('fieldApellidosPlaceholder')} required
+                            />
+                            {fieldErrors.apellidos && <span className="ib-field-error">{fieldErrors.apellidos}</span>}
+                          </div>
+                          <div className="ib-field">
+                            <label htmlFor="ib-dni">{t('fieldDniNie')}</label>
+                            <input
+                              id="ib-dni"
+                              className={`ib-input${fieldErrors.dniNie ? ' is-invalid' : ''}`}
+                              type="text" name="dniNie" value={form.dniNie}
+                              onChange={handleChange} placeholder="00000000A" maxLength={9} required
+                            />
+                            {fieldErrors.dniNie && <span className="ib-field-error">{fieldErrors.dniNie}</span>}
+                          </div>
+                        </div>
+                        <div className="ib-row">
+                          <div className="ib-field">
+                            <label htmlFor="ib-email">
+                              {t('fieldEmail')}
+                              <span className="ib-optional">{t('fieldEmailOptional')}</span>
+                            </label>
+                            <input
+                              id="ib-email"
+                              className="ib-input"
+                              type="email" name="email" value={form.email}
+                              onChange={handleChange} placeholder={t('fieldEmailPlaceholder')}
+                            />
+                          </div>
+                          <div className="ib-field">
+                            <label htmlFor="ib-tel">{t('fieldTelefono')}</label>
+                            <input
+                              id="ib-tel"
+                              className={`ib-input${fieldErrors.telefono ? ' is-invalid' : ''}`}
+                              type="tel" name="telefono" value={form.telefono}
+                              onChange={handleChange} placeholder={t('fieldTelefonoPlaceholder')} required
+                            />
+                            {fieldErrors.telefono && <span className="ib-field-error">{fieldErrors.telefono}</span>}
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {currentStepInfo?.type === 'question' && (() => {
+                      const { pregunta } = currentStepInfo
+                      return (
                         <YesNoField
                           name={pregunta.id}
                           value={form[pregunta.id] ?? ''}
@@ -489,59 +551,63 @@ export default function App({ editData, onEditDataConsumed }) {
                           label={pregunta.textos?.[lang] ?? pregunta.texto}
                           t={t}
                           onAnswer={handleAnswer}
+                          shake={questionShake}
                         />
+                      )
+                    })()}
+
+                    {formError && (
+                      <div className="ib-error-banner" role="alert">
+                        <span>{formError}</span>
+                        <button
+                          type="button"
+                          className="ib-error-dismiss"
+                          onClick={() => setFormError(null)}
+                          aria-label={t('btnDismissError')}
+                        >×</button>
                       </div>
-                    )
-                  })()}
+                    )}
 
-                </div>{/* end wizard-step */}
-
-                {/* Inline error message */}
-                {formError && (
-                  <div className="form-error-banner" role="alert">
-                    <span>{formError}</span>
-                    <button type="button" className="form-error-dismiss" onClick={() => setFormError(null)} aria-label={t('btnDismissError')}>×</button>
-                  </div>
+                    <div className="ib-actions">
+                      {safeStep > 0 ? (
+                        <button type="button" className="ib-btn ib-btn-secondary" onClick={handlePrev}>
+                          {t('btnBack')}
+                        </button>
+                      ) : (
+                        <button type="button" className="ib-btn ib-btn-secondary" onClick={handleLimpiar}>
+                          {t('btnClear')}
+                        </button>
+                      )}
+                      {safeStep < totalSteps - 1 ? (
+                        <button
+                          type="button"
+                          className="ib-btn ib-btn-primary"
+                          onClick={handleNext}
+                          disabled={checkingDni}
+                        >
+                          {t('btnContinue')}
+                        </button>
+                      ) : (
+                        <button
+                          type="submit"
+                          className="ib-btn ib-btn-success"
+                          disabled={submitting}
+                        >
+                          {submitting ? t('btnSubmitting') : t('btnSubmit')}
+                        </button>
+                      )}
+                    </div>
+                  </form>
                 )}
-
-                {/* Wizard navigation */}
-                <div className="wizard-nav">
-                  <div>
-                    {safeStep > 0 && (
-                      <button type="button" className="btn btn-secondary" onClick={handlePrev}>
-                        {t('btnBack')}
-                      </button>
-                    )}
-                    {safeStep === 0 && (
-                      <button type="button" className="btn btn-secondary" onClick={handleLimpiar}>{t('btnClear')}</button>
-                    )}
-                  </div>
-                  <div className="wizard-progress-text">
-                    {safeStep + 1} / {totalSteps}
-                  </div>
-                  <div className="wizard-nav-right">
-                    {safeStep < totalSteps - 1 ? (
-                      <button type="button" className="btn btn-primary" onClick={handleNext} disabled={checkingDni}>
-                        {t('btnContinue')}
-                      </button>
-                    ) : (
-                      <button type="submit" className="btn btn-success" disabled={submitting}>
-                        {submitting ? t('btnSubmitting') : t('btnSubmit')}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-              </form>
+              </>
             )}
-          </>
-        )}
-      </div>
-
+          </div>
+        </div>
+      </main>
 
       {toast && <div className={`toast ${toast.type}`}>{toast.msg}</div>}
 
-      {/* Confetti on submission */}
+      {/* Confetti on submission – existing keyframes live in index.css */}
       {confettiPieces.map(p => (
         <div
           key={p.id}
@@ -558,7 +624,6 @@ export default function App({ editData, onEditDataConsumed }) {
           }}
         />
       ))}
-
-    </>
+    </div>
   )
 }
