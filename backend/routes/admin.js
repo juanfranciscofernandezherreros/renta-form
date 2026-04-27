@@ -124,6 +124,19 @@ module.exports = function adminRoutes(svc) {
     send(res, result)
   })
 
+  // ── Configuración ─────────────────────────────────────────────────────
+
+  router.get('/configuracion', async (req, res) => {
+    const result = await svc.getConfiguracion()
+    send(res, result)
+  })
+
+  router.put('/configuracion/:clave', async (req, res) => {
+    const { valor } = req.body ?? {}
+    const result = await svc.updateConfiguracion(req.params.clave, valor)
+    send(res, result)
+  })
+
   // ── Traducciones faltantes ─────────────────────────────────────────────
 
   router.get('/traducciones/faltantes', async (req, res) => {
