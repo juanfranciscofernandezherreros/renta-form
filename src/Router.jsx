@@ -2,6 +2,9 @@ import { lazy, Suspense, useState, useEffect, useCallback } from 'react'
 import App from './App.jsx'
 import AdminPage from './AdminPage.jsx'
 import AdminLoginPage from './AdminLoginPage.jsx'
+import LoginPage from './LoginPage.jsx'
+import ProfilePage from './ProfilePage.jsx'
+import TokenConsultaPage from './TokenConsultaPage.jsx'
 import { useAuth } from './AuthContext.jsx'
 
 const ApiDocs = lazy(() => import('./ApiDocs.jsx'))
@@ -39,6 +42,33 @@ export default function Router() {
       return <AdminLoginPage />
     }
     return <AdminPage onNavigate={navigate} />
+  }
+
+  if (hash === '#/login') {
+    return <LoginPage onNavigate={navigate} />
+  }
+
+  if (hash === '#/perfil') {
+    if (!user) {
+      return <LoginPage onNavigate={navigate} />
+    }
+    return (
+      <ProfilePage
+        onNavigate={navigate}
+        onEditDeclaracion={handleEditDeclaracion}
+      />
+    )
+  }
+
+  if (hash === '#/consulta' || hash.startsWith('#/consulta/')) {
+    const token = hash.startsWith('#/consulta/') ? hash.slice('#/consulta/'.length) : ''
+    return (
+      <TokenConsultaPage
+        onNavigate={navigate}
+        onEditDeclaracion={handleEditDeclaracion}
+        initialToken={token}
+      />
+    )
   }
 
   return (

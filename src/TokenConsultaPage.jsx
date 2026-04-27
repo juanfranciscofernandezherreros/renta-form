@@ -40,6 +40,19 @@ function loadHistory() {
   }
 }
 
+function saveToHistory(data, prev) {
+  if (!data?.id) return prev
+  const entry = { id: data.id, dniNie: data.dniNie, creadoEn: data.creadoEn }
+  const filtered = (prev ?? []).filter(h => h.id !== entry.id)
+  const next = [entry, ...filtered].slice(0, 20)
+  try {
+    localStorage.setItem(TOKENS_STORAGE_KEY, JSON.stringify(next))
+  } catch {
+    // ignore quota errors
+  }
+  return next
+}
+
 export default function TokenConsultaPage({ onNavigate, onEditDeclaracion, initialToken }) {
   const { lang, setLang, t, availableLanguages } = useLanguage()
   const [token, setToken] = useState(initialToken ?? '')
@@ -64,6 +77,7 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion, initi
           setError(t('tokenNotFound'))
         } else {
           setResult(data)
+          setHistory(prev => saveToHistory(data, prev))
         }
       })
       .catch(() => {
@@ -91,6 +105,7 @@ export default function TokenConsultaPage({ onNavigate, onEditDeclaracion, initi
       setError(t('tokenNotFound'))
     } else {
       setResult(data)
+      setHistory(prev => saveToHistory(data, prev))
     }
   }
 

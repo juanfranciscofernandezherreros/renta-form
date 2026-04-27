@@ -2,9 +2,13 @@ import { useState, useRef, useEffect, useMemo } from 'react'
 import './App.css'
 import { getPreguntas, createDeclaracion, updateDeclaracion, listDeclaraciones } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
+import { useAuth } from './AuthContext.jsx'
 import { generateDeclaracionPDF } from './pdfUtils.js'
 import { translateYN } from './i18nUtils.js'
 
+// The regex validates the format after normalization to uppercase.
+// toUpperCase() is always called on the value before testing (see handleNext).
+const DNI_NIE_REGEX = /^[0-9XYZ][0-9]{7}[A-Z]$/
 
 const INITIAL_STATE = {
   // Identificación – únicos campos fijos. Las respuestas a las preguntas se
@@ -85,8 +89,9 @@ const CONFETTI_CLEANUP_MS = 5500
 const STEP_ID = 0
 const STEP_QUESTIONS = 1
 
-export default function App({ editData, onEditDataConsumed }) {
+export default function App({ editData, onEditDataConsumed, onNavigate }) {
   const { lang, setLang, t, availableLanguages } = useLanguage()
+  const { user } = useAuth()
   const [form, setForm] = useState(INITIAL_STATE)
   const [editId, setEditId] = useState(null)
   const [toast, setToast] = useState(null)
@@ -257,7 +262,11 @@ export default function App({ editData, onEditDataConsumed }) {
       const errors = {}
       if (!form.nombre.trim()) errors.nombre = t('errValidationRequired')
       if (!form.apellidos.trim()) errors.apellidos = t('errValidationRequired')
-      if (!form.dniNie.trim()) errors.dniNie = t('errValidationRequired')
+      if (!form.dniNie.trim()) {
+        errors.dniNie = t('errValidationRequired')
+      } else if (!DNI_NIE_REGEX.test(form.dniNie.trim().toUpperCase())) {
+        errors.dniNie = t('errDniFormat')
+      }
       if (!form.telefono.trim()) errors.telefono = t('errValidationRequired')
       if (Object.keys(errors).length > 0) {
         setFieldErrors(errors)
@@ -270,7 +279,8 @@ export default function App({ editData, onEditDataConsumed }) {
       // The unique constraint guarantees at most one match, so limit: 1 is enough.
       setCheckingDni(true)
       try {
-        const { data } = await listDeclaraciones({ query: { dniNie: form.dniNie.trim(), limit: 1 } })
+        const dniNieNorm = form.dniNie.trim().toUpperCase()
+        const { data } = await listDeclaraciones({ query: { dniNie: dniNieNorm, limit: 1 } })
         const existing = (data?.data ?? []).filter(d => d.id !== editId)
         if (existing.length > 0) {
           setFieldErrors({ dniNie: t('errDniDuplicate') })
@@ -326,10 +336,10 @@ export default function App({ editData, onEditDataConsumed }) {
 
     /** @type {import('./api/types.gen').DeclaracionInput} */
     const body = {
-      // Identification
+      // Identification – normalise DNI/NIE to uppercase to match DB constraint
       nombre: form.nombre,
       apellidos: form.apellidos,
-      dniNie: form.dniNie,
+      dniNie: form.dniNie.trim().toUpperCase(),
       email: form.email,
       telefono: form.telefono,
     }
@@ -467,6 +477,27 @@ export default function App({ editData, onEditDataConsumed }) {
               </button>
             ))}
           </div>
+          {onNavigate && (
+            <div className="ib-topbar-nav">
+              {user ? (
+                <button
+                  type="button"
+                  className="ib-lang-btn"
+                  onClick={() => onNavigate('#/perfil')}
+                >
+                  👤 {t('navProfile') || user.dniNie}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="ib-lang-btn"
+                  onClick={() => onNavigate('#/login')}
+                >
+                  {t('navLogin')}
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="ib-content" ref={topRef}>

@@ -811,9 +811,12 @@ async function buildDeclaracionPdfAttachment(dec) {
 }
 
 async function createDeclaracion(body) {
-  const { nombre, apellidos, dniNie, email, telefono } = body
+  const { nombre, apellidos, email, telefono } = body
+  // Normalise DNI/NIE to uppercase to satisfy the DB CHECK constraint and
+  // ensure consistent look-ups (loginUser also normalises to uppercase).
+  const dniNie = typeof body.dniNie === 'string' ? body.dniNie.trim().toUpperCase() : body.dniNie
 
-  const validationError = validateDeclaracionPersonalFields(body, { requireAll: true })
+  const validationError = validateDeclaracionPersonalFields({ ...body, dniNie }, { requireAll: true })
   if (validationError) return { data: null, error: { message: validationError }, status: 400 }
 
   // Guard: refuse to create a declaration if no questions are configured
@@ -940,7 +943,12 @@ async function updateEstadoDeclaracion(id, estado) {
 }
 
 async function updateDeclaracion(id, body) {
-  const validationError = validateDeclaracionPersonalFields(body, { requireAll: false })
+  // Normalise DNI/NIE to uppercase if provided, for the same reasons as createDeclaracion.
+  const normBody = body.dniNie !== undefined
+    ? { ...body, dniNie: typeof body.dniNie === 'string' ? body.dniNie.trim().toUpperCase() : body.dniNie }
+    : body
+
+  const validationError = validateDeclaracionPersonalFields(normBody, { requireAll: false })
   if (validationError) return { data: null, error: { message: validationError }, status: 400 }
 
   // Build a dynamic SET clause for personal fields only
@@ -954,8 +962,8 @@ async function updateDeclaracion(id, body) {
   const setClauses = []
   const params = []
   for (const [camel, snake] of Object.entries(PERSONAL_FIELD_MAP)) {
-    if (body[camel] !== undefined) {
-      params.push(body[camel])
+    if (normBody[camel] !== undefined) {
+      params.push(normBody[camel])
       setClauses.push(`${snake} = $${params.length}`)
     }
   }
@@ -973,8 +981,8 @@ async function updateDeclaracion(id, body) {
   // 'si'/'no' → upsert; '' or null → delete the answer.
   const answerOps = [] // [{ preguntaId, action: 'set'|'delete', value? }]
   for (const [campo, preguntaId] of campoToId) {
-    if (!Object.prototype.hasOwnProperty.call(body, campo)) continue
-    const raw = body[campo]
+    if (!Object.prototype.hasOwnProperty.call(normBody, campo)) continue
+    const raw = normBody[campo]
     const v = toYN(raw)
     if (v) {
       answerOps.push({ preguntaId, action: 'set', value: v })
@@ -1119,8 +1127,20 @@ async function deleteUser(dniNie) {
     if (rows[0].role === 'admin') {
       return { data: null, error: { message: 'No se pueden eliminar usuarios administradores' }, status: 403 }
     }
-    await pool.query('DELETE FROM declaraciones WHERE dni_nie = $1', [dniNie])
-    await pool.query('DELETE FROM usuarios WHERE dni_nie = $1', [dniNie])
+    const client = await pool.connect()
+    try {
+      await client.query('BEGIN')
+      await client.query('DELETE FROM declaraciones WHERE dni_nie = $1', [dniNie])
+      await client.query('DELETE FROM usuarios WHERE dni_nie = $1', [dniNie])
+      await client.query('COMMIT')
+    } catch (txErr) {
+      await client.query('ROLLBACK').catch((rbErr) => {
+        console.error('deleteUser ROLLBACK error:', rbErr.message)
+      })
+      throw txErr
+    } finally {
+      client.release()
+    }
     return { data: { success: true }, error: null }
   } catch (err) {
     console.error('deleteUser DB error:', err.message)
