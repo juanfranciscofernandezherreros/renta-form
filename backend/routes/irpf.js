@@ -1,6 +1,7 @@
 'use strict'
 
 const { Router } = require('express')
+const { requireAdmin } = require('../middleware/auth')
 
 const router = Router()
 
@@ -32,7 +33,7 @@ module.exports = function irpfRoutes(svc) {
   })
 
   // GET /v1/irpf/declaraciones/all  (admin – must come BEFORE /:id)
-  router.get('/declaraciones/all', async (req, res) => {
+  router.get('/declaraciones/all', requireAdmin, async (req, res) => {
     const { dniNie, estado, page, limit } = req.query
     const result = await svc.listDeclaracionesAll({
       dniNie,
@@ -67,8 +68,8 @@ module.exports = function irpfRoutes(svc) {
     send(res, result)
   })
 
-  // PATCH /v1/irpf/declaraciones/:id  (update estado)
-  router.patch('/declaraciones/:id', async (req, res) => {
+  // PATCH /v1/irpf/declaraciones/:id  (admin – update estado)
+  router.patch('/declaraciones/:id', requireAdmin, async (req, res) => {
     const { estado } = req.body ?? {}
     if (!estado) return res.status(400).json({ error: 'estado es obligatorio' })
     const result = await svc.updateEstadoDeclaracion(req.params.id, estado)
@@ -81,14 +82,14 @@ module.exports = function irpfRoutes(svc) {
     send(res, result)
   })
 
-  // DELETE /v1/irpf/declaraciones/:id
-  router.delete('/declaraciones/:id', async (req, res) => {
+  // DELETE /v1/irpf/declaraciones/:id  (admin)
+  router.delete('/declaraciones/:id', requireAdmin, async (req, res) => {
     const result = await svc.deleteDeclaracion(req.params.id)
     send(res, result)
   })
 
-  // POST /v1/irpf/declaraciones/:id/email
-  router.post('/declaraciones/:id/email', async (req, res) => {
+  // POST /v1/irpf/declaraciones/:id/email  (admin)
+  router.post('/declaraciones/:id/email', requireAdmin, async (req, res) => {
     const { email, mensaje } = req.body ?? {}
     const result = await svc.sendEmailDeclaracion({ declaracionId: req.params.id, email, mensaje })
     send(res, result)
