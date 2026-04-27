@@ -1293,6 +1293,24 @@ async function deleteDeclaracion(id) {
   }
 }
 
+async function bulkDeleteDeclaraciones(ids) {
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return { data: null, error: { message: 'Se requiere al menos un id' }, status: 400 }
+  }
+  try {
+    // Build parameterised placeholders: $1, $2, …
+    const placeholders = ids.map((_, i) => `$${i + 1}`).join(', ')
+    const { rowCount } = await pool.query(
+      `DELETE FROM declaraciones WHERE id IN (${placeholders})`,
+      ids,
+    )
+    return { data: { deleted: rowCount }, error: null }
+  } catch (err) {
+    console.error('bulkDeleteDeclaraciones DB error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+}
+
 // ── Admin: Secciones ───────────────────────────────────────────────────────
 
 // (secciones table removed – no longer used)
@@ -2042,6 +2060,7 @@ module.exports = {
   updateEstadoDeclaracion,
   updateDeclaracion,
   deleteDeclaracion,
+  bulkDeleteDeclaraciones,
   listPreguntasFormulario,
   createPreguntaFormulario,
   updatePreguntaFormulario,

@@ -130,6 +130,10 @@ export async function deleteDeclaracion(options) {
   return request('DELETE', `/irpf/declaraciones/${encodeURIComponent(id)}`)
 }
 
+export async function bulkDeleteDeclaraciones({ ids } = {}) {
+  return request('DELETE', '/irpf/declaraciones/bulk', { body: { ids } })
+}
+
 export async function sendEmailDeclaracion(options) {
   const id = options?.path?.id
   return request('POST', `/irpf/declaraciones/${encodeURIComponent(id)}/email`, { body: {} })
