@@ -353,30 +353,62 @@ async function createPreguntaFormulario({ campo, orden, texto, textos } = {}) {
     return { data: null, error: { message: 'Debes proporcionar texto o textos' } }
   }
 
-  // Compute orden
-  let ordenNum
+  // Parse the requested orden (if any). The actual numeric value is decided
+  // inside the transaction so that it can be clamped against the live state
+  // of the table without a TOCTOU race against concurrent inserts.
+  let requestedOrden = null
   if (orden !== undefined && orden !== null && orden !== '') {
-    ordenNum = parseInt(orden, 10)
-    if (Number.isNaN(ordenNum)) return { data: null, error: { message: 'orden debe ser un número entero' } }
-  } else {
-    const { rows: maxRows } = await pool.query(`SELECT COALESCE(MAX(orden), 0) AS maxo FROM preguntas`)
-    ordenNum = parseInt(maxRows[0].maxo, 10) + 1
+    const parsed = parseInt(orden, 10)
+    if (Number.isNaN(parsed)) return { data: null, error: { message: 'orden debe ser un número entero' } }
+    if (parsed < 1) return { data: null, error: { message: 'orden debe ser mayor o igual que 1' } }
+    requestedOrden = parsed
   }
 
+  const client = await pool.connect()
   try {
-    const { rows } = await pool.query(
+    await client.query('BEGIN')
+
+    // Lock the table so the MAX(orden) read and the shift below are atomic
+    // with respect to other concurrent create/update operations.
+    await client.query('LOCK TABLE preguntas IN SHARE ROW EXCLUSIVE MODE')
+
+    const { rows: maxRows } = await client.query(
+      `SELECT COALESCE(MAX(orden), 0)::int AS maxo FROM preguntas`
+    )
+    const maxo = maxRows[0].maxo
+    let ordenNum
+    if (requestedOrden === null) {
+      // No position requested → append at the end.
+      ordenNum = maxo + 1
+    } else {
+      // Clamp to the valid insertion range [1, maxo + 1] and shift everything
+      // that would collide with the new row one position down.
+      ordenNum = Math.min(requestedOrden, maxo + 1)
+      if (ordenNum <= maxo) {
+        await client.query(
+          `UPDATE preguntas SET orden = orden + 1 WHERE orden >= $1`,
+          [ordenNum]
+        )
+      }
+    }
+
+    const { rows } = await client.query(
       `INSERT INTO preguntas (campo, orden, texto)
        VALUES ($1, $2, $3::jsonb)
        RETURNING id, campo, orden, texto, actualizada_en`,
       [campoNorm, ordenNum, JSON.stringify(mergeObj)]
     )
+    await client.query('COMMIT')
     return { data: rowToPreguntaFormulario(rows[0]), status: 201, error: null }
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {})
     if (err.code === '23505') {
       return { data: null, error: { message: 'Ya existe una pregunta con ese campo' }, status: 409 }
     }
     console.error('createPreguntaFormulario error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  } finally {
+    client.release()
   }
 }
 
@@ -395,23 +427,21 @@ async function deletePreguntaFormulario(id) {
 async function updatePreguntaFormulario(id, { campo, orden, texto, textos } = {}) {
   if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
 
-  const setClauses = []
-  const params = []
-
+  // Validate inputs up front (before opening a transaction).
+  let campoNorm
   if (campo !== undefined) {
-    const campoNorm = String(campo).trim()
+    campoNorm = String(campo).trim()
     if (!CAMPO_RE.test(campoNorm)) {
       return { data: null, error: { message: 'El campo debe ser camelCase (letras y números, comenzando por minúscula)' } }
     }
-    params.push(campoNorm)
-    setClauses.push(`campo = $${params.length}`)
   }
 
+  let requestedOrden = null
   if (orden !== undefined && orden !== null && orden !== '') {
-    const ordenNum = parseInt(orden, 10)
-    if (Number.isNaN(ordenNum)) return { data: null, error: { message: 'orden debe ser un número entero' } }
-    params.push(ordenNum)
-    setClauses.push(`orden = $${params.length}`)
+    const parsed = parseInt(orden, 10)
+    if (Number.isNaN(parsed)) return { data: null, error: { message: 'orden debe ser un número entero' } }
+    if (parsed < 1) return { data: null, error: { message: 'orden debe ser mayor o igual que 1' } }
+    requestedOrden = parsed
   }
 
   // Build merge object for texto
@@ -427,36 +457,104 @@ async function updatePreguntaFormulario(id, { campo, orden, texto, textos } = {}
     mergeObj = { es: String(texto).trim() }
   }
 
-  if (mergeObj) {
-    params.push(JSON.stringify(mergeObj))
-    setClauses.push(`texto = COALESCE(texto, '{}'::jsonb) || $${params.length}::jsonb`)
-  }
-
-  if (!setClauses.length) {
+  if (campoNorm === undefined && requestedOrden === null && !mergeObj) {
     return { data: null, error: { message: 'No hay cambios que guardar' } }
   }
 
-  setClauses.push(`actualizada_en = NOW()`)
-
+  const client = await pool.connect()
   try {
+    await client.query('BEGIN')
+
+    // Lock the table so reorder reads/writes are atomic with respect to
+    // other concurrent create/update operations.
+    await client.query('LOCK TABLE preguntas IN SHARE ROW EXCLUSIVE MODE')
+
+    // Locate the target row to know its current orden (needed for the shift).
+    const { rows: existing } = await client.query(
+      `SELECT orden FROM preguntas WHERE id = $1`,
+      [id]
+    )
+    if (!existing.length) {
+      await client.query('ROLLBACK').catch(() => {})
+      return { data: null, error: { message: 'Pregunta no encontrada' }, status: 404 }
+    }
+    const oldOrden = parseInt(existing[0].orden, 10)
+
+    // If the orden is changing, shift the affected range so positions stay
+    // contiguous and the target row ends up exactly where the caller asked.
+    let nextOrden = oldOrden
+    if (requestedOrden !== null) {
+      const { rows: maxRows } = await client.query(
+        `SELECT COALESCE(MAX(orden), 0)::int AS maxo FROM preguntas`
+      )
+      const maxo = maxRows[0].maxo
+      // Target position is clamped to the current valid range [1, maxo]
+      // since we are not adding a new row. (maxo >= 1 because the target
+      // row was just located above.)
+      nextOrden = Math.min(requestedOrden, maxo)
+
+      if (nextOrden < oldOrden) {
+        // Moving up: shift down rows in [nextOrden, oldOrden - 1] except self.
+        await client.query(
+          `UPDATE preguntas
+              SET orden = orden + 1
+            WHERE orden >= $1 AND orden < $2 AND id <> $3`,
+          [nextOrden, oldOrden, id]
+        )
+      } else if (nextOrden > oldOrden) {
+        // Moving down: shift up rows in (oldOrden, nextOrden] except self.
+        await client.query(
+          `UPDATE preguntas
+              SET orden = orden - 1
+            WHERE orden > $1 AND orden <= $2 AND id <> $3`,
+          [oldOrden, nextOrden, id]
+        )
+      }
+    }
+
+    // Build the dynamic SET clause for the target row.
+    const setClauses = []
+    const params = []
+    if (campoNorm !== undefined) {
+      params.push(campoNorm)
+      setClauses.push(`campo = $${params.length}`)
+    }
+    if (requestedOrden !== null) {
+      params.push(nextOrden)
+      setClauses.push(`orden = $${params.length}`)
+    }
+    if (mergeObj) {
+      params.push(JSON.stringify(mergeObj))
+      setClauses.push(`texto = COALESCE(texto, '{}'::jsonb) || $${params.length}::jsonb`)
+    }
+    setClauses.push(`actualizada_en = NOW()`)
     params.push(id)
-    const { rowCount } = await pool.query(
+
+    const { rowCount } = await client.query(
       `UPDATE preguntas SET ${setClauses.join(', ')} WHERE id = $${params.length}`,
       params
     )
-    if (!rowCount) return { data: null, error: { message: 'Pregunta no encontrada' } }
+    if (!rowCount) {
+      await client.query('ROLLBACK').catch(() => {})
+      return { data: null, error: { message: 'Pregunta no encontrada' }, status: 404 }
+    }
 
-    const { rows } = await pool.query(
+    const { rows } = await client.query(
       `SELECT id, campo, orden, texto, actualizada_en FROM preguntas WHERE id = $1`,
       [id]
     )
+
+    await client.query('COMMIT')
     return { data: rowToPreguntaFormulario(rows[0]), error: null }
   } catch (err) {
+    await client.query('ROLLBACK').catch(() => {})
     if (err.code === '23505') {
       return { data: null, error: { message: 'Ya existe una pregunta con ese campo' }, status: 409 }
     }
     console.error('updatePreguntaFormulario error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  } finally {
+    client.release()
   }
 }
 
