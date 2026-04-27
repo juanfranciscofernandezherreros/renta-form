@@ -83,7 +83,8 @@ header .header-text p  { font-size: 0.85rem; opacity: .88; margin-top: 3px; font
 /* ── Main card */
 .card {
   background: #fff;
-  max-width: 920px;
+  width: 90%;
+  max-width: 100%;
   margin: 0 auto;
   border-radius: 0 0 20px 20px;
   box-shadow: 0 8px 40px rgba(0,0,0,.25);
