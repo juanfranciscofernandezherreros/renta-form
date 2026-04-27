@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from './AuthContext.jsx'
 import { loginAdmin } from './apiClient.js'
 import { useLanguage } from './LanguageContext.jsx'
+import './adminlte.css'
 
 
 export default function AdminLoginPage() {
@@ -50,20 +51,17 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <>
-      <header>
-        <div className="header-inner">
-          <div className="logo">{t('logoText')}</div>
+    <div className="adminlte-login-page">
+      <div className="login-box">
+        <div className="login-logo">
+          <a href="#/backend_admin">🏛️ {t('logoText')}</a>
         </div>
-      </header>
-
-      <div className="card">
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="section-title">Identificación de administrador</div>
-          {errors.global && (
-            <div className="info-box info-box-error">❌ {errors.global}</div>
-          )}
-          <div className="form-grid">
+        <div className="login-card-body">
+          <p className="login-box-msg">Identificación de administrador</p>
+          <form onSubmit={handleSubmit} noValidate>
+            {errors.global && (
+              <div className="info-box info-box-error">❌ {errors.global}</div>
+            )}
             <div className="field">
               <label>Usuario</label>
               <input
@@ -90,16 +88,13 @@ export default function AdminLoginPage() {
               />
               {errors.password && <span className="field-error">{errors.password}</span>}
             </div>
-          </div>
 
-          <div className="btn-row">
             <button type="submit" className="btn btn-primary" disabled={loading}>
               {loading ? '⏳ Accediendo…' : '🔑 Acceder al panel'}
             </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
-
-    </>
+    </div>
   )
 }
