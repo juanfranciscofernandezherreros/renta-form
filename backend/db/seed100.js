@@ -120,7 +120,7 @@ async function seed100(client) {
       await client.query(
         `INSERT INTO usuarios (dni_nie, dni_nie_hash, nombre, apellidos, email, telefono, role, password_hash)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-         ON CONFLICT (dni_nie_hash) DO UPDATE SET
+         ON CONFLICT (dni_nie_hash) WHERE dni_nie_hash IS NOT NULL DO UPDATE SET
            nombre = EXCLUDED.nombre,
            apellidos = EXCLUDED.apellidos,
            email = EXCLUDED.email,
@@ -141,7 +141,7 @@ async function seed100(client) {
          ) VALUES (
            $1, $2, $3, $4, $5, $6, $7::estado_expediente
          )
-         ON CONFLICT (dni_nie_hash) DO UPDATE SET
+         ON CONFLICT (dni_nie_hash) WHERE dni_nie_hash IS NOT NULL DO UPDATE SET
            nombre = EXCLUDED.nombre,
            apellidos = EXCLUDED.apellidos,
            email = EXCLUDED.email,
