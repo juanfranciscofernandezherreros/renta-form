@@ -206,9 +206,16 @@ export default function App({ editData, onEditDataConsumed }) {
   const handleAnswer = () => {
     spawnXpPopup()
     setStreak(s => s + 1)
-    // All questions are now displayed on a single step, so we no longer
-    // auto-advance or auto-submit. The user reviews/modifies all answers
-    // and then clicks Submit (or Download PDF) explicitly.
+    // Auto-advance after answering a yes/no question
+    const nextStep = visibleSteps[safeStep + 1]
+    if (nextStep) {
+      setStepDirection('forward')
+      setCurrentStep(prev => prev + 1)
+      setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
+    } else {
+      // Last question answered – auto-submit after React commits the answer state
+      setTimeout(() => formRef.current?.requestSubmit(), 0)
+    }
   }
 
   const spawnConfetti = () => {
@@ -229,15 +236,18 @@ export default function App({ editData, onEditDataConsumed }) {
   }
 
   // Wizard step helpers
-  // Two steps total:
-  //   0 = ID fields (with "Continue" button)
-  //   1 = all questions, grouped by sección, on one page (with "Back" + "Submit" + "Download PDF")
+  // Steps: 0 = ID fields, 1..N = one step per question from the catalog.
+  // Every question returned by the API is shown as its own step, with
+  // auto-advance on yes/no click and auto-submit on the last answer.
   const visibleSteps = useMemo(() => {
     if (loadingPreguntas || secciones.length === 0) return []
-    return [
-      { type: 'id', key: 'id' },
-      { type: 'questions', key: 'questions' },
-    ]
+    const steps = [{ type: 'id', key: 'id' }]
+    for (const seccion of secciones) {
+      for (const pregunta of seccion.preguntas) {
+        steps.push({ type: 'question', key: `q:${pregunta.id}`, seccion, pregunta })
+      }
+    }
+    return steps
   }, [loadingPreguntas, secciones])
   const totalSteps = visibleSteps.length
   const safeStep = Math.min(currentStep, Math.max(0, visibleSteps.length - 1))
@@ -381,19 +391,18 @@ export default function App({ editData, onEditDataConsumed }) {
   }, [secciones, lang, t])
 
   // Index of the active sidebar step based on the current wizard step.
-  // With the new 2-step flow:
-  //   - Step 0 (ID): only the first sidebar entry is active.
-  //   - Step 1 (all questions): all sección entries are considered done and
-  //     the final "Confirmar y enviar" entry becomes active.
-  //   - After submit: every entry (including confirm) is marked as done.
+  // The final "confirm" step (last index) becomes active when the user is on
+  // the last wizard step (where the Submit button is shown), and is marked
+  // done once the declaration has been submitted.
   const activeSidebarIndex = useMemo(() => {
     const confirmIdx = sidebarSteps.length - 1
     if (submitted) return confirmIdx + 1 // mark all (including confirm) as done
+    if (totalSteps > 1 && safeStep === totalSteps - 1) return confirmIdx
     if (!currentStepInfo) return 0
     if (currentStepInfo.type === 'id') return 0
-    if (currentStepInfo.type === 'questions') return confirmIdx
-    return 0
-  }, [currentStepInfo, sidebarSteps.length, submitted])
+    const idx = secciones.findIndex(s => s.id === currentStepInfo.seccion?.id)
+    return idx >= 0 ? idx + 1 : 0
+  }, [currentStepInfo, secciones, sidebarSteps.length, safeStep, totalSteps, submitted])
 
   // Active question text/subtitle for the main header
   const mainHeading = useMemo(() => {
@@ -401,9 +410,10 @@ export default function App({ editData, onEditDataConsumed }) {
     if (currentStepInfo.type === 'id') {
       return { title: t('section1'), subtitle: t('step1Subtitle') }
     }
-    // 'questions' step – use the generic instructions/confirm header
-    return { title: t('sectionConfirm'), subtitle: t('instructionsTitle') }
-  }, [currentStepInfo, t])
+    const sec = currentStepInfo.seccion
+    const title = sec?.titulos?.[lang] ?? sec?.titulo ?? t('section1')
+    return { title, subtitle: t('instructionsTitle') }
+  }, [currentStepInfo, lang, t])
 
   return (
     <div className="ib-shell">
@@ -624,42 +634,18 @@ export default function App({ editData, onEditDataConsumed }) {
                       </>
                     )}
 
-                    {currentStepInfo?.type === 'questions' && (() => {
-                      // Cumulative question index across all sections so that
-                      // numbering continues sequentially (1, 2, 3, …) instead
-                      // of restarting at each section.
-                      let questionIndex = 0
+                    {currentStepInfo?.type === 'question' && (() => {
+                      const { pregunta } = currentStepInfo
                       return (
-                        <div className="ib-questions-list">
-                          {secciones.map(seccion => {
-                            const preguntas = seccion.preguntas ?? []
-                            if (preguntas.length === 0) return null
-                            const seccionTitulo = seccion.titulos?.[lang] ?? seccion.titulo ?? ''
-                            return (
-                              <section key={seccion.id} className="ib-summary-section">
-                                {seccionTitulo && (
-                                  <h4 className="ib-summary-section-title">{seccionTitulo}</h4>
-                                )}
-                                {preguntas.map(pregunta => {
-                                  questionIndex += 1
-                                  return (
-                                    <YesNoField
-                                      key={pregunta.id}
-                                      name={pregunta.id}
-                                      value={form[pregunta.id] ?? ''}
-                                      onChange={handleChange}
-                                      label={pregunta.textos?.[lang] ?? pregunta.texto}
-                                      t={t}
-                                      questionNumber={questionIndex}
-                                      onAnswer={handleAnswer}
-                                      shake={questionShake}
-                                    />
-                                  )
-                                })}
-                              </section>
-                            )
-                          })}
-                        </div>
+                        <YesNoField
+                          name={pregunta.id}
+                          value={form[pregunta.id] ?? ''}
+                          onChange={handleChange}
+                          label={pregunta.textos?.[lang] ?? pregunta.texto}
+                          t={t}
+                          onAnswer={handleAnswer}
+                          shake={questionShake}
+                        />
                       )
                     })()}
 
@@ -685,7 +671,7 @@ export default function App({ editData, onEditDataConsumed }) {
                           {t('btnClear')}
                         </button>
                       )}
-                      {currentStepInfo?.type === 'id' ? (
+                      {safeStep < totalSteps - 1 ? (
                         <button
                           type="button"
                           className="ib-btn ib-btn-primary"
