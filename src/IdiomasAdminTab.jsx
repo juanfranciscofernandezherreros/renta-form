@@ -13,6 +13,9 @@ import { useLanguage } from './LanguageContext.jsx'
 
 const EMPTY_FORM = { code: '', label: '', activo: true }
 
+const PAGE_SIZE_OPTIONS = [5, 10, 15, 20]
+const DEFAULT_PAGE_LIMIT = 10
+
 /** Número de caracteres a partir del cual el textarea de traducción se expande a 3 filas. */
 const TEXTAREA_EXPAND_THRESHOLD = 80
 /** Número de claves de traducción mostradas por página en el editor de contenido. */
@@ -31,7 +34,7 @@ export default function IdiomasAdminTab({ showToast }) {
   const [error, setError] = useState(null)
   const [filtroActivo, setFiltroActivo] = useState('')
   const [page, setPage] = useState(1)
-  const limit = 10
+  const [limit, setLimit] = useState(DEFAULT_PAGE_LIMIT)
   const [modal, setModal] = useState(null) // null | 'create' | 'edit'
   const [editando, setEditando] = useState(null)
   const [form, setForm] = useState(EMPTY_FORM)
@@ -64,7 +67,7 @@ export default function IdiomasAdminTab({ showToast }) {
       .catch(err => { if (!cancelled) setError(err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [filtroActivo, page, refreshKey])
+  }, [filtroActivo, page, limit, refreshKey])
 
   const openCreate = () => {
     setForm(EMPTY_FORM)
@@ -188,6 +191,17 @@ export default function IdiomasAdminTab({ showToast }) {
             <option value="">Todos</option>
             <option value="true">Activos</option>
             <option value="false">Inactivos</option>
+          </select>
+          <select
+            className="admin-filter-select"
+            value={limit}
+            onChange={e => { setLimit(Number(e.target.value)); setPage(1) }}
+            title="Elementos por página"
+            aria-label="Elementos por página"
+          >
+            {PAGE_SIZE_OPTIONS.map(n => (
+              <option key={n} value={n}>{n} / página</option>
+            ))}
           </select>
           <button type="button" className="btn btn-primary btn-sm" onClick={openCreate}>
             ➕ Nuevo idioma

@@ -10,7 +10,8 @@ import Pagination from './Pagination.jsx'
 import { useLanguage } from './LanguageContext.jsx'
 
 const TEXTAREA_EXPAND_THRESHOLD = 80
-const IDIOMAS_PAGE_LIMIT = 10
+const PAGE_SIZE_OPTIONS = [5, 10, 15, 20]
+const DEFAULT_IDIOMAS_PAGE_LIMIT = 10
 const KEYS_PAGE_LIMIT = 20
 
 export default function TraduccionesAdminTab({ showToast }) {
@@ -33,6 +34,7 @@ export default function TraduccionesAdminTab({ showToast }) {
   const [panelOpen, setPanelOpen] = useState(false)
   const [keysPage, setKeysPage] = useState(1)
   const [idiomasPage, setIdiomasPage] = useState(1)
+  const [idiomasLimit, setIdiomasLimit] = useState(DEFAULT_IDIOMAS_PAGE_LIMIT)
 
   // New translation row
   const [newKey, setNewKey] = useState('')
@@ -148,14 +150,14 @@ export default function TraduccionesAdminTab({ showToast }) {
   useEffect(() => { setKeysPage(1) }, [contentFilter])
 
   // Paginated slice of idiomas for the idiomas datatable.
-  const idiomasTotalPages = Math.max(1, Math.ceil(idiomas.length / IDIOMAS_PAGE_LIMIT))
+  const idiomasTotalPages = Math.max(1, Math.ceil(idiomas.length / idiomasLimit))
   const safeIdiomasPage = Math.min(idiomasPage, idiomasTotalPages)
   const pagedIdiomas = useMemo(
     () => idiomas.slice(
-      (safeIdiomasPage - 1) * IDIOMAS_PAGE_LIMIT,
-      safeIdiomasPage * IDIOMAS_PAGE_LIMIT
+      (safeIdiomasPage - 1) * idiomasLimit,
+      safeIdiomasPage * idiomasLimit
     ),
-    [idiomas, safeIdiomasPage]
+    [idiomas, safeIdiomasPage, idiomasLimit]
   )
 
   return (
@@ -188,6 +190,24 @@ export default function TraduccionesAdminTab({ showToast }) {
       {/* Idiomas datatable */}
       {!idiomasLoading && !idiomasError && idiomas.length > 0 && (
         <>
+          <div className="admin-toolbar">
+            <div className="admin-stats">
+              <span className="admin-stat-badge">{idiomas.length} idioma{idiomas.length !== 1 ? 's' : ''}</span>
+            </div>
+            <div className="admin-filters">
+              <select
+                className="admin-filter-select"
+                value={idiomasLimit}
+                onChange={e => { setIdiomasLimit(Number(e.target.value)); setIdiomasPage(1) }}
+                title="Elementos por página"
+                aria-label="Elementos por página"
+              >
+                {PAGE_SIZE_OPTIONS.map(n => (
+                  <option key={n} value={n}>{n} / página</option>
+                ))}
+              </select>
+            </div>
+          </div>
           <div style={{ overflowX: 'auto' }}>
             <table className="preguntas-table">
               <thead>

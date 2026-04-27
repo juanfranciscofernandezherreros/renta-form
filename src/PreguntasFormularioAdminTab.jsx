@@ -10,7 +10,8 @@ import {
 import Pagination from './Pagination.jsx'
 
 const DEFAULT_LANGS = [{ code: 'es', label: 'Español' }]
-const PAGE_LIMIT = 10
+const PAGE_SIZE_OPTIONS = [5, 10, 15, 20]
+const DEFAULT_PAGE_LIMIT = 10
 
 function makeEmptyForm(langs) {
   const textos = {}
@@ -62,6 +63,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(DEFAULT_PAGE_LIMIT)
   const [modal, setModal] = useState(null) // null | 'edit' | 'create'
   const [editando, setEditando] = useState(null)
   const [langs, setLangs] = useState(DEFAULT_LANGS)
@@ -92,7 +94,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    listPreguntasFormulario({ query: { page, limit: PAGE_LIMIT } })
+    listPreguntasFormulario({ query: { page, limit } })
       .then(({ data, error: apiErr }) => {
         if (cancelled) return
         if (apiErr) throw new Error(apiErr.message ?? 'Error desconocido')
@@ -103,7 +105,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
       .catch(err => { if (!cancelled) setError(err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [page, refreshKey])
+  }, [page, limit, refreshKey])
 
   const openEdit = (pregunta) => {
     const textos = {}
@@ -225,7 +227,18 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
         <div className="admin-stats">
           <span className="admin-stat-badge">{total} pregunta{total !== 1 ? 's' : ''} del formulario</span>
         </div>
-        <div className="admin-actions">
+        <div className="admin-filters">
+          <select
+            className="admin-filter-select"
+            value={limit}
+            onChange={e => { setLimit(Number(e.target.value)); setPage(1) }}
+            title="Elementos por página"
+            aria-label="Elementos por página"
+          >
+            {PAGE_SIZE_OPTIONS.map(n => (
+              <option key={n} value={n}>{n} / página</option>
+            ))}
+          </select>
           <button type="button" className="btn btn-primary" onClick={openCreate}>
             ➕ Nueva pregunta
           </button>
@@ -300,7 +313,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
 
       <Pagination
         page={page}
-        totalPages={Math.ceil(total / PAGE_LIMIT)}
+        totalPages={Math.ceil(total / limit)}
         onPageChange={setPage}
       />
 
