@@ -19,6 +19,9 @@ const BCRYPT_ROUNDS = 12
 // calls in the src/ directory.  Used by getMissingTranslations so the endpoint
 // can report gaps for every language without needing a base/reference language.
 const ALL_REQUIRED_KEYS = [
+  'emailEnvioTitle',
+  'emailEnvioLabel',
+  'emailEnvioSaved',
   'btnAdmin',
   'btnBack',
   'btnClear',
