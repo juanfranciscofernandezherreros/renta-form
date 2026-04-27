@@ -207,28 +207,29 @@ async function loadRolesForDniNie(dniNie) {
 
 async function loginAdmin({ username, password }) {
   try {
-    const normalised = (username ?? '').trim().toUpperCase()
+    const normalised = (username ?? '').trim()
+    if (!normalised) return { data: null, error: { message: 'Usuario no encontrado' } }
     const { rows } = await pool.query(
       `${USER_SELECT_WITH_ROLES}
          FROM usuarios u ${USER_ROLES_JOIN}
-        WHERE u.dni_nie_hash = $1
+        WHERE LOWER(u.username) = LOWER($1)
         GROUP BY u.id`,
-      [hashDni(normalised)]
+      [normalised]
     )
     if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
     const user = rows[0]
     const roles = (user.roles || []).filter(Boolean)
     if (!roles.includes('admin')) return { data: null, error: { message: 'No tienes permisos de administrador' } }
     if (user.bloqueado) return { data: null, error: { message: 'USER_BLOCKED' } }
-    if (!(await verifyPassword(password, user.password_hash))) {
+    if (!user.password_hash || !(await verifyPassword(password, user.password_hash))) {
       return { data: null, error: { message: 'Contraseña incorrecta' } }
     }
     return {
       data: {
-        username: normalised,
+        username: user.username,
         roles,
         email: user.email,
-        token: signToken({ sub: normalised, roles }, ADMIN_SESSION_TTL_SECONDS),
+        token: signToken({ sub: user.username, roles }, ADMIN_SESSION_TTL_SECONDS),
       },
       error: null,
     }
@@ -238,42 +239,23 @@ async function loginAdmin({ username, password }) {
   }
 }
 
-async function loginUser({ dniNie, password }) {
+async function changePassword({ username, oldPassword, newPassword }) {
   try {
-    const normalised = (dniNie ?? '').trim().toUpperCase()
+    const normalised = (username ?? '').trim()
+    if (!normalised) return { data: null, error: { message: 'Usuario no encontrado' } }
     const { rows } = await pool.query(
-      `${USER_SELECT_WITH_ROLES}
-         FROM usuarios u ${USER_ROLES_JOIN}
-        WHERE u.dni_nie_hash = $1
-        GROUP BY u.id`,
-      [hashDni(normalised)]
-    )
-    if (!rows.length) return { data: null, error: { message: 'DNI/NIE no encontrado' } }
-    const user = rows[0]
-    if (user.bloqueado) return { data: null, error: { message: 'USER_BLOCKED' } }
-    if (!(await verifyPassword(password, user.password_hash))) {
-      return { data: null, error: { message: 'Contraseña incorrecta' } }
-    }
-    const roles = (user.roles || []).filter(Boolean)
-    return { data: { dniNie: normalised, roles, token: signToken({ sub: normalised, roles }) }, error: null }
-  } catch (err) {
-    console.error('loginUser DB error:', err.message)
-    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
-  }
-}
-
-async function changePassword({ dniNie, oldPassword, newPassword }) {
-  try {
-    const { rows } = await pool.query(
-      'SELECT password_hash FROM usuarios WHERE dni_nie_hash = $1',
-      [hashDni(dniNie)]
+      'SELECT password_hash FROM usuarios WHERE LOWER(username) = LOWER($1)',
+      [normalised]
     )
     if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
-    if (!(await verifyPassword(oldPassword, rows[0].password_hash))) {
+    if (!rows[0].password_hash || !(await verifyPassword(oldPassword, rows[0].password_hash))) {
       return { data: null, error: { message: 'La contraseña actual es incorrecta' } }
     }
     const hashed = await hashPassword(newPassword)
-    await pool.query('UPDATE usuarios SET password_hash = $1 WHERE dni_nie_hash = $2', [hashed, hashDni(dniNie)])
+    await pool.query(
+      'UPDATE usuarios SET password_hash = $1 WHERE LOWER(username) = LOWER($2)',
+      [hashed, normalised]
+    )
     return { data: { success: true }, error: null }
   } catch (err) {
     console.error('changePassword DB error:', err.message)
@@ -283,20 +265,21 @@ async function changePassword({ dniNie, oldPassword, newPassword }) {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-async function changeEmail({ dniNie, newEmail }) {
+async function changeEmail({ username, newEmail }) {
   try {
     const trimmedEmail = (newEmail ?? '').trim()
     if (!EMAIL_REGEX.test(trimmedEmail)) {
       return { data: null, error: { message: 'El formato del email no es válido' } }
     }
-    const normalised = (dniNie ?? '').trim().toUpperCase()
+    const normalised = (username ?? '').trim()
+    if (!normalised) return { data: null, error: { message: 'Usuario no encontrado' } }
     const { rows } = await pool.query(
       `SELECT u.email,
               COALESCE(ARRAY_AGG(r.nombre) FILTER (WHERE r.nombre IS NOT NULL), '{}') AS roles
          FROM usuarios u ${USER_ROLES_JOIN}
-        WHERE u.dni_nie_hash = $1
+        WHERE LOWER(u.username) = LOWER($1)
         GROUP BY u.id`,
-      [hashDni(normalised)]
+      [normalised]
     )
     if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
     const user = rows[0]
@@ -307,7 +290,10 @@ async function changeEmail({ dniNie, newEmail }) {
     if (user.email === trimmedEmail) {
       return { data: { success: true, email: user.email }, error: null }
     }
-    await pool.query('UPDATE usuarios SET email = $1 WHERE dni_nie_hash = $2', [trimmedEmail, hashDni(normalised)])
+    await pool.query(
+      'UPDATE usuarios SET email = $1 WHERE LOWER(username) = LOWER($2)',
+      [trimmedEmail, normalised]
+    )
     return { data: { success: true, email: trimmedEmail }, error: null }
   } catch (err) {
     console.error('changeEmail DB error:', err.message)
@@ -1161,7 +1147,14 @@ async function deleteDeclaracion(id) {
 
 async function listUsersAdmin({ bloqueado, denunciado, search, page = 1, limit = 10 }) {
   try {
-    const conditions = []
+    // The admin user is not a citizen and must never appear in this list.
+    const conditions = [
+      `NOT EXISTS (
+         SELECT 1 FROM usuarios_roles ur
+           JOIN roles r ON r.id = ur.rol_id
+          WHERE ur.usuario_id = u.id AND r.nombre = 'admin'
+       )`,
+    ]
     const params = []
     if (bloqueado !== undefined) { conditions.push(`u.bloqueado = $${params.length + 1}`); params.push(bloqueado) }
     if (denunciado !== undefined) { conditions.push(`u.denunciado = $${params.length + 1}`); params.push(denunciado) }
@@ -1836,7 +1829,6 @@ async function sendEmailToUser({ dniNie }) {
 
 module.exports = {
   loginAdmin,
-  loginUser,
   changePassword,
   changeEmail,
   getPreguntas,

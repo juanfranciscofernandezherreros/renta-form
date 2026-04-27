@@ -62,20 +62,16 @@ async function request(method, path, { body, query } = {}) {
 
 // ── Auth ───────────────────────────────────────────────────────────────────
 
-export async function loginUser({ dniNie, password }) {
-  return request('POST', '/auth/login', { body: { dniNie, password } })
-}
-
 export async function loginAdmin({ username, password }) {
   return request('POST', '/auth/admin-login', { body: { username, password } })
 }
 
-export async function changePassword({ dniNie, oldPassword, newPassword }) {
-  return request('POST', '/auth/change-password', { body: { dniNie, oldPassword, newPassword } })
+export async function changePassword({ username, oldPassword, newPassword }) {
+  return request('POST', '/auth/change-password', { body: { username, oldPassword, newPassword } })
 }
 
-export async function changeEmail({ dniNie, newEmail }) {
-  return request('POST', '/auth/change-email', { body: { dniNie, newEmail } })
+export async function changeEmail({ username, newEmail }) {
+  return request('POST', '/auth/change-email', { body: { username, newEmail } })
 }
 
 // ── IRPF preguntas ─────────────────────────────────────────────────────────

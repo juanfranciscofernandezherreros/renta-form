@@ -33,33 +33,25 @@ module.exports = function authRoutes(svc) {
     send(res, result)
   })
 
-  // POST /v1/auth/login
-  router.post('/login', authLimiter, async (req, res) => {
-    const { dniNie, password } = req.body ?? {}
-    if (!dniNie || !password) {
-      return res.status(400).json({ error: 'dniNie y password son obligatorios' })
-    }
-    const result = await svc.loginUser({ dniNie, password })
-    send(res, result)
-  })
-
   // POST /v1/auth/change-password
+  // Sólo se usa para cambiar la contraseña del administrador.
   router.post('/change-password', async (req, res) => {
-    const { dniNie, oldPassword, newPassword } = req.body ?? {}
-    if (!dniNie || !oldPassword || !newPassword) {
-      return res.status(400).json({ error: 'dniNie, oldPassword y newPassword son obligatorios' })
+    const { username, oldPassword, newPassword } = req.body ?? {}
+    if (!username || !oldPassword || !newPassword) {
+      return res.status(400).json({ error: 'username, oldPassword y newPassword son obligatorios' })
     }
-    const result = await svc.changePassword({ dniNie, oldPassword, newPassword })
+    const result = await svc.changePassword({ username, oldPassword, newPassword })
     send(res, result)
   })
 
   // POST /v1/auth/change-email
+  // Sólo se usa para cambiar el email del administrador.
   router.post('/change-email', authLimiter, async (req, res) => {
-    const { dniNie, newEmail } = req.body ?? {}
-    if (!dniNie || !newEmail) {
-      return res.status(400).json({ error: 'dniNie y newEmail son obligatorios' })
+    const { username, newEmail } = req.body ?? {}
+    if (!username || !newEmail) {
+      return res.status(400).json({ error: 'username y newEmail son obligatorios' })
     }
-    const result = await svc.changeEmail({ dniNie, newEmail })
+    const result = await svc.changeEmail({ username, newEmail })
     send(res, result)
   })
 

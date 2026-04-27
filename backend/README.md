@@ -82,9 +82,10 @@ Todos los endpoints están prefijados con `/v1`.
 | Método | Ruta | Descripción |
 |--------|------|-------------|
 | GET | `/health` | Health check |
-| POST | `/v1/auth/login` | Login (dniNie + password) |
+| POST | `/v1/auth/admin-login` | Login del administrador (username + password) |
 | POST | `/v1/auth/verificar-codigo` | Verificar código de acceso a intranet |
-| POST | `/v1/auth/change-password` | Cambiar contraseña de usuario |
+| POST | `/v1/auth/change-password` | Cambiar contraseña del administrador |
+| POST | `/v1/auth/change-email` | Cambiar email del administrador |
 | GET | `/v1/irpf/preguntas` | Catálogo de preguntas del formulario |
 | GET | `/v1/irpf/idiomas` | Listar idiomas activos |
 | GET | `/v1/irpf/traducciones` | Todas las traducciones agrupadas por código de idioma |

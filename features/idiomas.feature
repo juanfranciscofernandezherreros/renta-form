@@ -7,24 +7,10 @@ Feature: Idiomas y traducciones de la interfaz
     Then el selector de idioma es visible
     Then se toma un screenshot "idiomas_01_selector_visible"
 
-  Scenario: El selector de idioma es visible en la página de login
-    Given el usuario navega a la pantalla de login
-    Then el selector de idioma es visible
-    Then se toma un screenshot "idiomas_02_selector_login"
-
-  Scenario: El selector de idioma es visible en la página de consulta
-    Given el usuario navega a la pantalla de consulta
-    Then el selector de idioma es visible
-    Then se toma un screenshot "idiomas_03_selector_consulta"
-
   # ── Idioma por defecto ──────────────────────────────────────────────────
 
   Scenario: El idioma español está activo por defecto en la página principal
     Given el usuario abre la pagina principal
-    Then el botón de idioma "ES" está activo
-
-  Scenario: El idioma español está activo por defecto en la página de login
-    Given el usuario navega a la pantalla de login
     Then el botón de idioma "ES" está activo
 
   # ── Cambio de idioma ────────────────────────────────────────────────────

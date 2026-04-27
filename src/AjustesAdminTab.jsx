@@ -72,7 +72,7 @@ export default function AjustesAdminTab({ showToast }) {
     if (Object.keys(errs).length) { setPwErrors(errs); return }
     setPwLoading(true)
     const { error: apiError } = await changePassword({
-      dniNie: user.dniNie,
+      username: user.username ?? user.dniNie,
       oldPassword: pwForm.oldPassword,
       newPassword: pwForm.newPassword,
     })
@@ -103,7 +103,7 @@ export default function AjustesAdminTab({ showToast }) {
     if (Object.keys(errs).length) { setEmailErrors(errs); return }
     setEmailLoading(true)
     const { data, error: apiError } = await changeEmail({
-      dniNie: user.dniNie,
+      username: user.username ?? user.dniNie,
       newEmail: trimmed,
     })
     setEmailLoading(false)

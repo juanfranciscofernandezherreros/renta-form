@@ -70,14 +70,6 @@ Feature: Rellenar el formulario de declaración de la Renta
     Then se muestra un error de declaracion duplicada
     Then se toma un screenshot "12_envio_duplicado_error"
 
-  Scenario: Pantalla de login de usuario
-    Given el usuario navega a la pantalla de login
-    Then se toma un screenshot "13_pantalla_login"
-
-  Scenario: Pantalla de consulta por token
-    Given el usuario navega a la pantalla de consulta
-    Then se toma un screenshot "14_pantalla_consulta"
-
   Scenario: Validacion - campos de identificacion con errores visibles
     Given el usuario abre la pagina principal
     When el usuario hace clic en Siguiente sin rellenar nada
