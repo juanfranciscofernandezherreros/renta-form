@@ -27,7 +27,7 @@ function getAuthToken() {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-async function request(method, path, { body, query } = {}) {
+async function request(method, path, { body, query, skipAuth = false } = {}) {
   let url = `${API_BASE_URL}${path}`
   if (query) {
     const params = new URLSearchParams()
@@ -43,9 +43,11 @@ async function request(method, path, { body, query } = {}) {
     opts.headers['Content-Type'] = 'application/json'
     opts.body = JSON.stringify(body)
   }
-  const token = getAuthToken()
-  if (token) {
-    opts.headers['Authorization'] = `Bearer ${token}`
+  if (!skipAuth) {
+    const token = getAuthToken()
+    if (token) {
+      opts.headers['Authorization'] = `Bearer ${token}`
+    }
   }
 
   try {
@@ -94,7 +96,10 @@ export async function listDeclaracionesAll(options) {
 
 export async function createDeclaracion(options) {
   const body = options?.body ?? {}
-  return request('POST', '/irpf/declaraciones', { body })
+  // Use the dedicated public endpoint (mounted at /v1/public/declaraciones)
+  // and skip the Authorization header so a stale/expired bearer token can
+  // never cause the request to be rejected with 403/401 by an intermediary.
+  return request('POST', '/public/declaraciones', { body, skipAuth: true })
 }
 
 export async function getDeclaracion(options) {

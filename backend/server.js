@@ -79,10 +79,12 @@ app.get('/health', (_req, res) => {
 const authRoutes = require('./routes/auth')
 const irpfRoutes = require('./routes/irpf')
 const adminRoutes = require('./routes/admin')
+const publicRoutes = require('./routes/public')
 
 app.use('/v1/auth', authRoutes(svc))
 app.use('/v1/irpf', irpfRoutes(svc))
 app.use('/v1/admin', adminRoutes(svc))
+app.use('/v1/public', publicRoutes(svc))
 
 // ── Public alias: GET /v1/preguntas → same catalog as GET /v1/irpf/preguntas ─
 app.get('/v1/preguntas', async (_req, res) => {
