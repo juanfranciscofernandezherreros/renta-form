@@ -18,6 +18,12 @@ const BCRYPT_ROUNDS = 12
 // calls in the src/ directory.  Used by getMissingTranslations so the endpoint
 // can report gaps for every language without needing a base/reference language.
 const ALL_REQUIRED_KEYS = [
+  'ajustesEmailTitle',
+  'ajustesEmailLabel',
+  'ajustesEmailDesc',
+  'ajustesSaved',
+  'btnSaveAjustes',
+  'btnSavingAjustes',
   'btnAdmin',
   'btnBack',
   'btnClear',
@@ -723,6 +729,10 @@ async function listDeclaracionesAll({ dniNie, estado, page = 1, limit = 20 }) {
 
 async function notifyAdminsOfDeclaracion(dec, attachments) {
   try {
+    if (!(await isEmailEnabled())) {
+      console.info('[mailer] Email sending disabled; skipping admin notification')
+      return
+    }
     const { rows } = await pool.query(
       "SELECT email FROM usuarios WHERE role = 'admin' AND email IS NOT NULL AND email <> ''"
     )
@@ -756,6 +766,10 @@ async function notifyAdminsOfDeclaracion(dec, attachments) {
 
 async function notifyClientOfDeclaracion(dec, attachments) {
   try {
+    if (!(await isEmailEnabled())) {
+      console.info('[mailer] Email sending disabled; skipping client notification')
+      return
+    }
     const to = (dec.email || '').trim()
     if (!to) return
     const subject = 'Tu cuestionario de la Renta 2025'
@@ -1483,6 +1497,53 @@ async function getMissingTranslations(ref = 'static') {
   }
 }
 
+// ── Admin: Ajustes ─────────────────────────────────────────────────────────
+
+async function getAjustes() {
+  try {
+    const { rows } = await pool.query('SELECT clave, valor FROM ajustes ORDER BY clave')
+    const data = {}
+    for (const r of rows) data[r.clave] = r.valor
+    // Expose booleans as proper types
+    return {
+      data: {
+        emailEnabled: data.email_enabled !== 'false',
+      },
+      error: null,
+    }
+  } catch (err) {
+    console.error('getAjustes DB error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+}
+
+async function updateAjustes({ emailEnabled }) {
+  try {
+    if (emailEnabled !== undefined) {
+      await pool.query(
+        `INSERT INTO ajustes (clave, valor) VALUES ('email_enabled', $1)
+         ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor`,
+        [emailEnabled ? 'true' : 'false']
+      )
+    }
+    return getAjustes()
+  } catch (err) {
+    console.error('updateAjustes DB error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+}
+
+/** Returns true when the email_enabled setting is on (defaults to true). */
+async function isEmailEnabled() {
+  try {
+    const { rows } = await pool.query(`SELECT valor FROM ajustes WHERE clave = 'email_enabled'`)
+    if (!rows.length) return true
+    return rows[0].valor !== 'false'
+  } catch {
+    return true
+  }
+}
+
 // ── Email stubs ────────────────────────────────────────────────────────────
 // Email delivery is not configured in this deployment.  These stubs keep the
 // API surface consistent (no unhandled TypeErrors in the routes) and return
@@ -1560,4 +1621,6 @@ module.exports = {
   ALL_REQUIRED_KEYS,
   sendEmailDeclaracion,
   sendEmailToUser,
+  getAjustes,
+  updateAjustes,
 }

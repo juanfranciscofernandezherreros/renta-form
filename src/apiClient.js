@@ -198,6 +198,16 @@ export async function getTraduccionesFaltantes({ query } = {}) {
   return request('GET', '/admin/traducciones/faltantes', { query })
 }
 
+// ── Admin: Ajustes ─────────────────────────────────────────────────────────
+
+export async function getAjustes() {
+  return request('GET', '/admin/ajustes')
+}
+
+export async function updateAjustes({ emailEnabled }) {
+  return request('PUT', '/admin/ajustes', { body: { emailEnabled } })
+}
+
 // ── PDF upload (stored as part of declaración) ─────────────────────────────
 // We update the declaración with the rentaPdf field so the data persists
 // across page reloads via the DB.

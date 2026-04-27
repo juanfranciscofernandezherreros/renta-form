@@ -119,7 +119,16 @@ CREATE TABLE IF NOT EXISTS traducciones (
 
 CREATE INDEX IF NOT EXISTS idx_traducciones_idioma ON traducciones (idioma_id);
 
--- 8. Triggers
+-- 8. Tabla: Ajustes (configuración general de la aplicación)
+CREATE TABLE IF NOT EXISTS ajustes (
+    clave  VARCHAR(100) PRIMARY KEY,
+    valor  TEXT         NOT NULL DEFAULT ''
+);
+
+-- Valor por defecto: envío de emails activado
+INSERT INTO ajustes (clave, valor) VALUES ('email_enabled', 'true') ON CONFLICT (clave) DO NOTHING;
+
+-- 9. Triggers
 CREATE OR REPLACE TRIGGER trg_declaraciones_actualizado_en
     BEFORE UPDATE ON declaraciones FOR EACH ROW EXECUTE FUNCTION fn_set_actualizado_en();
 

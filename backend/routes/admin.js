@@ -132,5 +132,18 @@ module.exports = function adminRoutes(svc) {
     send(res, result)
   })
 
+  // ── Ajustes ───────────────────────────────────────────────────────────
+
+  router.get('/ajustes', async (req, res) => {
+    const result = await svc.getAjustes()
+    send(res, result)
+  })
+
+  router.put('/ajustes', async (req, res) => {
+    const { emailEnabled } = req.body ?? {}
+    const result = await svc.updateAjustes({ emailEnabled })
+    send(res, result)
+  })
+
   return router
 }
