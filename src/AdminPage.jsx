@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useAuth } from './AuthContext.jsx'
 import { useLanguage } from './LanguageContext.jsx'
@@ -8,6 +8,8 @@ import {
   deleteDeclaracion,
   updateDeclaracion,
   getPreguntas,
+  bulkImportDeclaraciones,
+  getDeclaracionesImportTemplate,
 } from './apiClient.js'
 import { translateYN } from './i18nUtils.js'
 import PreguntasFormularioAdminTab from './PreguntasFormularioAdminTab.jsx'
@@ -184,6 +186,11 @@ export default function AdminPage({ onNavigate }) {
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(10)
 
+  // Bulk CSV import
+  const fileInputRef = useRef(null)
+  const [importing, setImporting] = useState(false)
+  const [importReport, setImportReport] = useState(null)
+
   // Edit declaration modal
   const [editModal, setEditModal] = useState(null) // declaration object being edited
   const [editForm, setEditForm] = useState({})
@@ -275,6 +282,45 @@ export default function AdminPage({ onNavigate }) {
     setDeclaraciones(prev => prev.map(d => d.id === editModal.id ? data : d))
     setEditModal(null)
     showToast('Declaración actualizada correctamente')
+  }
+
+  const handleDownloadTemplate = async () => {
+    const { data, error: apiErr } = await getDeclaracionesImportTemplate()
+    if (apiErr) { showToast(`Error al descargar plantilla: ${apiErr.message}`, 'error'); return }
+    const blob = new Blob([data], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'declaraciones-template.csv'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleImportFile = async (e) => {
+    const file = e.target.files?.[0]
+    // Reset the input so selecting the same file again triggers onChange
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    if (!file) return
+    setImporting(true)
+    setImportReport(null)
+    try {
+      const csv = await file.text()
+      const { data, error: apiErr } = await bulkImportDeclaraciones({ csv })
+      if (apiErr) {
+        showToast(`Error al importar: ${apiErr.message}`, 'error')
+      } else {
+        setImportReport(data)
+        showToast(`Importadas ${data.imported} de ${data.total} declaraciones${data.failed ? ` (${data.failed} con error)` : ''}`,
+          data.failed ? 'error' : 'success')
+        refresh()
+      }
+    } catch (err) {
+      showToast(`Error leyendo el fichero: ${err.message ?? err}`, 'error')
+    } finally {
+      setImporting(false)
+    }
   }
 
   const SIDEBAR_ITEMS = [
@@ -467,8 +513,65 @@ export default function AdminPage({ onNavigate }) {
                 <option key={n} value={n}>{n} / página</option>
               ))}
             </select>
+            <button
+              type="button"
+              className="btn btn-secondary btn-sm"
+              onClick={handleDownloadTemplate}
+              title="Descargar una plantilla CSV con las columnas esperadas (preguntas dinámicas)"
+            >
+              📥 Plantilla CSV
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={importing}
+              title="Importar varias declaraciones desde un fichero CSV"
+            >
+              {importing ? '⏳ Importando…' : '📤 Importar CSV'}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              style={{ display: 'none' }}
+              onChange={handleImportFile}
+            />
           </div>
         </div>
+
+        {importReport && (
+          <div className={`info-box${importReport.failed > 0 ? ' info-box-error' : ''}`}>
+            <div>
+              <strong>Importación completada:</strong>{' '}
+              {importReport.imported} importadas · {importReport.failed} con error · {importReport.total} en total
+              {importReport.unknownHeaders?.length > 0 && (
+                <div style={{ fontSize: '.85rem', marginTop: 4 }}>
+                  ⚠️ Columnas ignoradas (no coinciden con preguntas ni datos personales):{' '}
+                  <code>{importReport.unknownHeaders.join(', ')}</code>
+                </div>
+              )}
+              {importReport.failed > 0 && (
+                <details style={{ marginTop: 6 }}>
+                  <summary>Ver errores ({importReport.failed})</summary>
+                  <ul style={{ margin: '6px 0 0 18px', fontSize: '.85rem' }}>
+                    {importReport.rows.filter(r => !r.ok).map(r => (
+                      <li key={r.line}>Fila {r.line}: {r.error}</li>
+                    ))}
+                  </ul>
+                </details>
+              )}
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm btn-xs"
+                style={{ marginTop: 6 }}
+                onClick={() => setImportReport(null)}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        )}
 
         {loading && <div className="info-box">⏳ Cargando declaraciones…</div>}
         {error && <div className="info-box info-box-error">❌ {error}</div>}

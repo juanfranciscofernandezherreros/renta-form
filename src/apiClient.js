@@ -130,6 +130,30 @@ export async function deleteDeclaracion(options) {
   return request('DELETE', `/irpf/declaraciones/${encodeURIComponent(id)}`)
 }
 
+export async function bulkImportDeclaraciones({ csv } = {}) {
+  return request('POST', '/admin/declaraciones/import', { body: { csv } })
+}
+
+export async function getDeclaracionesImportTemplate() {
+  // Download endpoint returns text/csv directly (not JSON), so bypass the
+  // generic JSON helper.
+  const url = `${API_BASE_URL}/admin/declaraciones/import/template`
+  const headers = {}
+  const token = getAuthToken()
+  if (token) headers['Authorization'] = `Bearer ${token}`
+  try {
+    const res = await fetch(url, { method: 'GET', headers })
+    if (!res.ok) {
+      const json = await res.json().catch(() => null)
+      return { data: null, error: { message: json?.error ?? res.statusText } }
+    }
+    const text = await res.text()
+    return { data: text, error: null }
+  } catch (err) {
+    return { data: null, error: { message: err.message ?? 'Error de red' } }
+  }
+}
+
 // ── Admin: Preguntas del formulario ───────────────────────────────────────
 
 export async function listPreguntasFormulario(options = {}) {

@@ -173,6 +173,25 @@ module.exports = function adminRoutes(svc) {
     send(res, result)
   })
 
+  // ── Importación masiva de declaraciones (CSV) ────────────────────────────
+
+  router.get('/declaraciones/import/template', async (_req, res) => {
+    const result = await svc.getDeclaracionesImportTemplate()
+    if (result.error) return res.status(result.status || 500).json({ error: result.error.message })
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8')
+    res.setHeader('Content-Disposition', 'attachment; filename="declaraciones-template.csv"')
+    return res.status(200).send(result.data)
+  })
+
+  router.post('/declaraciones/import', async (req, res) => {
+    const csv = req.body && typeof req.body.csv === 'string' ? req.body.csv : null
+    if (typeof csv !== 'string' || csv.trim() === '') {
+      return res.status(400).json({ error: 'Body JSON debe contener el campo "csv" con el contenido del CSV' })
+    }
+    const result = await svc.bulkImportDeclaraciones(csv)
+    send(res, result)
+  })
+
   // ── Configuración ─────────────────────────────────────────────────────
 
   router.get('/configuracion', async (req, res) => {
