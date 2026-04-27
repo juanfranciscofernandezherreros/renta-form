@@ -6,6 +6,7 @@ import {
   listDeclaracionesAll,
   updateEstadoDeclaracion,
   deleteDeclaracion,
+  bulkDeleteDeclaraciones,
   updateDeclaracion,
   getPreguntas,
   bulkImportDeclaraciones,
@@ -197,6 +198,10 @@ export default function AdminPage({ onNavigate }) {
   const [editForm, setEditForm] = useState({})
   const [editSaving, setEditSaving] = useState(false)
 
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
+
   const [preguntasSecciones, setPreguntasSecciones] = useState([])
 
   const showToast = useCallback((msg, type = 'success') => {
@@ -226,6 +231,7 @@ export default function AdminPage({ onNavigate }) {
         setDeclaraciones(data?.data ?? [])
         setTotal(data?.total ?? 0)
         setError(null)
+        setSelectedIds(new Set())
       })
       .catch(err => { if (!cancelled) setError(err.message) })
       .finally(() => { if (!cancelled) setLoading(false) })
@@ -250,6 +256,17 @@ export default function AdminPage({ onNavigate }) {
     if (apiErr) { showToast(`Error al eliminar: ${apiErr.message}`, 'error'); return }
     setExpanded(null)
     showToast('Declaración eliminada correctamente')
+    refresh()
+  }
+
+  const handleBulkDelete = async () => {
+    setConfirmBulkDelete(false)
+    const ids = Array.from(selectedIds)
+    const { error: apiErr } = await bulkDeleteDeclaraciones({ ids })
+    if (apiErr) { showToast(`Error al eliminar: ${apiErr.message}`, 'error'); return }
+    setSelectedIds(new Set())
+    setExpanded(null)
+    showToast(`${ids.length} declaración${ids.length !== 1 ? 'es' : ''} eliminada${ids.length !== 1 ? 's' : ''} correctamente`)
     refresh()
   }
 
@@ -665,10 +682,52 @@ export default function AdminPage({ onNavigate }) {
         )}
 
         {!loading && !error && declaraciones.length > 0 && (
+          <>
+            <div className="bulk-action-bar">
+              <label className="bulk-select-all">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size === declaraciones.length}
+                  ref={el => { if (el) el.indeterminate = selectedIds.size > 0 && selectedIds.size < declaraciones.length }}
+                  onChange={e => {
+                    if (e.target.checked) {
+                      setSelectedIds(new Set(declaraciones.map(d => d.id)))
+                    } else {
+                      setSelectedIds(new Set())
+                    }
+                  }}
+                />
+                {' '}Seleccionar todas ({declaraciones.length})
+              </label>
+              {selectedIds.size > 0 && (
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm"
+                  onClick={() => setConfirmBulkDelete(true)}
+                >
+                  🗑️ Eliminar seleccionadas ({selectedIds.size})
+                </button>
+              )}
+            </div>
           <div className="declaraciones-list">
             {declaraciones.map(dec => (
-              <div key={dec.id} className="declaracion-card">
+              <div key={dec.id} className={`declaracion-card${selectedIds.has(dec.id) ? ' declaracion-card--selected' : ''}`}>
                 <div className="declaracion-header" onClick={() => setExpanded(expanded === dec.id ? null : dec.id)}>
+                  <div className="declaracion-checkbox" onClick={e => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      aria-label={`Seleccionar declaración ${dec.id.slice(0, 8)}`}
+                      checked={selectedIds.has(dec.id)}
+                      onChange={e => {
+                        setSelectedIds(prev => {
+                          const next = new Set(prev)
+                          if (e.target.checked) next.add(dec.id)
+                          else next.delete(dec.id)
+                          return next
+                        })
+                      }}
+                    />
+                  </div>
                   <div className="declaracion-meta">
                     <span className="declaracion-id">#{dec.id.slice(0, 8)}…</span>
                     <span className={`estado-badge ${ESTADO_CLASS[dec.estado] ?? 'badge-blue'}`}>
@@ -802,6 +861,7 @@ export default function AdminPage({ onNavigate }) {
               </div>
             ))}
           </div>
+          </>
         )}
         <Pagination
           page={page}
@@ -834,6 +894,26 @@ export default function AdminPage({ onNavigate }) {
               </button>
               <button type="button" className="btn btn-danger" onClick={() => handleDelete(confirmDelete)}>
                 🗑️ Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      , document.body)}
+
+      {/* Bulk delete confirmation modal */}
+      {confirmBulkDelete && createPortal(
+        <div className="admin-modal-overlay" onClick={() => setConfirmBulkDelete(false)}>
+          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+            <h2 className="admin-modal-title">⚠️ Confirmar eliminación múltiple</h2>
+            <p className="admin-modal-desc">
+              ¿Estás seguro de que quieres eliminar <strong>{selectedIds.size}</strong> declaración{selectedIds.size !== 1 ? 'es' : ''}? Esta acción no se puede deshacer.
+            </p>
+            <div className="btn-row">
+              <button type="button" className="btn btn-secondary" onClick={() => setConfirmBulkDelete(false)}>
+                Cancelar
+              </button>
+              <button type="button" className="btn btn-danger" onClick={handleBulkDelete}>
+                🗑️ Eliminar {selectedIds.size} declaración{selectedIds.size !== 1 ? 'es' : ''}
               </button>
             </div>
           </div>
