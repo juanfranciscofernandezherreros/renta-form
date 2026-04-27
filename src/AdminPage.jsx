@@ -14,6 +14,7 @@ import PreguntasFormularioAdminTab from './PreguntasFormularioAdminTab.jsx'
 import UsuariosAdminTab from './UsuariosAdminTab.jsx'
 import IdiomasAdminTab from './IdiomasAdminTab.jsx'
 import TraduccionesAdminTab from './TraduccionesAdminTab.jsx'
+import AjustesAdminTab from './AjustesAdminTab.jsx'
 import Pagination from './Pagination.jsx'
 import './adminlte.css'
 
@@ -281,6 +282,7 @@ export default function AdminPage({ onNavigate }) {
     { key: 'usuarios',      icon: '👥', label: 'Usuarios' },
     { key: 'idiomas',       icon: '🌐', label: 'Idiomas' },
     { key: 'traducciones',  icon: '📝', label: 'Traducciones' },
+    { key: 'ajustes',       icon: '⚙️', label: 'Ajustes' },
   ]
   const activeMeta = SIDEBAR_ITEMS.find(it => it.key === activeTab) ?? SIDEBAR_ITEMS[0]
 
@@ -401,6 +403,18 @@ export default function AdminPage({ onNavigate }) {
               Selecciona un idioma para editar sus traducciones. El panel de edición se mostrará sobre la lista.
             </p>
             <TraduccionesAdminTab showToast={showToast} />
+          </>
+        )}
+
+        {activeTab === 'ajustes' && (
+          <>
+            <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: '0 0 4px', color: '#333' }}>
+              ⚙️ Ajustes
+            </h2>
+            <p style={{ fontSize: '.82rem', color: '#666', margin: '0 0 16px' }}>
+              Cambia la contraseña del usuario administrador con el que has iniciado sesión.
+            </p>
+            <AjustesAdminTab showToast={showToast} />
           </>
         )}
 
