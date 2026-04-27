@@ -28,7 +28,7 @@ const ALL_REQUIRED_KEYS = [
   'btnDownloadPDF',
   'btnLoggingIn',
   'btnLogin',
-  'btnSendAnother',
+  'btnFinalize',
   'btnSubmit',
   'btnSubmitting',
   'btnUpdatePassword',
