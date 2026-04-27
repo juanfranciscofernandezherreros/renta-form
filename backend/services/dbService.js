@@ -10,7 +10,7 @@ const bcrypt = require('bcrypt')
 const pool = require('../db/pool')
 const mailer = require('./mailer')
 const pdfGenerator = require('./pdfGenerator')
-const { encryptDni, decryptDni } = require('../utils/dniEncryption')
+const { encryptDni, decryptDni, normalise: normaliseDni } = require('../utils/dniEncryption')
 
 const BCRYPT_ROUNDS = 12
 
@@ -701,7 +701,7 @@ async function listDeclaracionesAll({ dniNie, estado, page = 1, limit = 20 }) {
     const params = []
     if (dniNie) {
       conditions.push(`dni_nie = $${params.length + 1}`)
-      params.push(encryptDni(dniNie.trim().toUpperCase()))
+      params.push(encryptDni(dniNie))
     }
     if (estado) { conditions.push(`estado = $${params.length + 1}`); params.push(estado) }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
@@ -1066,7 +1066,7 @@ async function listUsersAdmin({ bloqueado, denunciado, search, page = 1, limit =
     if (search) {
       const escaped = search.replace(/[%_\\]/g, '\\$&')
       const like = `%${escaped}%`
-      const encryptedSearch = encryptDni(search.trim().toUpperCase())
+      const encryptedSearch = encryptDni(search)
       conditions.push(`(nombre ILIKE $${params.length + 1} OR apellidos ILIKE $${params.length + 2} OR email ILIKE $${params.length + 3} OR dni_nie = $${params.length + 4})`)
       params.push(like, like, like, encryptedSearch)
     }
