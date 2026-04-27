@@ -104,6 +104,7 @@ const ALL_REQUIRED_KEYS = [
   'rentaPdfBtnTitle',
   'section1',
   'section5',
+  'sectionConfirm',
   'step1Subtitle',
   'successText',
   'successTitle',
