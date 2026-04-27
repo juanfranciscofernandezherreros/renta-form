@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from './AuthContext.jsx'
 import { useLanguage } from './LanguageContext.jsx'
-import { changePassword, changeEmail } from './apiClient.js'
+import { changePassword, changeEmail, getConfiguracion, updateConfiguracion } from './apiClient.js'
 
 const MIN_PASSWORD_LENGTH = 6
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -19,10 +19,39 @@ export default function AjustesAdminTab({ showToast }) {
   const [emailSuccess, setEmailSuccess] = useState(false)
   const [emailLoading, setEmailLoading] = useState(false)
 
+  const [emailEnvioActivo, setEmailEnvioActivo] = useState(true)
+  const [emailEnvioLoading, setEmailEnvioLoading] = useState(false)
+  const [emailEnvioSaved, setEmailEnvioSaved] = useState(false)
+  const [emailEnvioError, setEmailEnvioError] = useState(null)
+
+  useEffect(() => {
+    getConfiguracion().then(({ data }) => {
+      if (data && data.email_envio_activo !== undefined) {
+        setEmailEnvioActivo(data.email_envio_activo !== 'false')
+      }
+    })
+  }, [])
+
   // Keep the email field in sync if the user's email loads/changes after mount.
   useEffect(() => {
     setEmailForm(prev => (prev.newEmail ? prev : { ...prev, newEmail: user?.email ?? '' }))
   }, [user?.email])
+
+  const handleEmailEnvioToggle = async (newValue) => {
+    setEmailEnvioLoading(true)
+    setEmailEnvioSaved(false)
+    setEmailEnvioError(null)
+    const { error: apiError } = await updateConfiguracion({ clave: 'email_envio_activo', valor: String(newValue) })
+    setEmailEnvioLoading(false)
+    if (apiError) {
+      setEmailEnvioError(apiError.message)
+      if (showToast) showToast(apiError.message, 'error')
+      return
+    }
+    setEmailEnvioActivo(newValue)
+    setEmailEnvioSaved(true)
+    if (showToast) showToast(t('emailEnvioSaved'))
+  }
 
   const handlePwChange = e => {
     const { name, value } = e.target
@@ -93,6 +122,28 @@ export default function AjustesAdminTab({ showToast }) {
       <div className="field" style={{ maxWidth: 360, marginBottom: 20 }}>
         <label>{t('tokenResultDni')}</label>
         <input type="text" value={user?.dniNie ?? ''} readOnly disabled />
+      </div>
+
+      <div className="section-title">{t('emailEnvioTitle')}</div>
+
+      {emailEnvioSaved && (
+        <div className="info-box">{t('emailEnvioSaved')}</div>
+      )}
+      {emailEnvioError && (
+        <div className="info-box info-box-error">❌ {emailEnvioError}</div>
+      )}
+
+      <div className="form-grid" style={{ marginBottom: 20 }}>
+        <div className="field" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <label style={{ margin: 0 }}>{t('emailEnvioLabel')}</label>
+          <input
+            type="checkbox"
+            checked={emailEnvioActivo}
+            disabled={emailEnvioLoading}
+            onChange={e => handleEmailEnvioToggle(e.target.checked)}
+            style={{ width: 'auto', cursor: 'pointer' }}
+          />
+        </div>
       </div>
 
       <div className="section-title">{t('changeEmailTitle')}</div>

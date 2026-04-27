@@ -198,6 +198,16 @@ export async function getTraduccionesFaltantes({ query } = {}) {
   return request('GET', '/admin/traducciones/faltantes', { query })
 }
 
+// ── Admin: Configuración ───────────────────────────────────────────────────
+
+export async function getConfiguracion() {
+  return request('GET', '/admin/configuracion')
+}
+
+export async function updateConfiguracion({ clave, valor }) {
+  return request('PUT', `/admin/configuracion/${encodeURIComponent(clave)}`, { body: { valor } })
+}
+
 // ── PDF upload (stored as part of declaración) ─────────────────────────────
 // We update the declaración with the rentaPdf field so the data persists
 // across page reloads via the DB.

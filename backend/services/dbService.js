@@ -102,6 +102,9 @@ const ALL_REQUIRED_KEYS = [
   'profileUpdated',
   'pwSuccess',
   'emailSuccess',
+  'emailEnvioTitle',
+  'emailEnvioLabel',
+  'emailEnvioSaved',
   'rentaPdfBtn',
   'rentaPdfBtnTitle',
   'section1',
@@ -721,8 +724,49 @@ async function listDeclaracionesAll({ dniNie, estado, page = 1, limit = 20 }) {
   }
 }
 
+async function isEmailEnvioActivo() {
+  try {
+    const { rows } = await pool.query(
+      `SELECT valor FROM configuracion WHERE clave = 'email_envio_activo'`
+    )
+    if (rows.length === 0) return true
+    return rows[0].valor !== 'false'
+  } catch {
+    return true
+  }
+}
+
+async function getConfiguracion() {
+  try {
+    const { rows } = await pool.query('SELECT clave, valor FROM configuracion ORDER BY clave')
+    const data = Object.fromEntries(rows.map(r => [r.clave, r.valor]))
+    return { data, error: null }
+  } catch (err) {
+    console.error('getConfiguracion DB error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+}
+
+async function updateConfiguracion(clave, valor) {
+  try {
+    await pool.query(
+      `INSERT INTO configuracion (clave, valor) VALUES ($1, $2)
+       ON CONFLICT (clave) DO UPDATE SET valor = EXCLUDED.valor`,
+      [clave, String(valor)]
+    )
+    return { data: { clave, valor: String(valor) }, error: null }
+  } catch (err) {
+    console.error('updateConfiguracion DB error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+}
+
 async function notifyAdminsOfDeclaracion(dec, attachments) {
   try {
+    if (!(await isEmailEnvioActivo())) {
+      console.info('[mailer] Email sending disabled by configuration; skipping admin notification')
+      return
+    }
     const { rows } = await pool.query(
       "SELECT email FROM usuarios WHERE role = 'admin' AND email IS NOT NULL AND email <> ''"
     )
@@ -756,6 +800,10 @@ async function notifyAdminsOfDeclaracion(dec, attachments) {
 
 async function notifyClientOfDeclaracion(dec, attachments) {
   try {
+    if (!(await isEmailEnvioActivo())) {
+      console.info('[mailer] Email sending disabled by configuration; skipping client notification')
+      return
+    }
     const to = (dec.email || '').trim()
     if (!to) return
     const subject = 'Tu cuestionario de la Renta 2025'
@@ -1560,4 +1608,6 @@ module.exports = {
   ALL_REQUIRED_KEYS,
   sendEmailDeclaracion,
   sendEmailToUser,
+  getConfiguracion,
+  updateConfiguracion,
 }

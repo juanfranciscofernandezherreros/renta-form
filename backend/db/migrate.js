@@ -90,6 +90,17 @@ async function migrate() {
     // Drop any orphan rows that still have a NULL campo (cannot be exposed).
     await client.query(`DELETE FROM preguntas WHERE campo IS NULL`)
 
+    // ── 5. Ensure `configuracion` table exists and has the default settings ─
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS configuracion (
+        clave VARCHAR(100) PRIMARY KEY,
+        valor TEXT NOT NULL DEFAULT ''
+      )
+    `)
+    await client.query(
+      `INSERT INTO configuracion (clave, valor) VALUES ('email_envio_activo', 'true') ON CONFLICT (clave) DO NOTHING`
+    )
+
     // Finally enforce NOT NULL + UNIQUE on `campo`.
     await client.query(`ALTER TABLE preguntas ALTER COLUMN campo SET NOT NULL`)
     await client.query(`
