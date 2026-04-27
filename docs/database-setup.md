@@ -125,8 +125,7 @@ Triggers:
 | `npm run tablas`                | Alias de `npm run migrate` (crear tablas).                                                |
 | `npm run db:drop`               | Ejecuta `database/drop.sql` (borra tablas, tipos y funciones). Destructivo.               |
 | `npm run db:reset`              | `db:drop` + `migrate` + `seed-translations` + `seed-questions` + `seed-users`. Destructivo. |
-| `npm run db:seed-translations`  | Migra + siembra `idiomas` y `traducciones` desde `backend/data/translations.js`.          |
-| `npm run db:seed-languages`     | Migra + siembra sólo `idiomas`.                                                           |
+| `npm run db:seed-translations`  | Migra + siembra `idiomas` y `traducciones` desde el catálogo demo inline en `backend/db/seedTraducciones.js`. |
 | `npm run db:seed-questions`     | Migra + siembra las 14 `preguntas` demo (`backend/db/seedPreguntas.js`).                  |
 | `npm run db:seed-users`         | Migra + siembra `usuarios` (incluye un admin).                                            |
 | `npm run seed:admin`            | Inserta/actualiza el usuario admin (`backend/db/seedAdmin.js`).                           |
@@ -289,7 +288,6 @@ cd backend && npm run db:setup-all
 - Migraciones (incluye limpieza de columnas legacy): `backend/db/migrate.js`
 - Seeds:
   - `backend/db/seedTraducciones.js`
-  - `backend/db/seedLanguages.js`
   - `backend/db/seedPreguntas.js`
   - `backend/db/seedUsuarios.js`
   - `backend/db/seedAdmin.js`
