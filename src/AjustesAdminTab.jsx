@@ -14,7 +14,7 @@ export default function AjustesAdminTab({ showToast }) {
   const [pwSuccess, setPwSuccess] = useState(false)
   const [pwLoading, setPwLoading] = useState(false)
 
-  const [emailForm, setEmailForm] = useState({ newEmail: user?.email ?? '', password: '' })
+  const [emailForm, setEmailForm] = useState({ newEmail: user?.email ?? '' })
   const [emailErrors, setEmailErrors] = useState({})
   const [emailSuccess, setEmailSuccess] = useState(false)
   const [emailLoading, setEmailLoading] = useState(false)
@@ -70,12 +70,10 @@ export default function AjustesAdminTab({ showToast }) {
     const trimmed = (emailForm.newEmail ?? '').trim()
     if (!trimmed) errs.newEmail = t('errEmailRequired')
     else if (!EMAIL_REGEX.test(trimmed)) errs.newEmail = t('errEmailFormat')
-    if (!emailForm.password) errs.password = t('errPasswordRequired')
     if (Object.keys(errs).length) { setEmailErrors(errs); return }
     setEmailLoading(true)
     const { data, error: apiError } = await changeEmail({
       dniNie: user.dniNie,
-      password: emailForm.password,
       newEmail: trimmed,
     })
     setEmailLoading(false)
@@ -85,7 +83,7 @@ export default function AjustesAdminTab({ showToast }) {
       return
     }
     if (updateUser) updateUser({ email: data?.email ?? trimmed })
-    setEmailForm({ newEmail: data?.email ?? trimmed, password: '' })
+    setEmailForm({ newEmail: data?.email ?? trimmed })
     setEmailSuccess(true)
     if (showToast) showToast(t('emailSuccess'))
   }
@@ -119,18 +117,6 @@ export default function AjustesAdminTab({ showToast }) {
               required
             />
             {emailErrors.newEmail && <span className="field-error">{emailErrors.newEmail}</span>}
-          </div>
-          <div className="field">
-            <label>{t('fieldPassword')}</label>
-            <input
-              type="password"
-              name="password"
-              value={emailForm.password}
-              onChange={handleEmailChange}
-              autoComplete="current-password"
-              required
-            />
-            {emailErrors.password && <span className="field-error">{emailErrors.password}</span>}
           </div>
         </div>
         <div className="btn-row">

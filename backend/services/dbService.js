@@ -241,7 +241,7 @@ async function changePassword({ dniNie, oldPassword, newPassword }) {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
-async function changeEmail({ dniNie, password, newEmail }) {
+async function changeEmail({ dniNie, newEmail }) {
   try {
     const trimmedEmail = (newEmail ?? '').trim()
     if (!EMAIL_REGEX.test(trimmedEmail)) {
@@ -249,7 +249,7 @@ async function changeEmail({ dniNie, password, newEmail }) {
     }
     const normalised = (dniNie ?? '').trim().toUpperCase()
     const { rows } = await pool.query(
-      'SELECT password_hash, role, email FROM usuarios WHERE UPPER(dni_nie) = $1',
+      'SELECT role, email FROM usuarios WHERE UPPER(dni_nie) = $1',
       [normalised]
     )
     if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
@@ -257,9 +257,6 @@ async function changeEmail({ dniNie, password, newEmail }) {
     // Only admins can change their own email through this endpoint.
     if (user.role !== 'admin') {
       return { data: null, error: { message: 'No tienes permisos para cambiar el email' }, status: 403 }
-    }
-    if (!(await verifyPassword(password, user.password_hash))) {
-      return { data: null, error: { message: 'La contraseña actual es incorrecta' } }
     }
     if (user.email === trimmedEmail) {
       return { data: { success: true, email: user.email }, error: null }
