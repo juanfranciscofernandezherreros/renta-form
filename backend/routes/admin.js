@@ -1,7 +1,23 @@
 'use strict'
 
 const { Router } = require('express')
+const rateLimit = require('express-rate-limit')
+const { requireAdmin } = require('../middleware/auth')
 const router = Router()
+
+// Defence in depth: cap the number of admin API calls per IP to mitigate
+// brute-force and abuse even when a token is present.
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiadas peticiones. Inténtalo de nuevo más tarde.' },
+})
+
+// All routes mounted under /v1/admin require a valid admin bearer token.
+router.use(adminLimiter)
+router.use(requireAdmin)
 
 function send(res, result) {
   if (result.error) {
@@ -121,6 +137,19 @@ module.exports = function adminRoutes(svc) {
 
   router.put('/idiomas/:idiomaId/content', async (req, res) => {
     const result = await svc.updateIdiomaContent(req.params.idiomaId, req.body ?? {})
+    send(res, result)
+  })
+
+  // ── Configuración ─────────────────────────────────────────────────────
+
+  router.get('/configuracion', async (req, res) => {
+    const result = await svc.getConfiguracion()
+    send(res, result)
+  })
+
+  router.put('/configuracion/:clave', async (req, res) => {
+    const { valor } = req.body ?? {}
+    const result = await svc.updateConfiguracion(req.params.clave, valor)
     send(res, result)
   })
 
