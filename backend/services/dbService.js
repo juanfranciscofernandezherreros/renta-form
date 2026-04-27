@@ -890,7 +890,7 @@ async function createDeclaracion(body) {
     return { data: { id: declaracionId, estado: row.estado, creadoEn: row.creado_en }, error: null, status: 201 }
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {})
-    if (err.code === '23505' && err.constraint === 'uq_declaraciones_dni_nie') {
+    if (err.code === '23505' && (err.constraint === 'uq_declaraciones_dni_nie' || err.constraint === 'uq_declaraciones_dni_nie_hash')) {
       return { data: null, error: { message: 'Ya existe una declaración con este DNI/NIE' }, status: 409 }
     }
     console.error('createDeclaracion DB error:', err.message)
@@ -1071,9 +1071,9 @@ async function listUsersAdmin({ bloqueado, denunciado, search, page = 1, limit =
     if (search) {
       const escaped = search.replace(/[%_\\]/g, '\\$&')
       const like = `%${escaped}%`
-      const encryptedSearch = hashDni(search)
+      const hashedSearch = hashDni(search)
       conditions.push(`(nombre ILIKE $${params.length + 1} OR apellidos ILIKE $${params.length + 2} OR email ILIKE $${params.length + 3} OR dni_nie_hash = $${params.length + 4})`)
-      params.push(like, like, like, encryptedSearch)
+      params.push(like, like, like, hashedSearch)
     }
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
     const countRes = await pool.query(`SELECT COUNT(*) FROM usuarios ${where}`, params)

@@ -34,10 +34,12 @@ END;
 $$;
 
 -- 3. Tabla: Usuarios
+-- dni_nie stores the AES-encrypted value; dni_nie_hash stores the HMAC-SHA256
+-- used for UNIQUE constraints and WHERE lookups (populated by the application).
 CREATE TABLE IF NOT EXISTS usuarios (
     id                   UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     dni_nie              TEXT         NOT NULL,
-    dni_nie_hash         TEXT         NOT NULL DEFAULT '',
+    dni_nie_hash         TEXT,
     nombre               VARCHAR(100) NOT NULL,
     apellidos            VARCHAR(200) NOT NULL DEFAULT '',
     email                VARCHAR(254) NOT NULL,
@@ -47,9 +49,13 @@ CREATE TABLE IF NOT EXISTS usuarios (
     bloqueado            BOOLEAN      NOT NULL DEFAULT false,
     denunciado           BOOLEAN      NOT NULL DEFAULT false,
     preguntas_asignadas  JSONB        NOT NULL DEFAULT '[]',
-    creado_en            TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
-    CONSTRAINT uq_usuarios_dni_nie_hash UNIQUE (dni_nie_hash)
+    creado_en            TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
+-- Partial unique index: NULL hashes (legacy plain-text rows) are excluded so
+-- existing data is not affected when this migration runs on a live database.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_usuarios_dni_nie_hash
+    ON usuarios (dni_nie_hash)
+    WHERE dni_nie_hash IS NOT NULL;
 
 -- 4. Tabla: Preguntas (catálogo dinámico, totalmente autodescriptivo)
 -- El identificador público es el `campo` camelCase (e.g. 'viviendaAlquiler').
@@ -71,14 +77,11 @@ ALTER TABLE preguntas ADD COLUMN IF NOT EXISTS campo VARCHAR(100);
 ALTER TABLE preguntas ADD COLUMN IF NOT EXISTS orden INTEGER NOT NULL DEFAULT 0;
 CREATE INDEX IF NOT EXISTS idx_preguntas_orden ON preguntas (orden);
 
--- Widen usuarios.dni_nie to TEXT, add dni_nie_hash column for uniqueness/lookups.
+-- Widen usuarios.dni_nie to TEXT and add dni_nie_hash for existing databases.
 ALTER TABLE usuarios ALTER COLUMN dni_nie TYPE TEXT;
-ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS dni_nie_hash TEXT NOT NULL DEFAULT '';
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS dni_nie_hash TEXT;
+-- Drop old UNIQUE constraint on the plain-text column if it still exists.
 DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_usuarios_dni_nie_hash') THEN
-    ALTER TABLE usuarios ADD CONSTRAINT uq_usuarios_dni_nie_hash UNIQUE (dni_nie_hash);
-  END IF;
-  -- Drop old UNIQUE on the plain-text column if it existed (legacy schema).
   IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'usuarios_dni_nie_key') THEN
     ALTER TABLE usuarios DROP CONSTRAINT usuarios_dni_nie_key;
   END IF;
@@ -86,6 +89,7 @@ END $$;
 
 -- 5. Tabla: Declaraciones (sólo datos personales — las respuestas viven
 --    en la tabla `respuestas_declaracion` y son completamente dinámicas).
+-- dni_nie stores the AES-encrypted value; dni_nie_hash is used for uniqueness.
 CREATE TABLE IF NOT EXISTS declaraciones (
     id                        UUID              PRIMARY KEY DEFAULT gen_random_uuid(),
     creado_en                 TIMESTAMPTZ       NOT NULL DEFAULT NOW(),
@@ -94,28 +98,24 @@ CREATE TABLE IF NOT EXISTS declaraciones (
     nombre                    VARCHAR(100)      NOT NULL,
     apellidos                 VARCHAR(200)      NOT NULL,
     dni_nie                   TEXT              NOT NULL,
-    dni_nie_hash              TEXT              NOT NULL DEFAULT '',
+    dni_nie_hash              TEXT,
     email                     VARCHAR(254)      NOT NULL,
-    telefono                  VARCHAR(20)       NOT NULL,
-
-    CONSTRAINT uq_declaraciones_dni_nie  UNIQUE (dni_nie_hash)
+    telefono                  VARCHAR(20)       NOT NULL
 );
+-- Partial unique index on the hash column (NULL = legacy row, not enforced).
+CREATE UNIQUE INDEX IF NOT EXISTS uq_declaraciones_dni_nie_hash
+    ON declaraciones (dni_nie_hash)
+    WHERE dni_nie_hash IS NOT NULL;
 
--- Widen declaraciones.dni_nie to TEXT, add dni_nie_hash, drop plain-text
--- format check if any of these still exist from an older schema version.
+-- Widen declaraciones.dni_nie to TEXT, add dni_nie_hash, and remove any
+-- legacy plain-text constraints that may exist from an older schema version.
 ALTER TABLE declaraciones ALTER COLUMN dni_nie TYPE TEXT;
-ALTER TABLE declaraciones ADD COLUMN IF NOT EXISTS dni_nie_hash TEXT NOT NULL DEFAULT '';
+ALTER TABLE declaraciones ADD COLUMN IF NOT EXISTS dni_nie_hash TEXT;
 ALTER TABLE declaraciones DROP CONSTRAINT IF EXISTS chk_dni_nie_formato;
+-- Drop the old UNIQUE on the plain-text column if present.
 DO $$ BEGIN
-  -- If uniqueness was on the plain column, move it to the hash column.
-  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_declaraciones_dni_nie'
-             AND contype = 'u') THEN
-    -- Check whether the constraint is already on dni_nie_hash by inspecting pg_attribute.
-    -- Simplest safe approach: drop and recreate on the hash column.
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_declaraciones_dni_nie') THEN
     ALTER TABLE declaraciones DROP CONSTRAINT uq_declaraciones_dni_nie;
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_declaraciones_dni_nie') THEN
-    ALTER TABLE declaraciones ADD CONSTRAINT uq_declaraciones_dni_nie UNIQUE (dni_nie_hash);
   END IF;
 END $$;
 

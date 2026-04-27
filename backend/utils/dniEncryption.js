@@ -100,7 +100,7 @@ function decryptDni(ciphertext) {
     decrypted += decipher.final('utf8')
     return decrypted
   } catch (err) {
-    console.error('[dniEncryption] decryptDni failed:', err.message)
+    console.error('[dniEncryption] decryptDni failed – check DNI_ENCRYPTION_KEY configuration')
     throw err
   }
 }
