@@ -54,20 +54,24 @@ export default function TraduccionesAdminTab({ showToast }) {
     return data
   }, [])
 
-  // Load the content of every idioma in parallel
-  const loadAllContents = useCallback(async (list) => {
+  // Load the content of every idioma in parallel.
+  // `isCancelled` is an optional callback used by the initial-load effect to
+  // skip state updates when the component has unmounted mid-flight.
+  const loadAllContents = useCallback(async (list, isCancelled) => {
     if (!list?.length) {
+      if (isCancelled?.()) return
       setContents({})
       setOriginalContents({})
       return
     }
-    setContentsLoading(true)
+    if (!isCancelled?.()) setContentsLoading(true)
     const results = await Promise.all(
       list.map(async (idioma) => {
         const { data, error: apiErr } = await getIdiomaContent({ path: { id: idioma.id } })
         return { idioma, content: apiErr ? {} : (data?.content ?? {}), error: apiErr }
       })
     )
+    if (isCancelled?.()) return
     const map = {}
     for (const { idioma, content } of results) {
       map[idioma.id] = { ...content }
@@ -80,17 +84,21 @@ export default function TraduccionesAdminTab({ showToast }) {
     setContentsLoading(false)
     const failed = results.filter(r => r.error)
     if (failed.length) {
-      showToast(`Error al cargar contenido de ${failed.length} idioma(s)`, 'error')
+      showToast(
+        `Error al cargar contenido de: ${failed.map(f => f.idioma.code).join(', ')}`,
+        'error'
+      )
     }
   }, [showToast])
 
   // Initial load: idiomas + faltantes + every idioma's content
   useEffect(() => {
     let cancelled = false
+    const isCancelled = () => cancelled
     ;(async () => {
       const [list] = await Promise.all([loadIdiomas(), loadFaltantes()])
       if (cancelled) return
-      await loadAllContents(list)
+      await loadAllContents(list, isCancelled)
     })()
     return () => { cancelled = true }
   }, [loadIdiomas, loadFaltantes, loadAllContents])
@@ -143,10 +151,12 @@ export default function TraduccionesAdminTab({ showToast }) {
   const handleDeleteKey = (key) => {
     setContents(prev => {
       const next = {}
-      for (const id of Object.keys(prev)) {
-        const langCopy = { ...prev[id] }
+      // Iterate over `idiomas` (not `prev`) so we preserve every language even
+      // if one of them isn't yet in `contents` (e.g. failed to load).
+      for (const idioma of idiomas) {
+        const langCopy = { ...(prev[idioma.id] ?? {}) }
         delete langCopy[key]
-        next[id] = langCopy
+        next[idioma.id] = langCopy
       }
       return next
     })
@@ -158,8 +168,11 @@ export default function TraduccionesAdminTab({ showToast }) {
     if (allKeys.includes(trimmed)) { showToast('Esa clave ya existe', 'error'); return }
     setContents(prev => {
       const next = {}
-      for (const id of Object.keys(prev)) {
-        next[id] = { ...prev[id], [trimmed]: prev[id]?.[trimmed] ?? '' }
+      // Iterate over `idiomas` so the new key is added to every language,
+      // including any that weren't yet in `contents`.
+      for (const idioma of idiomas) {
+        const existing = prev[idioma.id] ?? {}
+        next[idioma.id] = { ...existing, [trimmed]: existing[trimmed] ?? '' }
       }
       return next
     })
