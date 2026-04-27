@@ -203,6 +203,8 @@
 
 /* ── Form fields (floating label) ─────────────────────────────────────── */
 .ib-form { display: flex; flex-direction: column; gap: 22px; }
+.ib-questions-list { display: flex; flex-direction: column; gap: 22px; }
+.ib-questions-list .ib-summary-section { display: flex; flex-direction: column; gap: 14px; }
 .ib-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
