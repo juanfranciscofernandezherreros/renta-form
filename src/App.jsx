@@ -247,6 +247,9 @@ export default function App({ editData, onEditDataConsumed }) {
         steps.push({ type: 'question', key: `q:${pregunta.id}`, seccion, pregunta })
       }
     }
+    // Final review step: shows a summary of the answers and the submit button
+    // so the user must explicitly confirm before sending the declaration.
+    steps.push({ type: 'confirm', key: 'confirm' })
     return steps
   }, [loadingPreguntas, secciones])
   const totalSteps = visibleSteps.length
@@ -409,6 +412,9 @@ export default function App({ editData, onEditDataConsumed }) {
     if (!currentStepInfo) return { title: t('section1'), subtitle: t('step1Subtitle') }
     if (currentStepInfo.type === 'id') {
       return { title: t('section1'), subtitle: t('step1Subtitle') }
+    }
+    if (currentStepInfo.type === 'confirm') {
+      return { title: t('sectionConfirm'), subtitle: t('summaryTitle') }
     }
     const sec = currentStepInfo.seccion
     const title = sec?.titulos?.[lang] ?? sec?.titulo ?? t('section1')
@@ -648,6 +654,62 @@ export default function App({ editData, onEditDataConsumed }) {
                         />
                       )
                     })()}
+
+                    {currentStepInfo?.type === 'confirm' && (
+                      <section className="ib-summary" aria-label={t('summaryTitle')}>
+                        <h3 className="ib-summary-title">{t('summaryTitle')}</h3>
+
+                        <div className="ib-summary-section">
+                          <h4 className="ib-summary-section-title">{t('summaryYourData')}</h4>
+                          <dl className="ib-summary-list">
+                            <div className="ib-summary-row">
+                              <dt>{t('fieldNombre')}</dt>
+                              <dd>{form.nombre || '-'}</dd>
+                            </div>
+                            <div className="ib-summary-row">
+                              <dt>{t('fieldApellidos')}</dt>
+                              <dd>{form.apellidos || '-'}</dd>
+                            </div>
+                            <div className="ib-summary-row">
+                              <dt>{t('fieldDniNie')}</dt>
+                              <dd>{form.dniNie || '-'}</dd>
+                            </div>
+                            {form.email && (
+                              <div className="ib-summary-row">
+                                <dt>{t('fieldEmail')}</dt>
+                                <dd>{form.email}</dd>
+                              </div>
+                            )}
+                            <div className="ib-summary-row">
+                              <dt>{t('fieldTelefono')}</dt>
+                              <dd>{form.telefono || '-'}</dd>
+                            </div>
+                          </dl>
+                        </div>
+
+                        {secciones.map(seccion => {
+                          const preguntasConRespuesta = (seccion.preguntas ?? []).filter(p => {
+                            const v = form[p.id]
+                            return v === 'si' || v === 'no'
+                          })
+                          if (preguntasConRespuesta.length === 0) return null
+                          const seccionTitulo = seccion.titulos?.[lang] ?? seccion.titulo ?? ''
+                          return (
+                            <div key={seccion.id} className="ib-summary-section">
+                              <h4 className="ib-summary-section-title">{seccionTitulo}</h4>
+                              <dl className="ib-summary-list">
+                                {preguntasConRespuesta.map(p => (
+                                  <div key={p.id} className="ib-summary-row">
+                                    <dt>{p.textos?.[lang] ?? p.texto}</dt>
+                                    <dd>{translateYN(form[p.id], t)}</dd>
+                                  </div>
+                                ))}
+                              </dl>
+                            </div>
+                          )
+                        })}
+                      </section>
+                    )}
 
                     {formError && (
                       <div className="ib-error-banner" role="alert">
