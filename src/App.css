@@ -443,9 +443,10 @@
     border-right: 0;
     border-bottom: 1px solid #e5e7eb;
     padding: 20px 20px 8px;
+    border-radius: 0 0 18px 18px;
   }
   .ib-shell { flex-direction: column; }
-  .ib-brand { margin-bottom: 18px; }
+  .ib-brand { margin-bottom: 18px; justify-content: center; }
   .ib-stepper {
     display: flex;
     overflow-x: auto;
@@ -469,6 +470,7 @@
   .ib-topbar {
     padding: 14px 20px 0;
     flex-wrap: wrap;
+    justify-content: center;
   }
   .ib-content { padding: 20px 20px 48px; }
   .ib-row { grid-template-columns: 1fr; }
@@ -476,8 +478,11 @@
 
 /* ── Mobile (≤ 600px) ─────────────────────────────────────────────────── */
 @media (max-width: 600px) {
+  /* Fix horizontal overflow caused by base margin: 0 -24px -60px */
+  .ib-shell { margin: 0 0 -48px; }
+
   .ib-sidebar { padding: 16px 18px 6px; }
-  .ib-brand { margin-bottom: 12px; gap: 8px; }
+  .ib-brand { margin-bottom: 12px; gap: 8px; justify-content: center; text-align: center; }
   .ib-brand-icon { width: 26px; height: 26px; }
   .ib-brand-name { font-size: .95rem; }
   .ib-step { min-width: 96px; gap: 6px; }
@@ -485,7 +490,7 @@
   .ib-step-tag { font-size: .65rem; }
   .ib-step-title { font-size: .75rem; }
 
-  .ib-topbar { padding: 14px 18px 0; gap: 10px; }
+  .ib-topbar { padding: 14px 18px 0; gap: 10px; justify-content: center; }
   .ib-langs {
     flex-wrap: wrap;
     max-width: 100%;
@@ -495,19 +500,22 @@
   .ib-content { padding: 22px 20px 48px; }
   .ib-content-inner { max-width: 100%; }
 
-  .ib-progress { font-size: .72rem; gap: 8px; margin-bottom: 14px; }
+  .ib-progress { font-size: .72rem; gap: 8px; margin-bottom: 14px; justify-content: center; }
 
-  /* Consistent left alignment & safe wrapping for long copy on mobile */
+  /* Centre-align all copy on mobile, keep safe wrapping */
   .ib-title,
   .ib-subtitle,
   .ib-question-text,
   .ib-info,
   .ib-error-banner > span,
   .ib-field > label {
-    text-align: left;
+    text-align: center;
     overflow-wrap: anywhere;
     word-break: break-word;
   }
+
+  /* Labels inside form fields should stay left-aligned for readability */
+  .ib-field > label { text-align: left; }
 
   .ib-title { font-size: 1.25rem; padding: 0 2px; }
   .ib-subtitle { font-size: .88rem; margin-bottom: 22px; padding: 0 2px; }
