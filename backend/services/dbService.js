@@ -10,6 +10,7 @@ const bcrypt = require('bcrypt')
 const pool = require('../db/pool')
 const mailer = require('./mailer')
 const pdfGenerator = require('./pdfGenerator')
+const { signToken } = require('../middleware/auth')
 
 const BCRYPT_ROUNDS = 12
 
@@ -193,7 +194,7 @@ async function loginAdmin({ username, password }) {
     if (!(await verifyPassword(password, user.password_hash))) {
       return { data: null, error: { message: 'Contraseña incorrecta' } }
     }
-    return { data: { username: normalised, role: user.role, email: user.email }, error: null }
+    return { data: { username: normalised, role: user.role, email: user.email, token: signToken({ sub: normalised, role: user.role }) }, error: null }
   } catch (err) {
     console.error('loginAdmin DB error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
@@ -213,7 +214,7 @@ async function loginUser({ dniNie, password }) {
     if (!(await verifyPassword(password, user.password_hash))) {
       return { data: null, error: { message: 'Contraseña incorrecta' } }
     }
-    return { data: { dniNie: normalised, role: user.role }, error: null }
+    return { data: { dniNie: normalised, role: user.role, token: signToken({ sub: normalised, role: user.role }) }, error: null }
   } catch (err) {
     console.error('loginUser DB error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }

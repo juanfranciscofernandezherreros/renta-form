@@ -47,7 +47,7 @@ export default function AdminLoginPage() {
       setErrors({ global: 'No tienes permisos de administrador' })
       return
     }
-    login({ dniNie: data.username, role: data.role, email: data.email ?? '' })
+    login({ dniNie: data.username, role: data.role, email: data.email ?? '', token: data.token })
   }
 
   return (

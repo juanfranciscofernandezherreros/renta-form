@@ -4,6 +4,20 @@
 
 import { API_BASE_URL } from './constants.js'
 
+const AUTH_STORAGE_KEY = 'renta_form_user'
+
+/** Read the bearer token (if any) from the persisted auth state. */
+function getAuthToken() {
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(AUTH_STORAGE_KEY) : null
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed.token === 'string' ? parsed.token : null
+  } catch {
+    return null
+  }
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 async function request(method, path, { body, query } = {}) {
@@ -21,6 +35,10 @@ async function request(method, path, { body, query } = {}) {
   if (body !== undefined) {
     opts.headers['Content-Type'] = 'application/json'
     opts.body = JSON.stringify(body)
+  }
+  const token = getAuthToken()
+  if (token) {
+    opts.headers['Authorization'] = `Bearer ${token}`
   }
 
   try {
