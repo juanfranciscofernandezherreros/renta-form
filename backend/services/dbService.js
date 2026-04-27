@@ -11,6 +11,7 @@ const pool = require('../db/pool')
 const mailer = require('./mailer')
 const pdfGenerator = require('./pdfGenerator')
 const { signToken } = require('../middleware/auth')
+const { encryptDni, decryptDni, hashDni } = require('../utils/dniEncryption')
 
 const BCRYPT_ROUNDS = 12
 const ADMIN_SESSION_TTL_SECONDS = 5 * 60 // 5 minutes
