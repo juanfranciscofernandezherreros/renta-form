@@ -122,8 +122,8 @@ const MOCK_PREGUNTAS = {
         {
           id: 'q-fam-1',
           campo: 'hijosmenores',
-          texto: '¿Tienes hijos menores de 25 años a tu cargo?',
-          textos: { es: '¿Tienes hijos menores de 25 años a tu cargo?' },
+          texto: '¿Tienes hijos menores a tu cargo?',
+          textos: { es: '¿Tienes hijos menores a tu cargo?' },
         },
       ],
     },

@@ -26,6 +26,7 @@ const path = require('node:path')
 const REPO_ROOT = path.resolve(__dirname, '..')
 const VITE_PORT = process.env.VITE_PORT || '5173'
 const MOCK_PORT = process.env.MOCK_PORT || '3001'
+const VITE_KILL_TIMEOUT_MS = 8000
 const FRONTEND_URL = `http://localhost:${VITE_PORT}`
 const MOCK_URL = `http://localhost:${MOCK_PORT}`
 
@@ -212,7 +213,7 @@ async function main() {
     if (viteStopped) return viteExited
     viteStopped = true
     vite.kill('SIGTERM')
-    const killer = setTimeout(() => { try { vite.kill('SIGKILL') } catch { /* */ } }, 8000)
+    const killer = setTimeout(() => { try { vite.kill('SIGKILL') } catch { /* */ } }, VITE_KILL_TIMEOUT_MS)
     killer.unref()
     return viteExited
   }
