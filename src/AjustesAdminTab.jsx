@@ -25,7 +25,8 @@ export default function AjustesAdminTab({ showToast }) {
   const [emailEnvioError, setEmailEnvioError] = useState(null)
 
   useEffect(() => {
-    getConfiguracion().then(({ data }) => {
+    getConfiguracion().then(({ data, error }) => {
+      if (error) return
       if (data && data.email_envio_activo !== undefined) {
         setEmailEnvioActivo(data.email_envio_activo !== 'false')
       }

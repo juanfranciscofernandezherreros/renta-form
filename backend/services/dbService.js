@@ -731,7 +731,8 @@ async function isEmailEnvioActivo() {
     )
     if (rows.length === 0) return true
     return rows[0].valor !== 'false'
-  } catch {
+  } catch (err) {
+    console.error('isEmailEnvioActivo DB error:', err.message)
     return true
   }
 }
