@@ -48,7 +48,7 @@ export default function LoginPage({ onNavigate }) {
       setErrors({ global: error.message === ERROR_USER_BLOCKED ? t('errUserBlocked') : error.message })
       return
     }
-    login({ dniNie: data.dniNie, role: data.role })
+    login({ dniNie: data.dniNie, role: data.role, token: data.token })
     onNavigate('#/perfil')
   }
 

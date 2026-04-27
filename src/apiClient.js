@@ -4,6 +4,27 @@
 
 import { API_BASE_URL } from './constants.js'
 
+const AUTH_STORAGE_KEY = 'renta_form_user'
+
+// Tokens issued by the backend are compact JWT-like strings made of three
+// base64url segments separated by dots.  Validate the shape before sending
+// to avoid attaching malformed/garbage values that could have been written
+// to localStorage by other code or a tampering user.
+const TOKEN_SHAPE = /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/
+
+/** Read the bearer token (if any) from the persisted auth state. */
+function getAuthToken() {
+  try {
+    const raw = typeof localStorage !== 'undefined' ? localStorage.getItem(AUTH_STORAGE_KEY) : null
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    const token = parsed && typeof parsed.token === 'string' ? parsed.token : null
+    return token && TOKEN_SHAPE.test(token) ? token : null
+  } catch {
+    return null
+  }
+}
+
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 async function request(method, path, { body, query } = {}) {
@@ -21,6 +42,10 @@ async function request(method, path, { body, query } = {}) {
   if (body !== undefined) {
     opts.headers['Content-Type'] = 'application/json'
     opts.body = JSON.stringify(body)
+  }
+  const token = getAuthToken()
+  if (token) {
+    opts.headers['Authorization'] = `Bearer ${token}`
   }
 
   try {
