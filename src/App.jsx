@@ -718,15 +718,6 @@ export default function App({ editData, onEditDataConsumed }) {
                     )}
 
                     <div className="ib-actions">
-                      {safeStep > 0 ? (
-                        <button type="button" className="ib-btn ib-btn-secondary" onClick={handlePrev}>
-                          {t('btnBack')}
-                        </button>
-                      ) : (
-                        <button type="button" className="ib-btn ib-btn-secondary" onClick={handleLimpiar}>
-                          {t('btnClear')}
-                        </button>
-                      )}
                       {safeStep < totalSteps - 1 ? (
                         <button
                           type="button"
@@ -739,20 +730,29 @@ export default function App({ editData, onEditDataConsumed }) {
                       ) : (
                         <>
                           <button
-                            type="button"
-                            className="ib-btn ib-btn-secondary"
-                            onClick={() => generateDeclaracionPDF(form, secciones, lang)}
-                          >
-                            {t('btnDownloadPDF')}
-                          </button>
-                          <button
                             type="submit"
                             className="ib-btn ib-btn-success"
                             disabled={submitting}
                           >
                             {submitting ? t('btnSubmitting') : t('btnSubmit')}
                           </button>
+                          <button
+                            type="button"
+                            className="ib-btn ib-btn-secondary"
+                            onClick={() => generateDeclaracionPDF(form, secciones, lang)}
+                          >
+                            {t('btnDownloadPDF')}
+                          </button>
                         </>
+                      )}
+                      {safeStep > 0 ? (
+                        <button type="button" className="ib-btn ib-btn-secondary" onClick={handlePrev}>
+                          {t('btnBack')}
+                        </button>
+                      ) : (
+                        <button type="button" className="ib-btn ib-btn-secondary" onClick={handleLimpiar}>
+                          {t('btnClear')}
+                        </button>
                       )}
                     </div>
                   </form>
