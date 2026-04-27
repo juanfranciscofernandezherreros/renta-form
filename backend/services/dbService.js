@@ -13,6 +13,7 @@ const pdfGenerator = require('./pdfGenerator')
 const { signToken } = require('../middleware/auth')
 
 const BCRYPT_ROUNDS = 12
+const ADMIN_SESSION_TTL_SECONDS = 5 * 60 // 5 minutes
 
 // ── Translation keys ───────────────────────────────────────────────────────
 // Canonical set of i18n keys used by the frontend.  Extracted from all t('key')
@@ -197,7 +198,7 @@ async function loginAdmin({ username, password }) {
     if (!(await verifyPassword(password, user.password_hash))) {
       return { data: null, error: { message: 'Contraseña incorrecta' } }
     }
-    return { data: { username: normalised, role: user.role, email: user.email, token: signToken({ sub: normalised, role: user.role }, 5 * 60) }, error: null }
+    return { data: { username: normalised, role: user.role, email: user.email, token: signToken({ sub: normalised, role: user.role }, ADMIN_SESSION_TTL_SECONDS) }, error: null }
   } catch (err) {
     console.error('loginAdmin DB error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
