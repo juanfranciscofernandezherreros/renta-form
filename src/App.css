@@ -448,10 +448,13 @@
 /* ── Navigation buttons ───────────────────────────────────────────────── */
 .ib-actions {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   gap: 12px;
   margin-top: 28px;
+}
+.ib-actions .ib-btn {
+  width: 100%;
 }
 .ib-btn {
   appearance: none;

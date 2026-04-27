@@ -373,7 +373,8 @@ export default function App({ editData, onEditDataConsumed }) {
     }
   }
 
-  // ── Sidebar stepper: 1 step for ID + 1 step per sección ──
+  // ── Sidebar stepper: 1 step for ID + 1 step per sección + 1 final
+  // "Confirmar y enviar" step that lights up on the last wizard step. ──
   const sidebarSteps = useMemo(() => {
     const steps = [{ key: 'id', title: t('section1') }]
     for (const seccion of secciones) {
@@ -383,16 +384,23 @@ export default function App({ editData, onEditDataConsumed }) {
         seccionId: seccion.id,
       })
     }
+    steps.push({ key: 'confirm', title: t('sectionConfirm') })
     return steps
   }, [secciones, lang, t])
 
-  // Index of the active sidebar step based on the current wizard step
+  // Index of the active sidebar step based on the current wizard step.
+  // The final "confirm" step (last index) becomes active when the user is on
+  // the last wizard step (where the Submit button is shown), and is marked
+  // done once the declaration has been submitted.
   const activeSidebarIndex = useMemo(() => {
+    const confirmIdx = sidebarSteps.length - 1
+    if (submitted) return confirmIdx + 1 // mark all (including confirm) as done
+    if (totalSteps > 1 && safeStep === totalSteps - 1) return confirmIdx
     if (!currentStepInfo) return 0
     if (currentStepInfo.type === 'id') return 0
     const idx = secciones.findIndex(s => s.id === currentStepInfo.seccion?.id)
     return idx >= 0 ? idx + 1 : 0
-  }, [currentStepInfo, secciones])
+  }, [currentStepInfo, secciones, sidebarSteps.length, safeStep, totalSteps, submitted])
 
   // Active question text/subtitle for the main header
   const mainHeading = useMemo(() => {
