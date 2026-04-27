@@ -130,6 +130,8 @@ http://localhost:5173/#/api-docs
 | `npm run db:seed-users` | Siembra 100 usuarios de prueba |
 | `npm run db:seed-questions` | Siembra las preguntas del formulario |
 | `npm run test` | Ejecuta los tests E2E con Cucumber |
+| `npm run test:backend` | Ejecuta el suite Cucumber `@api` que cubre todos los endpoints del backend (requiere PostgreSQL en marcha y un backend escuchando en `BACKEND_BASE_URL`/`http://localhost:3001`) |
+| `npm run test:backend:coverage` | Lanza el backend bajo `c8`, ejecuta el suite `@api` y verifica que la cobertura de líneas del backend sea ≥ 90 % (umbral configurable con `COVERAGE_THRESHOLD`) |
 | `npm run lint` | Ejecuta ESLint sobre el código fuente |
 
 ---

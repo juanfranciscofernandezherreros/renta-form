@@ -144,3 +144,14 @@ async function migrateWithRetry(attempt = 1) {
 }
 
 migrateWithRetry().then(startListening)
+
+// Allow graceful shutdown on Ctrl+C / SIGTERM (e.g. Heroku dyno restart, or
+// the coverage runner that orchestrates the integration test suite). A
+// graceful exit lets V8 flush its coverage profile (NODE_V8_COVERAGE) and
+// any other async cleanup hooks registered with `process.on('exit', …)`.
+function shutdown(signal) {
+  console.log(`[server] Received ${signal}, shutting down…`)
+  process.exit(0)
+}
+process.on('SIGTERM', () => shutdown('SIGTERM'))
+process.on('SIGINT', () => shutdown('SIGINT'))
