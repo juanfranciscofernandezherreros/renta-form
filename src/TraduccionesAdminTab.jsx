@@ -105,6 +105,9 @@ export default function TraduccionesAdminTab({ showToast }) {
 
   // Union of all keys across idiomas + required keys from faltantesData so the
   // user can see and fill them in even if no idioma has them yet.
+  // Keys with at least one empty value across the idiomas are listed first
+  // (sorted alphabetically within that group), so the admin can quickly spot
+  // and fill in untranslated entries.
   const allKeys = useMemo(() => {
     const set = new Set()
     for (const id of Object.keys(contents)) {
@@ -113,7 +116,29 @@ export default function TraduccionesAdminTab({ showToast }) {
     if (faltantesData?.claves_requeridas) {
       for (const k of faltantesData.claves_requeridas) set.add(k)
     }
-    return Array.from(set).sort()
+    const idiomaIds = Object.keys(contents)
+    // Precompute "missing" status per key once (O(n*m)) instead of inside the
+    // sort comparator (which would be O(n*m*log(n))).
+    const missing = new Set()
+    for (const key of set) {
+      if (idiomaIds.length === 0) {
+        missing.add(key)
+        continue
+      }
+      for (const id of idiomaIds) {
+        const v = contents[id]?.[key]
+        if (v === undefined || v === null || String(v).trim() === '') {
+          missing.add(key)
+          break
+        }
+      }
+    }
+    return Array.from(set).sort((a, b) => {
+      const am = missing.has(a)
+      const bm = missing.has(b)
+      if (am !== bm) return am ? -1 : 1
+      return a.localeCompare(b)
+    })
   }, [contents, faltantesData])
 
   const filteredKeys = useMemo(() => {
