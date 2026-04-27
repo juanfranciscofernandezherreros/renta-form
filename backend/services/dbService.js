@@ -1465,7 +1465,9 @@ async function setUserRolesAdmin(dniNie, { roles } = {}) {
     await client.query('COMMIT')
     return { data: { dniNie, roles: wantedNames }, error: null }
   } catch (err) {
-    await client.query('ROLLBACK').catch(() => {})
+    await client.query('ROLLBACK').catch(rbErr => {
+      console.error('setUserRolesAdmin rollback failed:', rbErr.message)
+    })
     console.error('setUserRolesAdmin DB error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   } finally {
