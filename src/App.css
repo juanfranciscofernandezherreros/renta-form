@@ -1,1 +1,471 @@
+/* ───────────────────────────────────────────────────────────────────────────
+   Frontal redesign – "InsideBox-style" layout.
+   All rules are scoped under `.ib-shell` so they don't affect the admin
+   panel (which uses adminlte.css and its own classes) or other pages.
+   ─────────────────────────────────────────────────────────────────────── */
 
+.ib-shell {
+  /* Cancel the global body padding (`padding: 0 24px 60px`) so the layout
+     can be full-bleed without altering body/admin pages. */
+  margin: 0 -24px -60px;
+  min-height: 100vh;
+  background: #f9fafb;
+  color: #111827;
+  display: flex;
+  position: relative;
+  z-index: 1;                      /* sit above body::before star layer */
+  font-family: 'Nunito', 'Segoe UI', Arial, sans-serif;
+}
+
+/* ── Sidebar with stepper ─────────────────────────────────────────────── */
+.ib-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  padding: 36px 28px 32px;
+  display: flex;
+  flex-direction: column;
+}
+.ib-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 44px;
+}
+.ib-brand-icon {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #2563eb;
+}
+.ib-brand-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #111827;
+  letter-spacing: .2px;
+}
+
+.ib-stepper {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.ib-step {
+  position: relative;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding-bottom: 28px;
+}
+.ib-step:last-child { padding-bottom: 0; }
+.ib-step-bullet-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+.ib-step-bullet {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: .85rem;
+  font-weight: 700;
+  background: #f3f4f6;
+  color: #9ca3af;
+  transition: background .2s, color .2s, box-shadow .2s;
+}
+.ib-step.is-done  .ib-step-bullet { background: #10b981; color: #fff; }
+.ib-step.is-active .ib-step-bullet {
+  background: #2563eb;
+  color: #fff;
+  box-shadow: 0 0 0 6px rgba(37, 99, 235, .12);
+}
+.ib-step-line {
+  flex: 1;
+  width: 1px;
+  background: #e5e7eb;
+  margin: 6px 0;
+  min-height: 24px;
+}
+.ib-step.is-done .ib-step-line { background: #d1fae5; }
+
+.ib-step-label { padding-top: 6px; }
+.ib-step-tag {
+  font-size: .72rem;
+  color: #9ca3af;
+  text-transform: none;
+  display: block;
+  margin-bottom: 2px;
+}
+.ib-step-title {
+  font-size: .92rem;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.3;
+}
+.ib-step.is-pending .ib-step-title { color: #9ca3af; font-weight: 500; }
+
+/* ── Main content area ────────────────────────────────────────────────── */
+.ib-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ib-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 22px 36px 0;
+}
+.ib-langs {
+  display: inline-flex;
+  gap: 6px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  padding: 4px;
+}
+.ib-lang-btn {
+  border: 0;
+  background: transparent;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 600;
+  color: #4b5563;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background .15s, color .15s;
+}
+.ib-lang-btn:hover { background: #f3f4f6; }
+.ib-lang-btn.is-active {
+  background: #2563eb;
+  color: #fff;
+}
+
+.ib-content {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 32px 36px 64px;
+}
+.ib-content-inner {
+  width: 100%;
+  max-width: 720px;
+}
+.ib-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  font-size: .8rem;
+  color: #6b7280;
+}
+.ib-progress-bar {
+  flex: 1;
+  height: 4px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  overflow: hidden;
+}
+.ib-progress-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #2563eb 0%, #4f46e5 100%);
+  border-radius: 999px;
+  transition: width .35s ease;
+}
+
+.ib-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 6px;
+  letter-spacing: -0.01em;
+}
+.ib-subtitle {
+  margin: 0 0 28px;
+  color: #6b7280;
+  font-size: .95rem;
+  line-height: 1.5;
+}
+
+/* ── Form fields (floating label) ─────────────────────────────────────── */
+.ib-form { display: flex; flex-direction: column; gap: 22px; }
+.ib-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.ib-field { position: relative; }
+.ib-field > label {
+  position: absolute;
+  top: -8px;
+  left: 12px;
+  background: #f9fafb;
+  padding: 0 6px;
+  font-size: .75rem;
+  font-weight: 600;
+  color: #4b5563;
+  z-index: 1;
+}
+.ib-field .ib-optional {
+  font-weight: 500;
+  color: #9ca3af;
+  margin-left: 4px;
+}
+.ib-input,
+.ib-select {
+  width: 100%;
+  height: 48px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #fff;
+  padding: 0 14px;
+  font: inherit;
+  font-size: .92rem;
+  color: #111827;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.ib-input::placeholder { color: #9ca3af; }
+.ib-input:focus,
+.ib-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .12);
+}
+.ib-input.is-invalid,
+.ib-select.is-invalid {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, .12);
+}
+.ib-field-error {
+  display: block;
+  margin-top: 6px;
+  font-size: .78rem;
+  color: #dc2626;
+}
+
+/* ── Yes/No question card ─────────────────────────────────────────────── */
+.ib-question {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 14px;
+  padding: 28px 24px;
+  position: relative;
+  overflow: hidden;
+}
+.ib-question.shake { animation: ibShake .55s ease; }
+@keyframes ibShake {
+  10%, 90% { transform: translateX(-2px); }
+  20%, 80% { transform: translateX(3px); }
+  30%, 50%, 70% { transform: translateX(-6px); }
+  40%, 60% { transform: translateX(6px); }
+}
+.ib-question-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+.ib-question-num {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #2563eb;
+  font-size: .78rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ib-question-text {
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.45;
+}
+.ib-yesno {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+.ib-yesno-btn {
+  appearance: none;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font: inherit;
+  font-weight: 600;
+  font-size: .95rem;
+  color: #111827;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: border-color .15s, background .15s, transform .12s;
+}
+.ib-yesno-btn:hover { border-color: #2563eb; background: #f5f8ff; }
+.ib-yesno-btn.is-yes.is-selected {
+  border-color: #10b981;
+  background: #ecfdf5;
+  color: #047857;
+}
+.ib-yesno-btn.is-no.is-selected {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* ── Info / error / success boxes ─────────────────────────────────────── */
+.ib-info {
+  border: 1px solid #dbeafe;
+  background: #eff6ff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: #1e3a8a;
+  font-size: .88rem;
+  line-height: 1.5;
+}
+.ib-info strong { display: block; margin-bottom: 4px; color: #1e40af; }
+
+.ib-error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: .88rem;
+}
+.ib-error-dismiss {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.ib-success {
+  text-align: center;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 48px 28px;
+}
+.ib-success-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #10b981;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+}
+.ib-success h2 { margin: 0 0 6px; font-size: 1.4rem; color: #111827; }
+.ib-success p  { margin: 0 0 20px; color: #6b7280; }
+
+/* ── Navigation buttons ───────────────────────────────────────────────── */
+.ib-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 28px;
+}
+.ib-btn {
+  appearance: none;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 22px;
+  height: 44px;
+  font: inherit;
+  font-weight: 600;
+  font-size: .9rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, border-color .15s, color .15s, opacity .15s;
+}
+.ib-btn:disabled { opacity: .6; cursor: not-allowed; }
+.ib-btn-secondary {
+  background: #fff;
+  color: #111827;
+  border: 1px solid #d1d5db;
+}
+.ib-btn-secondary:hover:not(:disabled) { background: #f9fafb; }
+.ib-btn-primary {
+  background: #2563eb;
+  color: #fff;
+}
+.ib-btn-primary:hover:not(:disabled) { background: #1d4ed8; }
+.ib-btn-success {
+  background: #10b981;
+  color: #fff;
+}
+.ib-btn-success:hover:not(:disabled) { background: #059669; }
+
+/* ── Loading / empty states ───────────────────────────────────────────── */
+.ib-empty {
+  text-align: center;
+  color: #6b7280;
+  padding: 48px 16px;
+  font-size: .95rem;
+}
+
+/* ── Mobile / small-screen adjustments ────────────────────────────────── */
+@media (max-width: 900px) {
+  .ib-sidebar {
+    width: 100%;
+    border-right: 0;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 20px 20px 8px;
+  }
+  .ib-shell { flex-direction: column; }
+  .ib-brand { margin-bottom: 18px; }
+  .ib-stepper {
+    display: flex;
+    overflow-x: auto;
+    gap: 4px;
+    padding-bottom: 12px;
+    scrollbar-width: none;
+  }
+  .ib-stepper::-webkit-scrollbar { display: none; }
+  .ib-step {
+    flex-direction: column;
+    padding-bottom: 0;
+    min-width: 110px;
+    align-items: center;
+    text-align: center;
+  }
+  .ib-step-line { display: none; }
+  .ib-step-label { padding-top: 4px; }
+  .ib-step-tag { font-size: .68rem; }
+  .ib-step-title { font-size: .8rem; }
+  .ib-topbar { padding: 14px 20px 0; }
+  .ib-content { padding: 20px 20px 48px; }
+  .ib-row { grid-template-columns: 1fr; }
+}
