@@ -635,7 +635,7 @@
 
   /* Stack navigation buttons full-width for easier thumb reach */
   .ib-actions {
-    flex-direction: column-reverse;
+    flex-direction: column;
     align-items: stretch;
   }
   .ib-actions .ib-btn { width: 100%; }
