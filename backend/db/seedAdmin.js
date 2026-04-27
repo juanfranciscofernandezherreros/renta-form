@@ -65,7 +65,7 @@ async function seedAdmin() {
       [usuarioId]
     )
 
-    console.log(`[seedAdmin] ✅  Usuario administrador listo: ${USERNAME} / ${EMAIL}`)
+    console.log('[seedAdmin] ✅  Usuario administrador listo.')
   } finally {
     client.release()
     await pool.end()
