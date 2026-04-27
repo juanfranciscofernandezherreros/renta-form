@@ -10,21 +10,20 @@
 //   npm run seed:admin
 //
 // Environment variables (same as the rest of the backend):
-//   DATABASE_URL  – full connection string (Heroku / Neon)
+//   DATABASE_URL    – full connection string (Heroku / Neon)
 //   PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD – individual PG vars
-//   ADMIN_DNI     – DNI/NIE for the admin user  (default: admin)
-//   ADMIN_EMAIL   – email for the admin user     (default: admin@example.com)
-//   ADMIN_PASSWORD – plain-text password          (default: admin)
+//   ADMIN_USERNAME  – username for the admin user (default: admin)
+//   ADMIN_EMAIL     – email for the admin user    (default: admin@example.com)
+//   ADMIN_PASSWORD  – plain-text password         (default: admin)
 // ---------------------------------------------------------------------------
 
 const bcrypt = require('bcrypt')
 const pool = require('./pool')
 const migrate = require('./migrate')
-const { encryptDni, hashDni } = require('../utils/dniEncryption')
 
 const SALT_ROUNDS = 10
 
-const DNI_NIE  = (process.env.ADMIN_DNI || 'admin').toUpperCase()
+const USERNAME = (process.env.ADMIN_USERNAME || 'admin').trim()
 const NOMBRE   = 'Admin'
 const APELLIDOS = 'Sistema'
 const EMAIL    = process.env.ADMIN_EMAIL    || 'admin@example.com'
@@ -37,17 +36,19 @@ async function seedAdmin() {
     console.log('[seedAdmin] Hashing password…')
     const passwordHash = await bcrypt.hash(PASSWORD, SALT_ROUNDS)
 
+    // The administrator does NOT have a DNI/NIE: dni_nie and dni_nie_hash
+    // remain NULL. Identity is the `username` column (UNIQUE when not null).
     const { rows } = await client.query(
-      `INSERT INTO usuarios (dni_nie, dni_nie_hash, nombre, apellidos, email, telefono, password_hash)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       ON CONFLICT (dni_nie_hash) WHERE dni_nie_hash IS NOT NULL DO UPDATE SET
+      `INSERT INTO usuarios (username, dni_nie, dni_nie_hash, nombre, apellidos, email, telefono, password_hash)
+       VALUES ($1, NULL, NULL, $2, $3, $4, $5, $6)
+       ON CONFLICT (username) WHERE username IS NOT NULL DO UPDATE SET
          nombre        = EXCLUDED.nombre,
          apellidos     = EXCLUDED.apellidos,
          email         = EXCLUDED.email,
          telefono      = EXCLUDED.telefono,
          password_hash = EXCLUDED.password_hash
        RETURNING id`,
-      [encryptDni(DNI_NIE), hashDni(DNI_NIE), NOMBRE, APELLIDOS, EMAIL, TELEFONO, passwordHash]
+      [USERNAME, NOMBRE, APELLIDOS, EMAIL, TELEFONO, passwordHash]
     )
     const usuarioId = rows[0].id
 
@@ -64,7 +65,7 @@ async function seedAdmin() {
       [usuarioId]
     )
 
-    console.log(`[seedAdmin] ✅  Usuario administrador listo: ${DNI_NIE} / ${EMAIL}`)
+    console.log('[seedAdmin] ✅  Usuario administrador listo.')
   } finally {
     client.release()
     await pool.end()
@@ -77,3 +78,4 @@ migrate()
     console.error('[seedAdmin] ❌  Error:', err.message)
     process.exit(1)
   })
+

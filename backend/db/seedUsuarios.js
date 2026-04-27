@@ -11,11 +11,9 @@ const { encryptDni, hashDni } = require('../utils/dniEncryption')
 
 const SALT_ROUNDS = 10
 
-const ADMIN_DNI = process.env.ADMIN_DNI || 'admin'
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin'
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@example.com'
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin'
-
-const DEFAULT_USER_PASSWORD = 'Password123!'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -67,16 +65,16 @@ async function seedUsuarios(client) {
     console.log('[seedUsuarios] Seeding admin user...')
     const adminHash = await bcrypt.hash(ADMIN_PASSWORD, SALT_ROUNDS)
     const { rows: adminRows } = await client.query(
-      `INSERT INTO usuarios (dni_nie, dni_nie_hash, nombre, apellidos, email, telefono, password_hash)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       ON CONFLICT (dni_nie_hash) WHERE dni_nie_hash IS NOT NULL DO UPDATE SET
+      `INSERT INTO usuarios (username, dni_nie, dni_nie_hash, nombre, apellidos, email, telefono, password_hash)
+       VALUES ($1, NULL, NULL, $2, $3, $4, $5, $6)
+       ON CONFLICT (username) WHERE username IS NOT NULL DO UPDATE SET
          nombre        = EXCLUDED.nombre,
          apellidos     = EXCLUDED.apellidos,
          email         = EXCLUDED.email,
          telefono      = EXCLUDED.telefono,
          password_hash = EXCLUDED.password_hash
        RETURNING id`,
-      [encryptDni(ADMIN_DNI), hashDni(ADMIN_DNI), 'Admin', 'Sistema', ADMIN_EMAIL, '', adminHash]
+      [ADMIN_USERNAME, 'Admin', 'Sistema', ADMIN_EMAIL, '', adminHash]
     )
     await client.query(
       `INSERT INTO roles (nombre) VALUES ('admin'), ('user') ON CONFLICT (nombre) DO NOTHING`
@@ -90,18 +88,18 @@ async function seedUsuarios(client) {
 
     console.log('[seedUsuarios] Seeding 100 usuarios...')
     const usuarios = buildUsuarios()
-    const userPasswordHash = await bcrypt.hash(DEFAULT_USER_PASSWORD, SALT_ROUNDS)
+    // Citizens have no login, so password_hash stays NULL.
     for (const u of usuarios) {
       const { rows: userRows } = await client.query(
         `INSERT INTO usuarios (dni_nie, dni_nie_hash, nombre, apellidos, email, telefono, password_hash)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         VALUES ($1, $2, $3, $4, $5, $6, NULL)
          ON CONFLICT (dni_nie_hash) WHERE dni_nie_hash IS NOT NULL DO UPDATE SET
            nombre = EXCLUDED.nombre,
            apellidos = EXCLUDED.apellidos,
            email = EXCLUDED.email,
            telefono = EXCLUDED.telefono
          RETURNING id`,
-        [encryptDni(u.dni_nie), hashDni(u.dni_nie), u.nombre, u.apellidos, u.email, u.telefono, userPasswordHash]
+        [encryptDni(u.dni_nie), hashDni(u.dni_nie), u.nombre, u.apellidos, u.email, u.telefono]
       )
       await client.query(
         `INSERT INTO usuarios_roles (usuario_id, rol_id)

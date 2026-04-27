@@ -34,22 +34,30 @@ END;
 $$;
 
 -- 3. Tabla: Usuarios
--- dni_nie stores the AES-encrypted value; dni_nie_hash stores the HMAC-SHA256
--- used for UNIQUE constraints and WHERE lookups (populated by the application).
+-- Sólo los administradores tienen credenciales (username + password_hash).
+-- Los ciudadanos viven en esta tabla pero no inician sesión: sus columnas
+-- de credenciales (username, password_hash) y de identificación cifrada
+-- (dni_nie, dni_nie_hash) son opcionales.
 CREATE TABLE IF NOT EXISTS usuarios (
     id                   UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    dni_nie              TEXT         NOT NULL,
+    username             VARCHAR(50),
+    dni_nie              TEXT,
     dni_nie_hash         TEXT,
     nombre               VARCHAR(100) NOT NULL,
     apellidos            VARCHAR(200) NOT NULL DEFAULT '',
     email                VARCHAR(254) NOT NULL,
     telefono             VARCHAR(20)  NOT NULL DEFAULT '',
-    password_hash        TEXT         NOT NULL,
+    password_hash        TEXT,
     bloqueado            BOOLEAN      NOT NULL DEFAULT false,
     denunciado           BOOLEAN      NOT NULL DEFAULT false,
     preguntas_asignadas  JSONB        NOT NULL DEFAULT '[]',
     creado_en            TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
+-- Partial unique index on username: only enforced when username IS NOT NULL,
+-- allowing many citizen rows with NULL username.
+CREATE UNIQUE INDEX IF NOT EXISTS uq_usuarios_username
+    ON usuarios (username)
+    WHERE username IS NOT NULL;
 
 -- 3.b Tabla: Roles (catálogo de roles del sistema)
 CREATE TABLE IF NOT EXISTS roles (
@@ -100,9 +108,14 @@ ALTER TABLE preguntas ADD COLUMN IF NOT EXISTS campo VARCHAR(100);
 ALTER TABLE preguntas ADD COLUMN IF NOT EXISTS orden INTEGER NOT NULL DEFAULT 0;
 CREATE INDEX IF NOT EXISTS idx_preguntas_orden ON preguntas (orden);
 
--- Widen usuarios.dni_nie to TEXT and add dni_nie_hash for existing databases.
+-- Widen usuarios.dni_nie to TEXT, add dni_nie_hash and username for
+-- existing databases. dni_nie/password_hash become nullable so admins
+-- don't need a DNI and citizens don't need a password.
 ALTER TABLE usuarios ALTER COLUMN dni_nie TYPE TEXT;
 ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS dni_nie_hash TEXT;
+ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS username VARCHAR(50);
+ALTER TABLE usuarios ALTER COLUMN dni_nie DROP NOT NULL;
+ALTER TABLE usuarios ALTER COLUMN password_hash DROP NOT NULL;
 -- Drop old UNIQUE constraint on the plain-text column if it still exists.
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'usuarios_dni_nie_key') THEN

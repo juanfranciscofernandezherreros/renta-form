@@ -120,6 +120,29 @@ async function migrate() {
       console.log('[migrate] usuarios.role removed; relation usuarios↔roles is now many-to-many.')
     }
 
+    // ── Limpieza de admins legacy con DNI inventado ───────────────────────
+    // Antes los administradores se identificaban por hash del DNI y, al no
+    // tener uno real, se sembraba el literal 'ADMIN'/'admin'. Ahora los
+    // admins se identifican por `username` y no necesitan DNI: limpiamos
+    // los valores postizos y rellenamos `username` para los admins
+    // existentes que aún no lo tengan.
+    await client.query(`
+      UPDATE usuarios u
+         SET username = COALESCE(u.username, 'admin'),
+             dni_nie = NULL,
+             dni_nie_hash = NULL
+       WHERE EXISTS (
+         SELECT 1
+           FROM usuarios_roles ur
+           JOIN roles          r ON r.id = ur.rol_id
+          WHERE ur.usuario_id = u.id AND r.nombre = 'admin'
+       )
+       AND (
+         u.username IS NULL
+         OR UPPER(COALESCE(u.dni_nie, '')) = 'ADMIN'
+       )
+    `)
+
     // Ensure every existing user has at least one role assigned: anyone
     // without an explicit role gets the default 'user' role so the
     // application never has to deal with a "roleless" account.

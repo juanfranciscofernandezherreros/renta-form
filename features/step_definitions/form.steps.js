@@ -107,16 +107,6 @@ Given('el usuario abre la pagina principal', async function () {
   await this.page.waitForSelector('input[name="nombre"]', { timeout: 20000 })
 })
 
-Given('el usuario navega a la pantalla de login', async function () {
-  await this.page.goto(`${this.baseUrl}/#/login`, { waitUntil: 'networkidle' })
-  await this.page.waitForSelector('form', { timeout: 10000 })
-})
-
-Given('el usuario navega a la pantalla de consulta', async function () {
-  await this.page.goto(`${this.baseUrl}/#/consulta`, { waitUntil: 'networkidle' })
-  await this.page.waitForSelector('.card', { timeout: 10000 })
-})
-
 Given('el usuario hace clic en Siguiente sin rellenar nada', async function () {
   await this.page.waitForSelector('input[name="nombre"]', { timeout: 15000 })
   const btn = this.page.locator('button:has-text("Continuar")').first()

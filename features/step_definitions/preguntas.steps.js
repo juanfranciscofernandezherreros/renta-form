@@ -89,8 +89,8 @@ Given('el administrador accede al panel de administracion', async function () {
   // Login as admin
   const loginForm = this.page.locator('form')
   if (await loginForm.isVisible()) {
-    await this.page.fill('input[name="dniNie"], input[type="text"]', 'ADMIN')
-    await this.page.fill('input[name="password"], input[type="password"]', 'admin1234')
+    await this.page.fill('input[name="username"]', 'admin')
+    await this.page.fill('input[name="password"]', 'admin')
     await this.page.click('button[type="submit"]')
     await this.page.waitForSelector('.adminlte-wrapper, .admin-tabs, .admin-panel, [class*="admin"]', { timeout: 10000 })
   }
