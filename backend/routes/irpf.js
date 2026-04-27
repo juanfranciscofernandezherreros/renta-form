@@ -1,8 +1,21 @@
 'use strict'
 
 const { Router } = require('express')
+const rateLimit = require('express-rate-limit')
+const { requireAdmin } = require('../middleware/auth')
 
 const router = Router()
+
+// Defence in depth: cap the number of admin API calls per IP on the
+// admin-only IRPF endpoints to mitigate brute-force / abuse even when
+// a token is present.  Mirrors the limiter used in routes/admin.js.
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiadas peticiones. Inténtalo de nuevo más tarde.' },
+})
 
 function send(res, result) {
   if (result.error) {
@@ -32,7 +45,7 @@ module.exports = function irpfRoutes(svc) {
   })
 
   // GET /v1/irpf/declaraciones/all  (admin – must come BEFORE /:id)
-  router.get('/declaraciones/all', async (req, res) => {
+  router.get('/declaraciones/all', adminLimiter, requireAdmin, async (req, res) => {
     const { dniNie, estado, page, limit } = req.query
     const result = await svc.listDeclaracionesAll({
       dniNie,
@@ -67,8 +80,8 @@ module.exports = function irpfRoutes(svc) {
     send(res, result)
   })
 
-  // PATCH /v1/irpf/declaraciones/:id  (update estado)
-  router.patch('/declaraciones/:id', async (req, res) => {
+  // PATCH /v1/irpf/declaraciones/:id  (admin – update estado)
+  router.patch('/declaraciones/:id', adminLimiter, requireAdmin, async (req, res) => {
     const { estado } = req.body ?? {}
     if (!estado) return res.status(400).json({ error: 'estado es obligatorio' })
     const result = await svc.updateEstadoDeclaracion(req.params.id, estado)
@@ -81,14 +94,14 @@ module.exports = function irpfRoutes(svc) {
     send(res, result)
   })
 
-  // DELETE /v1/irpf/declaraciones/:id
-  router.delete('/declaraciones/:id', async (req, res) => {
+  // DELETE /v1/irpf/declaraciones/:id  (admin)
+  router.delete('/declaraciones/:id', adminLimiter, requireAdmin, async (req, res) => {
     const result = await svc.deleteDeclaracion(req.params.id)
     send(res, result)
   })
 
-  // POST /v1/irpf/declaraciones/:id/email
-  router.post('/declaraciones/:id/email', async (req, res) => {
+  // POST /v1/irpf/declaraciones/:id/email  (admin)
+  router.post('/declaraciones/:id/email', adminLimiter, requireAdmin, async (req, res) => {
     const { email, mensaje } = req.body ?? {}
     const result = await svc.sendEmailDeclaracion({ declaracionId: req.params.id, email, mensaje })
     send(res, result)
