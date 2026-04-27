@@ -57,7 +57,7 @@ function getTransporter() {
  * Send an email.  Never throws; resolves with `{ sent: boolean, error?: string }`.
  * If SMTP is not configured the call is logged and treated as a successful no-op.
  */
-async function sendMail({ to, subject, text, html }) {
+async function sendMail({ to, subject, text, html, attachments }) {
   if (!to || (Array.isArray(to) && to.length === 0)) {
     return { sent: false, error: 'No recipients' }
   }
@@ -76,6 +76,7 @@ async function sendMail({ to, subject, text, html }) {
       subject,
       text,
       html,
+      attachments,
     })
     console.info(`[mailer] Sent email to ${recipients} (id=${info.messageId})`)
     return { sent: true, messageId: info.messageId }

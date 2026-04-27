@@ -9,6 +9,7 @@
 const bcrypt = require('bcrypt')
 const pool = require('../db/pool')
 const mailer = require('./mailer')
+const pdfGenerator = require('./pdfGenerator')
 
 const BCRYPT_ROUNDS = 12
 
@@ -723,7 +724,7 @@ async function listDeclaracionesAll({ dniNie, estado, page = 1, limit = 20 }) {
   }
 }
 
-async function notifyAdminsOfDeclaracion(dec) {
+async function notifyAdminsOfDeclaracion(dec, attachments) {
   try {
     const { rows } = await pool.query(
       "SELECT email FROM usuarios WHERE role = 'admin' AND email IS NOT NULL AND email <> ''"
@@ -742,14 +743,73 @@ async function notifyAdminsOfDeclaracion(dec) {
       `DNI/NIE: ${dec.dniNie || ''}`,
       `Email del contribuyente: ${dec.email || ''}`,
       `Teléfono: ${dec.telefono || ''}`,
+      '',
+      'Adjunto encontrarás el cuestionario respondido en formato PDF.',
     ]
     await mailer.sendMail({
       to: recipients,
       subject,
       text: lines.join('\n'),
+      attachments,
     })
   } catch (err) {
     console.error('notifyAdminsOfDeclaracion DB error:', err.message)
+  }
+}
+
+async function notifyClientOfDeclaracion(dec, attachments) {
+  try {
+    const to = (dec.email || '').trim()
+    if (!to) return
+    const subject = 'Tu cuestionario de la Renta 2025'
+    const nombre = (dec.nombre || '').trim()
+    const greeting = nombre ? `Hola ${nombre},` : 'Hola,'
+    const lines = [
+      greeting,
+      '',
+      'Hemos recibido correctamente tu cuestionario para la Campaña de la Renta 2025.',
+      'Adjunto a este correo encontrarás el PDF con las respuestas que has facilitado.',
+      '',
+      'Si necesitas modificar algún dato, ponte en contacto con nosotros.',
+      '',
+      'Un saludo,',
+      'NH Gestión Integral',
+    ]
+    await mailer.sendMail({
+      to,
+      subject,
+      text: lines.join('\n'),
+      attachments,
+    })
+  } catch (err) {
+    console.error('notifyClientOfDeclaracion error:', err.message)
+  }
+}
+
+async function buildDeclaracionPdfAttachment(dec) {
+  if (!pdfGenerator.isAvailable()) return null
+  try {
+    // Load preguntas (ES text) so the PDF shows the full question along with the answer.
+    const { rows } = await pool.query(
+      `SELECT campo, texto FROM preguntas ORDER BY orden NULLS LAST, actualizada_en, campo`
+    )
+    const preguntas = rows.map((r) => {
+      const t = r.texto
+      let texto = ''
+      if (t === null || t === undefined) texto = ''
+      else if (typeof t === 'object') texto = t.es || Object.values(t)[0] || ''
+      else texto = String(t)
+      return { campo: r.campo, texto }
+    })
+    const buffer = await pdfGenerator.generateDeclaracionPDFBuffer(dec, preguntas)
+    return [{
+      filename: pdfGenerator.buildPdfFilename(dec),
+      content: buffer,
+      contentType: 'application/pdf',
+    }]
+  } catch (err) {
+    console.error('buildDeclaracionPdfAttachment error:', err.message)
+    return null
   }
 }
 
@@ -774,9 +834,13 @@ async function createDeclaracion(body) {
   // Collect answers from the body: any property whose key matches a known
   // pregunta `campo` and whose value is 'si'|'no'.
   const respuestaEntries = []
+  const respuestasByCampo = {}
   for (const [campo, preguntaId] of campoToId) {
     const v = toYN(body[campo])
-    if (v) respuestaEntries.push([preguntaId, v])
+    if (v) {
+      respuestaEntries.push([preguntaId, v])
+      respuestasByCampo[campo] = v
+    }
   }
 
   const client = await pool.connect()
@@ -801,18 +865,29 @@ async function createDeclaracion(body) {
     }
 
     await client.query('COMMIT')
-    // Fire-and-forget: notify administrators that a new declaration was saved.
+    // Fire-and-forget: notify administrators that a new declaration was saved
+    // and (if email was provided) send the contributor a copy of their answers.
     // We don't await this to keep the API response fast, and any failure is
-    // logged inside notifyAdminsOfDeclaracion / mailer.sendMail.
-    notifyAdminsOfDeclaracion({
+    // logged inside the helpers / mailer.sendMail.
+    const decForPdf = {
       id: declaracionId,
+      estado: row.estado,
+      creadoEn: row.creado_en,
       nombre,
       apellidos,
       dniNie,
       email,
       telefono,
-    }).catch((err) => {
-      console.error('notifyAdminsOfDeclaracion error:', err.message)
+      ...respuestasByCampo,
+    }
+    ;(async () => {
+      const attachments = await buildDeclaracionPdfAttachment(decForPdf)
+      await Promise.all([
+        notifyAdminsOfDeclaracion(decForPdf, attachments),
+        notifyClientOfDeclaracion(decForPdf, attachments),
+      ])
+    })().catch((err) => {
+      console.error('post-create notifications error:', err.message)
     })
     return { data: { id: declaracionId, estado: row.estado, creadoEn: row.creado_en }, error: null, status: 201 }
   } catch (err) {
