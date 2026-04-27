@@ -107,6 +107,8 @@ const ALL_REQUIRED_KEYS = [
   'step1Subtitle',
   'successText',
   'successTitle',
+  'summaryTitle',
+  'summaryYourData',
   'toastErrorHttp',
   'toastErrorHttpSuffix',
   'toastErrorNetwork',
