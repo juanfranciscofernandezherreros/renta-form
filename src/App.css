@@ -507,15 +507,17 @@
   .ib-subtitle,
   .ib-question-text,
   .ib-info,
-  .ib-error-banner > span,
-  .ib-field > label {
+  .ib-error-banner > span {
     text-align: center;
     overflow-wrap: anywhere;
     word-break: break-word;
   }
 
-  /* Labels inside form fields should stay left-aligned for readability */
-  .ib-field > label { text-align: left; }
+  /* Labels inside form fields: safe wrapping only, keep left-aligned for readability */
+  .ib-field > label {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
 
   .ib-title { font-size: 1.25rem; padding: 0 2px; }
   .ib-subtitle { font-size: .88rem; margin-bottom: 22px; padding: 0 2px; }
