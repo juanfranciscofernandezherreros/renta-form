@@ -163,14 +163,18 @@ export default function App({ editData, onEditDataConsumed }) {
     }
   }
 
+  const resetFormState = () => {
+    setForm(INITIAL_STATE)
+    setEditId(null)
+    setSubmitted(false)
+    setCurrentStep(0)
+    setStepDirection('forward')
+    setFieldErrors({})
+  }
+
   const handleLimpiar = () => {
     if (window.confirm(t('confirmClear'))) {
-      setForm(INITIAL_STATE)
-      setEditId(null)
-      setSubmitted(false)
-      setCurrentStep(0)
-      setStepDirection('forward')
-      setFieldErrors({})
+      resetFormState()
     }
   }
 
@@ -189,9 +193,11 @@ export default function App({ editData, onEditDataConsumed }) {
   const handleAnswer = () => {
     spawnXpPopup()
     setStreak(s => s + 1)
-    // Auto-advance after answering a yes/no question
+    // Auto-advance after answering a yes/no question.
+    // If the next step is the confirm step (or there is no next step), auto-submit
+    // immediately so the user doesn't have to press any extra button.
     const nextStep = visibleSteps[safeStep + 1]
-    if (nextStep) {
+    if (nextStep && nextStep.type !== 'confirm') {
       setStepDirection('forward')
       setCurrentStep(prev => prev + 1)
       setTimeout(() => topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50)
@@ -199,6 +205,11 @@ export default function App({ editData, onEditDataConsumed }) {
       // Last question answered – auto-submit after React commits the answer state
       setTimeout(() => formRef.current?.requestSubmit(), 0)
     }
+  }
+
+  const handleFinalizar = () => {
+    resetFormState()
+    setStreak(0)
   }
 
   const spawnConfetti = () => {
@@ -540,8 +551,8 @@ export default function App({ editData, onEditDataConsumed }) {
                   >
                     {t('btnDownloadPDF')}
                   </button>
-                  <button type="button" className="ib-btn ib-btn-secondary" onClick={handleLimpiar}>
-                    {t('btnSendAnother')}
+                  <button type="button" className="ib-btn ib-btn-secondary" onClick={handleFinalizar}>
+                    {t('btnFinalize')}
                   </button>
                 </div>
               </div>
