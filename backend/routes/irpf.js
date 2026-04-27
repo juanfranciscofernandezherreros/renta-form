@@ -17,10 +17,6 @@ const adminLimiter = rateLimit({
   message: { error: 'Demasiadas peticiones. Inténtalo de nuevo más tarde.' },
 })
 
-// Combined middleware applied to admin-only routes: rate-limit first, then
-// require an admin bearer token.
-const adminOnly = [adminLimiter, requireAdmin]
-
 function send(res, result) {
   if (result.error) {
     const status = result.status || (result.data === null ? 404 : 400)
@@ -49,7 +45,7 @@ module.exports = function irpfRoutes(svc) {
   })
 
   // GET /v1/irpf/declaraciones/all  (admin – must come BEFORE /:id)
-  router.get('/declaraciones/all', adminOnly, async (req, res) => {
+  router.get('/declaraciones/all', adminLimiter, requireAdmin, async (req, res) => {
     const { dniNie, estado, page, limit } = req.query
     const result = await svc.listDeclaracionesAll({
       dniNie,
@@ -85,7 +81,7 @@ module.exports = function irpfRoutes(svc) {
   })
 
   // PATCH /v1/irpf/declaraciones/:id  (admin – update estado)
-  router.patch('/declaraciones/:id', adminOnly, async (req, res) => {
+  router.patch('/declaraciones/:id', adminLimiter, requireAdmin, async (req, res) => {
     const { estado } = req.body ?? {}
     if (!estado) return res.status(400).json({ error: 'estado es obligatorio' })
     const result = await svc.updateEstadoDeclaracion(req.params.id, estado)
@@ -99,13 +95,13 @@ module.exports = function irpfRoutes(svc) {
   })
 
   // DELETE /v1/irpf/declaraciones/:id  (admin)
-  router.delete('/declaraciones/:id', adminOnly, async (req, res) => {
+  router.delete('/declaraciones/:id', adminLimiter, requireAdmin, async (req, res) => {
     const result = await svc.deleteDeclaracion(req.params.id)
     send(res, result)
   })
 
   // POST /v1/irpf/declaraciones/:id/email  (admin)
-  router.post('/declaraciones/:id/email', adminOnly, async (req, res) => {
+  router.post('/declaraciones/:id/email', adminLimiter, requireAdmin, async (req, res) => {
     const { email, mensaje } = req.body ?? {}
     const result = await svc.sendEmailDeclaracion({ declaracionId: req.params.id, email, mensaje })
     send(res, result)
