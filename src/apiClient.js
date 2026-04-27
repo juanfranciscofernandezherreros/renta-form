@@ -49,6 +49,10 @@ export async function changePassword({ dniNie, oldPassword, newPassword }) {
   return request('POST', '/auth/change-password', { body: { dniNie, oldPassword, newPassword } })
 }
 
+export async function changeEmail({ dniNie, password, newEmail }) {
+  return request('POST', '/auth/change-email', { body: { dniNie, password, newEmail } })
+}
+
 // ── IRPF preguntas ─────────────────────────────────────────────────────────
 
 export async function getPreguntas(lang) {

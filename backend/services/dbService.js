@@ -31,11 +31,16 @@ const ALL_REQUIRED_KEYS = [
   'btnSubmitting',
   'btnUpdatePassword',
   'btnUpdatingPassword',
+  'btnUpdateEmail',
+  'btnUpdatingEmail',
   'campaignName',
+  'changeEmailTitle',
   'changePasswordTitle',
   'confirmClear',
   'errDniDuplicate',
   'errDniFormat',
+  'errEmailFormat',
+  'errEmailRequired',
   'errNewPasswordLength',
   'errNewPasswordLengthSuffix',
   'errOldPasswordRequired',
@@ -58,6 +63,7 @@ const ALL_REQUIRED_KEYS = [
   'fieldEmail',
   'fieldEmailOptional',
   'fieldEmailPlaceholder',
+  'fieldNewEmail',
   'fieldNewPassword',
   'fieldNombre',
   'fieldOldPassword',
@@ -93,6 +99,7 @@ const ALL_REQUIRED_KEYS = [
   'profileSent',
   'profileUpdated',
   'pwSuccess',
+  'emailSuccess',
   'rentaPdfBtn',
   'rentaPdfBtnTitle',
   'section1',
@@ -171,7 +178,7 @@ async function loginAdmin({ username, password }) {
   try {
     const normalised = (username ?? '').trim().toUpperCase()
     const { rows } = await pool.query(
-      'SELECT password_hash, role, bloqueado FROM usuarios WHERE UPPER(dni_nie) = $1',
+      'SELECT password_hash, role, bloqueado, email FROM usuarios WHERE UPPER(dni_nie) = $1',
       [normalised]
     )
     if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
@@ -181,7 +188,7 @@ async function loginAdmin({ username, password }) {
     if (!(await verifyPassword(password, user.password_hash))) {
       return { data: null, error: { message: 'Contraseña incorrecta' } }
     }
-    return { data: { username: normalised, role: user.role }, error: null }
+    return { data: { username: normalised, role: user.role, email: user.email }, error: null }
   } catch (err) {
     console.error('loginAdmin DB error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
@@ -223,6 +230,39 @@ async function changePassword({ dniNie, oldPassword, newPassword }) {
     return { data: { success: true }, error: null }
   } catch (err) {
     console.error('changePassword DB error:', err.message)
+    return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
+  }
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+async function changeEmail({ dniNie, password, newEmail }) {
+  try {
+    const trimmedEmail = (newEmail ?? '').trim()
+    if (!EMAIL_REGEX.test(trimmedEmail)) {
+      return { data: null, error: { message: 'El formato del email no es válido' } }
+    }
+    const normalised = (dniNie ?? '').trim().toUpperCase()
+    const { rows } = await pool.query(
+      'SELECT password_hash, role, email FROM usuarios WHERE UPPER(dni_nie) = $1',
+      [normalised]
+    )
+    if (!rows.length) return { data: null, error: { message: 'Usuario no encontrado' } }
+    const user = rows[0]
+    // Only admins can change their own email through this endpoint.
+    if (user.role !== 'admin') {
+      return { data: null, error: { message: 'No tienes permisos para cambiar el email' }, status: 403 }
+    }
+    if (!(await verifyPassword(password, user.password_hash))) {
+      return { data: null, error: { message: 'La contraseña actual es incorrecta' } }
+    }
+    if (user.email === trimmedEmail) {
+      return { data: { success: true, email: user.email }, error: null }
+    }
+    await pool.query('UPDATE usuarios SET email = $1 WHERE UPPER(dni_nie) = $2', [trimmedEmail, normalised])
+    return { data: { success: true, email: trimmedEmail }, error: null }
+  } catch (err) {
+    console.error('changeEmail DB error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   }
 }
@@ -1369,6 +1409,7 @@ module.exports = {
   loginAdmin,
   loginUser,
   changePassword,
+  changeEmail,
   getPreguntas,
   listDeclaraciones,
   listDeclaracionesAll,

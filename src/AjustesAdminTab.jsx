@@ -1,17 +1,28 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from './AuthContext.jsx'
 import { useLanguage } from './LanguageContext.jsx'
-import { changePassword } from './apiClient.js'
+import { changePassword, changeEmail } from './apiClient.js'
 
 const MIN_PASSWORD_LENGTH = 6
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export default function AjustesAdminTab({ showToast }) {
-  const { user } = useAuth()
+  const { user, updateUser } = useAuth()
   const { t } = useLanguage()
   const [pwForm, setPwForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' })
   const [pwErrors, setPwErrors] = useState({})
   const [pwSuccess, setPwSuccess] = useState(false)
   const [pwLoading, setPwLoading] = useState(false)
+
+  const [emailForm, setEmailForm] = useState({ newEmail: user?.email ?? '', password: '' })
+  const [emailErrors, setEmailErrors] = useState({})
+  const [emailSuccess, setEmailSuccess] = useState(false)
+  const [emailLoading, setEmailLoading] = useState(false)
+
+  // Keep the email field in sync if the user's email loads/changes after mount.
+  useEffect(() => {
+    setEmailForm(prev => (prev.newEmail ? prev : { ...prev, newEmail: user?.email ?? '' }))
+  }, [user?.email])
 
   const handlePwChange = e => {
     const { name, value } = e.target
@@ -46,12 +57,88 @@ export default function AjustesAdminTab({ showToast }) {
     if (showToast) showToast(t('pwSuccess'))
   }
 
+  const handleEmailChange = e => {
+    const { name, value } = e.target
+    setEmailForm(prev => ({ ...prev, [name]: value }))
+    setEmailErrors(prev => ({ ...prev, [name]: null, global: null }))
+    setEmailSuccess(false)
+  }
+
+  const handleEmailSubmit = async e => {
+    e.preventDefault()
+    const errs = {}
+    const trimmed = (emailForm.newEmail ?? '').trim()
+    if (!trimmed) errs.newEmail = t('errEmailRequired')
+    else if (!EMAIL_REGEX.test(trimmed)) errs.newEmail = t('errEmailFormat')
+    if (!emailForm.password) errs.password = t('errPasswordRequired')
+    if (Object.keys(errs).length) { setEmailErrors(errs); return }
+    setEmailLoading(true)
+    const { data, error: apiError } = await changeEmail({
+      dniNie: user.dniNie,
+      password: emailForm.password,
+      newEmail: trimmed,
+    })
+    setEmailLoading(false)
+    if (apiError) {
+      setEmailErrors({ global: apiError.message })
+      if (showToast) showToast(apiError.message, 'error')
+      return
+    }
+    if (updateUser) updateUser({ email: data?.email ?? trimmed })
+    setEmailForm({ newEmail: data?.email ?? trimmed, password: '' })
+    setEmailSuccess(true)
+    if (showToast) showToast(t('emailSuccess'))
+  }
+
   return (
     <div>
       <div className="field" style={{ maxWidth: 360, marginBottom: 20 }}>
         <label>{t('tokenResultDni')}</label>
         <input type="text" value={user?.dniNie ?? ''} readOnly disabled />
       </div>
+
+      <div className="section-title">{t('changeEmailTitle')}</div>
+
+      {emailSuccess && (
+        <div className="info-box">{t('emailSuccess')}</div>
+      )}
+      {emailErrors.global && (
+        <div className="info-box info-box-error">❌ {emailErrors.global}</div>
+      )}
+
+      <form onSubmit={handleEmailSubmit} noValidate>
+        <div className="form-grid">
+          <div className="field">
+            <label>{t('fieldNewEmail')}</label>
+            <input
+              type="email"
+              name="newEmail"
+              value={emailForm.newEmail}
+              onChange={handleEmailChange}
+              autoComplete="email"
+              required
+            />
+            {emailErrors.newEmail && <span className="field-error">{emailErrors.newEmail}</span>}
+          </div>
+          <div className="field">
+            <label>{t('fieldPassword')}</label>
+            <input
+              type="password"
+              name="password"
+              value={emailForm.password}
+              onChange={handleEmailChange}
+              autoComplete="current-password"
+              required
+            />
+            {emailErrors.password && <span className="field-error">{emailErrors.password}</span>}
+          </div>
+        </div>
+        <div className="btn-row">
+          <button type="submit" className="btn btn-primary" disabled={emailLoading}>
+            {emailLoading ? t('btnUpdatingEmail') : t('btnUpdateEmail')}
+          </button>
+        </div>
+      </form>
 
       <div className="section-title">{t('changePasswordTitle')}</div>
 
