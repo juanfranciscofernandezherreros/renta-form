@@ -35,7 +35,8 @@ export default function Router() {
   }
 
   if (hash === '#/backend_admin') {
-    if (!user || user.role !== 'admin') {
+    const userRoles = Array.isArray(user?.roles) ? user.roles : (user?.role ? [user.role] : [])
+    if (!user || !userRoles.includes('admin')) {
       return <AdminLoginPage />
     }
     return <AdminPage onNavigate={navigate} />

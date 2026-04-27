@@ -20,6 +20,13 @@ function getTokenExp(token) {
   }
 }
 
+/** Helper: check if a stored user has the admin role (handles legacy single-role and new array form). */
+function hasAdminRole(parsed) {
+  if (!parsed) return false
+  if (Array.isArray(parsed.roles)) return parsed.roles.includes('admin')
+  return parsed.role === 'admin'
+}
+
 /** Return the stored user, or null if the admin token has already expired. */
 function loadStoredUser() {
   try {
@@ -27,7 +34,7 @@ function loadStoredUser() {
     if (!stored) return null
     const parsed = JSON.parse(stored)
     if (!parsed) return null
-    if (parsed.role === 'admin') {
+    if (hasAdminRole(parsed)) {
       const exp = getTokenExp(parsed.token)
       if (exp !== null && exp < Math.floor(Date.now() / 1000)) {
         localStorage.removeItem(STORAGE_KEY)
@@ -50,7 +57,7 @@ export function AuthProvider({ children }) {
       clearTimeout(timerRef.current)
       timerRef.current = null
     }
-    if (!userData || userData.role !== 'admin') return
+    if (!userData || !hasAdminRole(userData)) return
     const exp = getTokenExp(userData.token)
     if (exp === null) return
     const msUntilExpiry = exp * 1000 - Date.now()

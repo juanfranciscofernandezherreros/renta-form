@@ -115,17 +115,27 @@ async function seed100(client) {
     console.log('[seed100] Seeding 100 usuarios...')
     const SALT_ROUNDS = 10
     const usuarios = buildUsuarios()
+    await client.query(
+      `INSERT INTO roles (nombre) VALUES ('admin'), ('user') ON CONFLICT (nombre) DO NOTHING`
+    )
     for (const u of usuarios) {
       const passwordHash = await bcrypt.hash(u.password, SALT_ROUNDS)
-      await client.query(
-        `INSERT INTO usuarios (dni_nie, dni_nie_hash, nombre, apellidos, email, telefono, role, password_hash)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      const { rows: userRows } = await client.query(
+        `INSERT INTO usuarios (dni_nie, dni_nie_hash, nombre, apellidos, email, telefono, password_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
          ON CONFLICT (dni_nie_hash) WHERE dni_nie_hash IS NOT NULL DO UPDATE SET
            nombre = EXCLUDED.nombre,
            apellidos = EXCLUDED.apellidos,
            email = EXCLUDED.email,
-           telefono = EXCLUDED.telefono`,
-        [encryptDni(u.dni_nie), hashDni(u.dni_nie), u.nombre, u.apellidos, u.email, u.telefono, u.role, passwordHash]
+           telefono = EXCLUDED.telefono
+         RETURNING id`,
+        [encryptDni(u.dni_nie), hashDni(u.dni_nie), u.nombre, u.apellidos, u.email, u.telefono, passwordHash]
+      )
+      await client.query(
+        `INSERT INTO usuarios_roles (usuario_id, rol_id)
+         SELECT $1, r.id FROM roles r WHERE r.nombre = $2
+         ON CONFLICT (usuario_id, rol_id) DO NOTHING`,
+        [userRows[0].id, u.role || 'user']
       )
     }
     console.log('[seed100] 100 usuarios seeded.')

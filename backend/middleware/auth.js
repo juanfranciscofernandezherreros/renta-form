@@ -139,10 +139,16 @@ function requireAdmin(req, res, next) {
   if (!payload) {
     return res.status(401).json({ error: 'Unauthorized' })
   }
-  if (payload.role !== 'admin') {
+  // Many-to-many roles: prefer the `roles` array; fall back to the legacy
+  // single-string `role` claim for backward compatibility with tokens
+  // issued before the migration.
+  const roles = Array.isArray(payload.roles)
+    ? payload.roles
+    : (payload.role ? [payload.role] : [])
+  if (!roles.includes('admin')) {
     return res.status(403).json({ error: 'Forbidden' })
   }
-  req.user = payload
+  req.user = { ...payload, roles }
   next()
 }
 

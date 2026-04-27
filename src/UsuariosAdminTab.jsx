@@ -6,6 +6,9 @@ import {
   reportUser,
   deleteUser,
   listDeclaraciones,
+  listRolesAdmin,
+  getUserRolesAdmin,
+  setUserRolesAdmin,
 } from './apiClient.js'
 import Pagination from './Pagination.jsx'
 import { useLanguage } from './LanguageContext.jsx'
@@ -153,6 +156,8 @@ export default function UsuariosAdminTab({ showToast, preguntasSecciones = [] })
 
   // Modals
   const [confirmDelete, setConfirmDelete] = useState(null)
+  // Manage-roles modal: { user, allRoles, selected: Set<string>, saving }
+  const [rolesModal, setRolesModal] = useState(null)
 
   const refresh = useCallback(() => setRefreshKey(k => k + 1), [])
 
@@ -204,6 +209,56 @@ export default function UsuariosAdminTab({ showToast, preguntasSecciones = [] })
     const { error: apiErr } = await deleteUser({ path: { dniNie } })
     if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
     showToast('Usuario eliminado correctamente')
+    refresh()
+  }
+
+  const openRolesModal = async (user) => {
+    setRolesModal({ user, allRoles: [], selected: new Set(user.roles ?? []), loading: true, saving: false })
+    const [{ data: allRolesResp, error: rolesErr }, { data: userRolesResp }] = await Promise.all([
+      listRolesAdmin(),
+      getUserRolesAdmin({ dniNie: user.dniNie }),
+    ])
+    if (rolesErr) {
+      showToast(`Error cargando roles: ${rolesErr.message}`, 'error')
+      setRolesModal(null)
+      return
+    }
+    const currentNames = Array.isArray(userRolesResp)
+      ? userRolesResp.map(r => r.nombre)
+      : (user.roles ?? [])
+    setRolesModal({
+      user,
+      allRoles: allRolesResp ?? [],
+      selected: new Set(currentNames),
+      loading: false,
+      saving: false,
+    })
+  }
+
+  const toggleRolInModal = (nombre) => {
+    setRolesModal(prev => {
+      if (!prev) return prev
+      const next = new Set(prev.selected)
+      if (next.has(nombre)) next.delete(nombre)
+      else next.add(nombre)
+      return { ...prev, selected: next }
+    })
+  }
+
+  const handleSaveRoles = async () => {
+    if (!rolesModal) return
+    setRolesModal(prev => ({ ...prev, saving: true }))
+    const { error: apiErr } = await setUserRolesAdmin({
+      dniNie: rolesModal.user.dniNie,
+      roles: [...rolesModal.selected],
+    })
+    if (apiErr) {
+      showToast(`Error: ${apiErr.message}`, 'error')
+      setRolesModal(prev => prev ? { ...prev, saving: false } : prev)
+      return
+    }
+    showToast('Roles del usuario actualizados')
+    setRolesModal(null)
     refresh()
   }
 
@@ -284,9 +339,16 @@ export default function UsuariosAdminTab({ showToast, preguntasSecciones = [] })
                   <td>
                     <div className="pregunta-texto">{u.nombre} {u.apellidos}</div>
                     <div className="pregunta-seccion">📞 {u.telefono || '—'}</div>
-                    {u.role === 'admin' && (
-                      <span className="estado-badge badge-blue" style={{ marginTop: 4 }}>🛡️ Admin</span>
-                    )}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                      {(u.roles ?? []).map(r => (
+                        <span
+                          key={r}
+                          className={`estado-badge ${r === 'admin' ? 'badge-blue' : 'badge-activa'}`}
+                        >
+                          {r === 'admin' ? '🛡️ ' : '👤 '}{r}
+                        </span>
+                      ))}
+                    </div>
                   </td>
                   <td><code>{u.dniNie}</code></td>
                   <td style={{ fontSize: '.85rem' }}>{u.email}</td>
@@ -332,7 +394,15 @@ export default function UsuariosAdminTab({ showToast, preguntasSecciones = [] })
                       >
                         📄 PDF
                       </button>
-                      {u.role !== 'admin' && (
+                      <button
+                        type="button"
+                        className="btn btn-secondary btn-sm btn-xs"
+                        onClick={() => openRolesModal(u)}
+                        title="Gestionar roles del usuario"
+                      >
+                        🛡️ Roles
+                      </button>
+                      {!(u.roles ?? []).includes('admin') && (
                         <button
                           type="button"
                           className="btn btn-danger btn-sm btn-xs"
@@ -378,6 +448,69 @@ export default function UsuariosAdminTab({ showToast, preguntasSecciones = [] })
       , document.body)}
 
       {/* Assign secciones modal */}
+
+      {/* Manage roles modal */}
+      {rolesModal && createPortal(
+        <div className="admin-modal-overlay" onClick={() => !rolesModal.saving && setRolesModal(null)}>
+          <div className="admin-modal" onClick={e => e.stopPropagation()}>
+            <h2 className="admin-modal-title">🛡️ Gestionar roles</h2>
+            <p className="admin-modal-desc">
+              Asigna o revoca roles del usuario <strong>{rolesModal.user.nombre} {rolesModal.user.apellidos}</strong>{' '}
+              (<code>{rolesModal.user.dniNie}</code>).
+            </p>
+            {rolesModal.loading ? (
+              <div className="info-box">⏳ Cargando roles…</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, margin: '12px 0' }}>
+                {rolesModal.allRoles.length === 0 && (
+                  <div className="info-box">No hay roles definidos.</div>
+                )}
+                {rolesModal.allRoles.map(rol => {
+                  const checked = rolesModal.selected.has(rol.nombre)
+                  // Prevent the currently-logged-in admin from removing their
+                  // own 'admin' role (would lock themselves out).
+                  const lockSelfAdmin =
+                    checked &&
+                    rol.nombre === 'admin' &&
+                    rolesModal.user.dniNie?.toUpperCase() === currentDniNie
+                  return (
+                    <label key={rol.id} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={lockSelfAdmin || rolesModal.saving}
+                        onChange={() => toggleRolInModal(rol.nombre)}
+                      />
+                      <span style={{ fontWeight: 600 }}>{rol.nombre}</span>
+                      {rol.descripcion && (
+                        <span style={{ color: '#666', fontSize: '.85rem' }}>— {rol.descripcion}</span>
+                      )}
+                    </label>
+                  )
+                })}
+              </div>
+            )}
+            <div className="btn-row">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => setRolesModal(null)}
+                disabled={rolesModal.saving}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleSaveRoles}
+                disabled={rolesModal.loading || rolesModal.saving}
+              >
+                {rolesModal.saving ? '⏳ Guardando…' : '💾 Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      , document.body)}
     </div>
   )
 }

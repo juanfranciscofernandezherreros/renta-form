@@ -96,9 +96,42 @@ module.exports = function adminRoutes(svc) {
     send(res, result)
   })
 
+  router.get('/users/:dniNie/roles', async (req, res) => {
+    const result = await svc.getUserRolesAdmin(req.params.dniNie)
+    send(res, result)
+  })
+
+  router.put('/users/:dniNie/roles', async (req, res) => {
+    const result = await svc.setUserRolesAdmin(req.params.dniNie, req.body ?? {})
+    send(res, result)
+  })
+
   router.post('/users/:dniNie/email', async (req, res) => {
     const { email, mensaje } = req.body ?? {}
     const result = await svc.sendEmailToUser({ dniNie: req.params.dniNie, email, mensaje })
+    send(res, result)
+  })
+
+  // ── Roles (catálogo con relación many-to-many con usuarios) ─────────────
+
+  router.get('/roles', async (req, res) => {
+    const result = await svc.listRolesAdmin()
+    send(res, result)
+  })
+
+  router.post('/roles', async (req, res) => {
+    const result = await svc.createRoleAdmin(req.body ?? {})
+    send(res, result)
+  })
+
+  router.put('/roles/:id', async (req, res) => {
+    const result = await svc.updateRoleAdmin(req.params.id, req.body ?? {})
+    send(res, result)
+  })
+
+  router.delete('/roles/:id', async (req, res) => {
+    const result = await svc.deleteRoleAdmin(req.params.id)
+    if (result.status === 204) return res.status(204).end()
     send(res, result)
   })
 

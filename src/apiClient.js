@@ -184,6 +184,32 @@ export async function deleteUser(options) {
   return request('DELETE', `/admin/users/${encodeURIComponent(dniNie)}`)
 }
 
+export async function getUserRolesAdmin({ dniNie } = {}) {
+  return request('GET', `/admin/users/${encodeURIComponent(dniNie)}/roles`)
+}
+
+export async function setUserRolesAdmin({ dniNie, roles } = {}) {
+  return request('PUT', `/admin/users/${encodeURIComponent(dniNie)}/roles`, { body: { roles } })
+}
+
+// ── Admin: Roles (catálogo) ────────────────────────────────────────────────
+
+export async function listRolesAdmin() {
+  return request('GET', '/admin/roles')
+}
+
+export async function createRoleAdmin({ nombre, descripcion } = {}) {
+  return request('POST', '/admin/roles', { body: { nombre, descripcion } })
+}
+
+export async function updateRoleAdmin({ id, nombre, descripcion } = {}) {
+  return request('PUT', `/admin/roles/${encodeURIComponent(id)}`, { body: { nombre, descripcion } })
+}
+
+export async function deleteRoleAdmin({ id } = {}) {
+  return request('DELETE', `/admin/roles/${encodeURIComponent(id)}`)
+}
+
 // ── Idiomas & Traducciones ─────────────────────────────────────────────────
 
 export async function getIdiomas() {

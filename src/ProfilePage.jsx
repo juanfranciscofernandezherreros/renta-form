@@ -135,7 +135,7 @@ export default function ProfilePage({ onNavigate, onEditDeclaracion }) {
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/')}>
               {t('navNewForm')}
             </button>
-            {user?.role === 'admin' && (
+            {(Array.isArray(user?.roles) ? user.roles.includes('admin') : user?.role === 'admin') && (
               <button type="button" className="btn btn-secondary btn-sm" onClick={() => onNavigate('#/backend_admin')}>
                 {t('btnAdmin')}
               </button>
