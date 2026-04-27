@@ -11,6 +11,7 @@ import {
   bulkImportDeclaraciones,
   getDeclaracionesImportTemplate,
 } from './apiClient.js'
+import { parseCsv, rowsToCsv, BULK_IMPORT_MAX_ROWS } from './csvUtils.js'
 import { translateYN } from './i18nUtils.js'
 import PreguntasFormularioAdminTab from './PreguntasFormularioAdminTab.jsx'
 import UsuariosAdminTab from './UsuariosAdminTab.jsx'
@@ -190,6 +191,7 @@ export default function AdminPage({ onNavigate }) {
   const fileInputRef = useRef(null)
   const [importing, setImporting] = useState(false)
   const [importReport, setImportReport] = useState(null)
+  const [importProgress, setImportProgress] = useState({ done: 0, total: 0 })
 
   // Edit declaration modal
   const [editModal, setEditModal] = useState(null) // declaration object being edited
@@ -303,24 +305,83 @@ export default function AdminPage({ onNavigate }) {
     // Reset the input so selecting the same file again triggers onChange
     if (fileInputRef.current) fileInputRef.current.value = ''
     if (!file) return
-    setImporting(true)
-    setImportReport(null)
+
+    let csv
     try {
-      const csv = await file.text()
-      const { data, error: apiErr } = await bulkImportDeclaraciones({ csv })
-      if (apiErr) {
-        showToast(`Error al importar: ${apiErr.message}`, 'error')
-      } else {
-        setImportReport(data)
-        showToast(`Importadas ${data.imported} de ${data.total} declaraciones${data.failed ? ` (${data.failed} ${data.failed === 1 ? 'con error' : 'con errores'})` : ''}`,
-          data.failed ? 'error' : 'success')
-        refresh()
-      }
+      csv = await file.text()
     } catch (err) {
       showToast(`Error leyendo el fichero: ${err.message ?? err}`, 'error')
-    } finally {
-      setImporting(false)
+      return
     }
+
+    // Parse client-side so we can show progress and enforce the row cap
+    // before hitting the network.
+    let rows
+    try {
+      rows = parseCsv(csv).filter(r => r.some(c => String(c ?? '').trim() !== ''))
+    } catch (err) {
+      showToast(`CSV inválido: ${err.message ?? err}`, 'error')
+      return
+    }
+    if (rows.length < 2) {
+      showToast('El CSV debe tener una cabecera y al menos una fila', 'error')
+      return
+    }
+    const header = rows[0]
+    const dataRows = rows.slice(1)
+    if (dataRows.length > BULK_IMPORT_MAX_ROWS) {
+      showToast(`Máximo ${BULK_IMPORT_MAX_ROWS} declaraciones por importación (este CSV tiene ${dataRows.length})`, 'error')
+      return
+    }
+
+    setImporting(true)
+    setImportReport(null)
+    setImportProgress({ done: 0, total: dataRows.length })
+
+    const report = {
+      total: dataRows.length,
+      imported: 0,
+      failed: 0,
+      unknownHeaders: [],
+      rows: [],
+    }
+    let unknownCaptured = false
+
+    // Insert one row at a time, reusing the bulk import endpoint with a
+    // header + single row payload.  This keeps server-side validation
+    // consistent and lets us update the progress bar after each request.
+    for (let i = 0; i < dataRows.length; i += 1) {
+      const csvLine = i + 2
+      const singleCsv = rowsToCsv([header, dataRows[i]])
+      // eslint-disable-next-line no-await-in-loop
+      const { data, error: apiErr } = await bulkImportDeclaraciones({ csv: singleCsv })
+      if (apiErr) {
+        report.failed += 1
+        report.rows.push({ line: csvLine, ok: false, error: apiErr.message })
+      } else {
+        if (!unknownCaptured && Array.isArray(data?.unknownHeaders)) {
+          report.unknownHeaders = data.unknownHeaders
+          unknownCaptured = true
+        }
+        const inner = (data?.rows ?? [])[0]
+        if (inner && inner.ok) {
+          report.imported += 1
+          report.rows.push({ line: csvLine, ok: true, id: inner.id })
+        } else {
+          report.failed += 1
+          report.rows.push({ line: csvLine, ok: false, error: inner?.error ?? 'Error desconocido' })
+        }
+      }
+      setImportProgress({ done: i + 1, total: dataRows.length })
+    }
+
+    setImportReport(report)
+    showToast(
+      `Importadas ${report.imported} de ${report.total} declaraciones${report.failed ? ` (${report.failed} ${report.failed === 1 ? 'con error' : 'con errores'})` : ''}`,
+      report.failed ? 'error' : 'success',
+    )
+    refresh()
+    setImporting(false)
   }
 
   const SIDEBAR_ITEMS = [
@@ -526,7 +587,7 @@ export default function AdminPage({ onNavigate }) {
               className="btn btn-primary btn-sm"
               onClick={() => fileInputRef.current?.click()}
               disabled={importing}
-              title="Importar varias declaraciones desde un fichero CSV"
+              title={`Importar declaraciones desde un fichero CSV (máx. ${BULK_IMPORT_MAX_ROWS} filas)`}
             >
               {importing ? '⏳ Importando…' : '📤 Importar CSV'}
             </button>
@@ -539,6 +600,38 @@ export default function AdminPage({ onNavigate }) {
             />
           </div>
         </div>
+
+        {importing && importProgress.total > 0 && (
+          <div className="info-box" role="status" aria-live="polite">
+            <div style={{ marginBottom: 6, fontSize: '.9rem' }}>
+              ⏳ Importando declaraciones: <strong>{importProgress.done}</strong> de{' '}
+              <strong>{importProgress.total}</strong>
+              {' '}({Math.round((importProgress.done / importProgress.total) * 100)}%)
+            </div>
+            <div
+              style={{
+                width: '100%',
+                height: 10,
+                background: '#e5e7eb',
+                borderRadius: 6,
+                overflow: 'hidden',
+              }}
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={importProgress.total}
+              aria-valuenow={importProgress.done}
+            >
+              <div
+                style={{
+                  width: `${(importProgress.done / importProgress.total) * 100}%`,
+                  height: '100%',
+                  background: '#2563eb',
+                  transition: 'width .15s linear',
+                }}
+              />
+            </div>
+          </div>
+        )}
 
         {importReport && (
           <div className={`info-box${importReport.failed > 0 ? ' info-box-error' : ''}`}>

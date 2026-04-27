@@ -1010,6 +1010,7 @@ async function getDeclaracion(id) {
 // dniNie, telefono) are required; `email` is optional.
 
 const PERSONAL_HEADERS = ['nombre', 'apellidos', 'dniNie', 'email', 'telefono']
+const BULK_IMPORT_MAX_ROWS = 30
 
 function normaliseAnswerCell(raw) {
   if (raw === null || raw === undefined) return ''
@@ -1033,12 +1034,7 @@ async function getDeclaracionesImportTemplate() {
     )
     const campos = rows.map(r => r.campo)
     const header = [...PERSONAL_HEADERS, ...campos]
-    const example = [
-      'Nombre', 'Apellido1 Apellido2', '00000000T',
-      'ejemplo@correo.com', '600000000',
-      ...campos.map(() => 'no'),
-    ]
-    return { data: rowsToCsv([header, example]), error: null }
+    return { data: rowsToCsv([header]), error: null }
   } catch (err) {
     console.error('getDeclaracionesImportTemplate DB error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
@@ -1070,6 +1066,14 @@ async function bulkImportDeclaraciones(csvText) {
 
   const header = rows[0].map(h => String(h ?? '').trim())
   const dataRows = rows.slice(1)
+
+  if (dataRows.length > BULK_IMPORT_MAX_ROWS) {
+    return {
+      data: null,
+      error: { message: `Se permiten como máximo ${BULK_IMPORT_MAX_ROWS} declaraciones por importación (recibidas ${dataRows.length})` },
+      status: 400,
+    }
+  }
 
   for (const required of REQUIRED_TEXT_FIELDS) {
     if (!header.includes(required)) {
