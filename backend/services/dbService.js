@@ -8,6 +8,7 @@
 
 const bcrypt = require('bcrypt')
 const pool = require('../db/pool')
+const mailer = require('./mailer')
 
 const BCRYPT_ROUNDS = 12
 
@@ -722,6 +723,36 @@ async function listDeclaracionesAll({ dniNie, estado, page = 1, limit = 20 }) {
   }
 }
 
+async function notifyAdminsOfDeclaracion(dec) {
+  try {
+    const { rows } = await pool.query(
+      "SELECT email FROM usuarios WHERE role = 'admin' AND email IS NOT NULL AND email <> ''"
+    )
+    const recipients = rows.map((r) => r.email).filter(Boolean)
+    if (recipients.length === 0) {
+      console.info('[mailer] No admin recipients found for declaration notification')
+      return
+    }
+    const subject = `Nueva declaración de renta guardada (${dec.dniNie || dec.id})`
+    const lines = [
+      'Se ha guardado correctamente una nueva declaración de renta.',
+      '',
+      `ID: ${dec.id}`,
+      `Nombre: ${dec.nombre || ''} ${dec.apellidos || ''}`.trim(),
+      `DNI/NIE: ${dec.dniNie || ''}`,
+      `Email del contribuyente: ${dec.email || ''}`,
+      `Teléfono: ${dec.telefono || ''}`,
+    ]
+    await mailer.sendMail({
+      to: recipients,
+      subject,
+      text: lines.join('\n'),
+    })
+  } catch (err) {
+    console.error('notifyAdminsOfDeclaracion DB error:', err.message)
+  }
+}
+
 async function createDeclaracion(body) {
   const { nombre, apellidos, dniNie, email, telefono } = body
 
@@ -770,6 +801,19 @@ async function createDeclaracion(body) {
     }
 
     await client.query('COMMIT')
+    // Fire-and-forget: notify administrators that a new declaration was saved.
+    // We don't await this to keep the API response fast, and any failure is
+    // logged inside notifyAdminsOfDeclaracion / mailer.sendMail.
+    notifyAdminsOfDeclaracion({
+      id: declaracionId,
+      nombre,
+      apellidos,
+      dniNie,
+      email,
+      telefono,
+    }).catch((err) => {
+      console.error('notifyAdminsOfDeclaracion error:', err.message)
+    })
     return { data: { id: declaracionId, estado: row.estado, creadoEn: row.creado_en }, error: null, status: 201 }
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {})
