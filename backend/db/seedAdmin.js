@@ -20,6 +20,7 @@
 const bcrypt = require('bcrypt')
 const pool = require('./pool')
 const migrate = require('./migrate')
+const { encryptDni } = require('../utils/dniEncryption')
 
 const SALT_ROUNDS = 10
 
@@ -46,7 +47,7 @@ async function seedAdmin() {
          telefono      = EXCLUDED.telefono,
          role          = 'admin',
          password_hash = EXCLUDED.password_hash`,
-      [DNI_NIE, NOMBRE, APELLIDOS, EMAIL, TELEFONO, passwordHash]
+      [encryptDni(DNI_NIE), NOMBRE, APELLIDOS, EMAIL, TELEFONO, passwordHash]
     )
 
     console.log(`[seedAdmin] ✅  Usuario administrador listo: ${DNI_NIE} / ${EMAIL}`)

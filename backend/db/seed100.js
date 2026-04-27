@@ -9,6 +9,7 @@ const bcrypt = require('bcrypt')
 const pool = require('./pool')
 const migrate = require('./migrate')
 const seedPreguntas = require('./seedPreguntas')
+const { encryptDni } = require('../utils/dniEncryption')
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -124,7 +125,7 @@ async function seed100(client) {
            apellidos = EXCLUDED.apellidos,
            email = EXCLUDED.email,
            telefono = EXCLUDED.telefono`,
-        [u.dni_nie, u.nombre, u.apellidos, u.email, u.telefono, u.role, passwordHash]
+        [encryptDni(u.dni_nie), u.nombre, u.apellidos, u.email, u.telefono, u.role, passwordHash]
       )
     }
     console.log('[seed100] 100 usuarios seeded.')
@@ -146,7 +147,7 @@ async function seed100(client) {
            email = EXCLUDED.email,
            estado = EXCLUDED.estado
          RETURNING id`,
-        [d.nombre, d.apellidos, d.dni_nie, d.email, d.telefono, d.estado]
+        [d.nombre, d.apellidos, encryptDni(d.dni_nie), d.email, d.telefono, d.estado]
       )
       const declId = insertRows[0].id
 

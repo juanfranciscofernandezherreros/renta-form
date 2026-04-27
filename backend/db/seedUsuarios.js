@@ -7,6 +7,7 @@
 const bcrypt = require('bcrypt')
 const pool = require('./pool')
 const migrate = require('./migrate')
+const { encryptDni } = require('../utils/dniEncryption')
 
 const SALT_ROUNDS = 10
 
@@ -75,7 +76,7 @@ async function seedUsuarios(client) {
          telefono      = EXCLUDED.telefono,
          role          = 'admin',
          password_hash = EXCLUDED.password_hash`,
-      [ADMIN_DNI, 'Admin', 'Sistema', ADMIN_EMAIL, '', adminHash]
+      [encryptDni(ADMIN_DNI), 'Admin', 'Sistema', ADMIN_EMAIL, '', adminHash]
     )
 
     console.log('[seedUsuarios] Seeding 100 usuarios...')
@@ -90,7 +91,7 @@ async function seedUsuarios(client) {
            apellidos = EXCLUDED.apellidos,
            email = EXCLUDED.email,
            telefono = EXCLUDED.telefono`,
-        [u.dni_nie, u.nombre, u.apellidos, u.email, u.telefono, u.role, userPasswordHash]
+        [encryptDni(u.dni_nie), u.nombre, u.apellidos, u.email, u.telefono, u.role, userPasswordHash]
       )
     }
     console.log('[seedUsuarios] Usuarios seeded.')

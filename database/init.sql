@@ -36,7 +36,7 @@ $$;
 -- 3. Tabla: Usuarios
 CREATE TABLE IF NOT EXISTS usuarios (
     id                   UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    dni_nie              VARCHAR(9)   NOT NULL UNIQUE,
+    dni_nie              TEXT         NOT NULL UNIQUE,
     nombre               VARCHAR(100) NOT NULL,
     apellidos            VARCHAR(200) NOT NULL DEFAULT '',
     email                VARCHAR(254) NOT NULL,
@@ -69,6 +69,10 @@ ALTER TABLE preguntas ADD COLUMN IF NOT EXISTS campo VARCHAR(100);
 ALTER TABLE preguntas ADD COLUMN IF NOT EXISTS orden INTEGER NOT NULL DEFAULT 0;
 CREATE INDEX IF NOT EXISTS idx_preguntas_orden ON preguntas (orden);
 
+-- Widen usuarios.dni_nie to TEXT so it can hold AES-encrypted values.
+-- (The declaraciones equivalent is applied after that table is created below.)
+ALTER TABLE usuarios ALTER COLUMN dni_nie TYPE TEXT;
+
 -- 5. Tabla: Declaraciones (sólo datos personales — las respuestas viven
 --    en la tabla `respuestas_declaracion` y son completamente dinámicas).
 CREATE TABLE IF NOT EXISTS declaraciones (
@@ -78,13 +82,17 @@ CREATE TABLE IF NOT EXISTS declaraciones (
     estado                    estado_expediente NOT NULL DEFAULT 'recibido',
     nombre                    VARCHAR(100)      NOT NULL,
     apellidos                 VARCHAR(200)      NOT NULL,
-    dni_nie                   VARCHAR(9)        NOT NULL,
+    dni_nie                   TEXT              NOT NULL,
     email                     VARCHAR(254)      NOT NULL,
     telefono                  VARCHAR(20)       NOT NULL,
 
-    CONSTRAINT chk_dni_nie_formato       CHECK (dni_nie ~ '^[0-9XYZ][0-9]{7}[A-Z]$'),
     CONSTRAINT uq_declaraciones_dni_nie  UNIQUE (dni_nie)
 );
+
+-- Widen declaraciones.dni_nie to TEXT and drop the plain-text format check
+-- if either still exists from an older schema version.
+ALTER TABLE declaraciones ALTER COLUMN dni_nie TYPE TEXT;
+ALTER TABLE declaraciones DROP CONSTRAINT IF EXISTS chk_dni_nie_formato;
 
 -- 5b. Tabla: Respuestas de cada declaración (clave/valor dinámico).
 --     Una fila por (declaración, pregunta). Las respuestas son siempre
