@@ -341,7 +341,9 @@ async function createPreguntaFormulario({ campo, orden, texto, textos } = {}) {
   if (textos !== undefined) {
     const sanitised = sanitiseTextos(textos)
     if (!sanitised) return { data: null, error: { message: 'textos debe ser un objeto con claves de idioma' } }
-    if (!sanitised.es) return { data: null, error: { message: 'El texto en español (es) es obligatorio' } }
+    if (!Object.keys(sanitised).length) {
+      return { data: null, error: { message: 'Debes proporcionar el texto de la pregunta en al menos un idioma' } }
+    }
     mergeObj = sanitised
   } else if (texto !== undefined) {
     const v = String(texto).trim()
