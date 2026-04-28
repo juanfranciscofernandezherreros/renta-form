@@ -1,0 +1,68 @@
+name: 🐛 Bug report
+description: Reporta un error o comportamiento inesperado
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por reportar un bug. Rellena los campos siguientes con el mayor detalle posible.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Descripción del problema
+      description: Explica qué ocurre y qué esperabas que ocurriera.
+      placeholder: "Al hacer clic en… ocurre… pero debería…"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Pasos para reproducirlo
+      description: Lista los pasos exactos para reproducir el error.
+      placeholder: |
+        1. Navega a '…'
+        2. Haz clic en '…'
+        3. Rellena el campo '…' con '…'
+        4. Observa el error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamiento esperado
+      placeholder: "Esperaba que…"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportamiento actual
+      placeholder: "En cambio, ocurrió…"
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Entorno
+      description: Indica la versión del navegador, sistema operativo, Node.js, etc.
+      placeholder: |
+        - OS: macOS 14 / Ubuntu 22.04 / Windows 11
+        - Navegador: Chrome 124 / Firefox 125
+        - Node.js: 20.x
+        - npm: 11.x
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / capturas de pantalla
+      description: Pega cualquier mensaje de error relevante de la consola del navegador o del backend.
+      render: shell
+    validations:
+      required: false

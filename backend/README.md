@@ -14,14 +14,20 @@ psql -U postgres -c "CREATE DATABASE renta_form;"
 
 Copia `.env.example` a `.env` y ajusta las credenciales:
 
+```bash
+cp .env.example .env
+```
+
+Variables más importantes:
+
 ```env
 PROFILE=db
 PORT=3001
 
-# Opción A – URL completa (recomendado para Neon / Heroku)
-DATABASE_URL=postgresql://<usuario>:<contraseña>@<host>/<bbdd>?sslmode=require
+# Opción A – URL completa (recomendado para Neon / Heroku / Render)
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/renta_form
 
-# Opción B – variables individuales
+# Opción B – variables individuales (solo si no usas DATABASE_URL)
 # PGHOST=localhost
 # PGPORT=5432
 # PGDATABASE=renta_form
@@ -29,6 +35,14 @@ DATABASE_URL=postgresql://<usuario>:<contraseña>@<host>/<bbdd>?sslmode=require
 # PGPASSWORD=postgres
 
 CORS_ORIGIN=http://localhost:5173
+
+# Clave de firma de tokens (HMAC-SHA256). Generar con:
+# node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+AUTH_SECRET=cambia-esto-en-produccion
+
+# Clave AES-256 para cifrar DNI/NIE (64 hex chars). Generar con:
+# node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+# DNI_ENCRYPTION_KEY=
 
 # Envío de correo (opcional). Si no están definidas, el envío de correo se
 # omite con un log informativo y la API sigue funcionando con normalidad.
@@ -77,57 +91,107 @@ El servidor escucha en `http://localhost:3001`.
 
 ## URL base de la API
 
-Todos los endpoints están prefijados con `/v1`.
+Todos los endpoints de la API están prefijados con `/v1`. Los endpoints marcados con 🔒 requieren un token de administrador en la cabecera `Authorization: Bearer <token>`.
+
+### Salud del servidor
 
 | Método | Ruta | Descripción |
 |--------|------|-------------|
-| GET | `/health` | Health check |
-| POST | `/v1/auth/admin-login` | Login del administrador (username + password) |
-| POST | `/v1/auth/verificar-codigo` | Verificar código de acceso a intranet |
-| POST | `/v1/auth/change-password` | Cambiar contraseña del administrador |
-| POST | `/v1/auth/change-email` | Cambiar email del administrador |
-| GET | `/v1/irpf/preguntas` | Catálogo de preguntas del formulario |
-| GET | `/v1/irpf/idiomas` | Listar idiomas activos |
-| GET | `/v1/irpf/traducciones` | Todas las traducciones agrupadas por código de idioma |
-| GET | `/v1/irpf/declaraciones` | Listar declaraciones (paginado) |
-| POST | `/v1/irpf/declaraciones` | Enviar nueva declaración (multipart) |
-| GET | `/v1/irpf/declaraciones/all` | Listar todas las declaraciones (admin) |
-| GET | `/v1/irpf/declaraciones/:id` | Detalle de una declaración |
-| PATCH | `/v1/irpf/declaraciones/:id` | Actualizar estado |
-| PUT | `/v1/irpf/declaraciones/:id` | Actualizar campos editables |
-| DELETE | `/v1/irpf/declaraciones/:id` | Eliminar declaración |
-| GET | `/v1/irpf/declaraciones/:id/preguntas` | Preguntas asignadas a la declaración |
-| PUT | `/v1/irpf/declaraciones/:id/preguntas` | Upsert de asignaciones de preguntas |
-| DELETE | `/v1/irpf/declaraciones/:id/preguntas/:preguntaId` | Eliminar asignación |
-| POST | `/v1/irpf/declaraciones/:id/email` | Enviar email de la declaración |
-| GET | `/v1/irpf/consulta/:token` | Consulta pública por token |
-| GET | `/v1/admin/preguntas` | Listar preguntas adicionales |
-| POST | `/v1/admin/preguntas` | Crear pregunta |
-| GET | `/v1/admin/preguntas/:id` | Obtener pregunta |
-| PUT | `/v1/admin/preguntas/:id` | Actualizar pregunta |
-| DELETE | `/v1/admin/preguntas/:id` | Eliminar pregunta |
-| GET | `/v1/admin/secciones` | Listar secciones |
-| POST | `/v1/admin/secciones` | Crear sección |
-| PUT | `/v1/admin/secciones/:id` | Actualizar sección |
-| DELETE | `/v1/admin/secciones/:id` | Eliminar sección |
-| GET | `/v1/admin/secciones/:id/declaraciones` | Declaraciones de la sección |
-| GET | `/v1/admin/secciones/:id/preguntas` | Preguntas de la sección |
-| GET | `/v1/admin/users` | Listar usuarios |
+| GET | `/health` | Health check – devuelve `{ status: "ok", time: "…" }` |
+
+### Autenticación (`/v1/auth`)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/v1/auth/admin-login` | Login del administrador (`username` + `password`) → devuelve token |
+| POST | `/v1/auth/change-password` | Cambiar contraseña (`username`, `oldPassword`, `newPassword`) |
+| POST | `/v1/auth/change-email` | Cambiar email del administrador (`username`, `newEmail`) |
+
+### Formulario IRPF (`/v1/irpf`)
+
+| Método | Ruta | Auth | Descripción |
+|--------|------|------|-------------|
+| GET | `/v1/irpf/preguntas` | – | Catálogo de preguntas (acepta `?lang=es|fr|ca|en`) |
+| GET | `/v1/irpf/idiomas` | – | Idiomas activos de la aplicación |
+| GET | `/v1/irpf/traducciones` | – | Todas las traducciones agrupadas por idioma |
+| GET | `/v1/irpf/declaraciones` | – | Listar declaraciones propias (paginado, `?dniNie&estado&page&limit`) |
+| POST | `/v1/irpf/declaraciones` | – | Enviar nueva declaración |
+| GET | `/v1/irpf/declaraciones/all` | 🔒 | Listar todas las declaraciones (admin, `?dniNie&estado&page&limit`) |
+| GET | `/v1/irpf/declaraciones/:id` | – | Detalle de una declaración |
+| PATCH | `/v1/irpf/declaraciones/:id` | 🔒 | Actualizar estado de la declaración |
+| PUT | `/v1/irpf/declaraciones/:id` | – | Actualizar campos editables de la declaración |
+| DELETE | `/v1/irpf/declaraciones/bulk` | 🔒 | Borrado masivo de declaraciones (body: `{ ids: [...] }`) |
+| DELETE | `/v1/irpf/declaraciones/:id` | 🔒 | Eliminar declaración |
+| POST | `/v1/irpf/declaraciones/:id/email` | 🔒 | Enviar email de la declaración |
+| GET | `/v1/irpf/consulta/:token` | – | Consulta pública por token de seguimiento |
+
+### Endpoint público (`/v1/public`)
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/v1/public/declaraciones` | Crear declaración – alias sin autenticación (para clientes sin sesión) |
+
+### Panel de administración (`/v1/admin`) 🔒
+
+Todos los endpoints de `/v1/admin` requieren token de administrador.
+
+**Preguntas del formulario**
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/v1/admin/preguntas-formulario` | Listar preguntas (`?page&limit`) |
+| POST | `/v1/admin/preguntas-formulario` | Crear pregunta |
+| PUT | `/v1/admin/preguntas-formulario/:id` | Actualizar pregunta |
+| DELETE | `/v1/admin/preguntas-formulario/:id` | Eliminar pregunta |
+
+**Usuarios**
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/v1/admin/users` | Listar usuarios (`?bloqueado&denunciado&search&page&limit`) |
 | POST | `/v1/admin/users/assign` | Asignar cuenta de usuario |
 | GET | `/v1/admin/users/:dniNie` | Obtener usuario |
-| PATCH | `/v1/admin/users/:dniNie/block` | Bloquear/desbloquear usuario |
-| PATCH | `/v1/admin/users/:dniNie/report` | Denunciar/retirar denuncia |
+| PATCH | `/v1/admin/users/:dniNie/block` | Bloquear / desbloquear usuario |
+| PATCH | `/v1/admin/users/:dniNie/report` | Denunciar / retirar denuncia |
 | DELETE | `/v1/admin/users/:dniNie` | Eliminar usuario |
+| GET | `/v1/admin/users/:dniNie/roles` | Obtener roles del usuario |
+| PUT | `/v1/admin/users/:dniNie/roles` | Asignar roles al usuario |
 | POST | `/v1/admin/users/:dniNie/email` | Enviar email al usuario |
-| PUT | `/v1/admin/users/:dniNie/preguntas` | Asignar preguntas al usuario |
-| PUT | `/v1/admin/users/:dniNie/secciones` | Asignar secciones al usuario |
-| GET | `/v1/admin/idiomas` | Listar idiomas (paginado) |
+
+**Roles**
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/v1/admin/roles` | Listar roles del catálogo |
+| POST | `/v1/admin/roles` | Crear rol |
+| PUT | `/v1/admin/roles/:id` | Actualizar rol |
+| DELETE | `/v1/admin/roles/:id` | Eliminar rol |
+
+**Idiomas y traducciones**
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/v1/admin/idiomas` | Listar idiomas (`?activo&page&limit`) |
 | POST | `/v1/admin/idiomas` | Crear idioma |
-| PUT | `/v1/admin/idiomas/:id` | Actualizar idioma |
-| DELETE | `/v1/admin/idiomas/:id` | Eliminar idioma |
-| GET | `/v1/admin/idiomas/:id/content` | Obtener traducciones de un idioma |
-| PUT | `/v1/admin/idiomas/:id/content` | Actualizar traducciones de un idioma |
-| GET | `/v1/admin/traducciones/faltantes` | Claves de traducción faltantes por idioma |
+| PUT | `/v1/admin/idiomas/:idiomaId` | Actualizar idioma |
+| DELETE | `/v1/admin/idiomas/:idiomaId` | Eliminar idioma |
+| GET | `/v1/admin/idiomas/:idiomaId/content` | Obtener traducciones del idioma |
+| PUT | `/v1/admin/idiomas/:idiomaId/content` | Actualizar traducciones del idioma |
+| GET | `/v1/admin/traducciones/faltantes` | Claves de traducción faltantes (`?ref=static\|db`) |
+
+**Declaraciones – importación masiva**
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/v1/admin/declaraciones/import/template` | Descargar plantilla CSV |
+| POST | `/v1/admin/declaraciones/import` | Importar declaraciones desde CSV (body: `{ csv: "…" }`) |
+
+**Configuración**
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/v1/admin/configuracion` | Obtener pares clave/valor de configuración |
+| PUT | `/v1/admin/configuracion/:clave` | Actualizar un valor de configuración |
 
 ---
 
@@ -139,9 +203,16 @@ Todos los endpoints están prefijados con `/v1`.
 | `npm run dev` | Arranca con `--watch` (reinicio automático al cambiar ficheros) |
 | `npm run migrate` | Aplica el esquema (`database/init.sql`). No arranca el servidor. |
 | `npm run seed` | Siembra/actualiza traducciones en la BD. No arranca el servidor. |
-| `npm run db:setup` | Ejecuta `migrate` + `seed` en secuencia |
-| `npm run db:seed-questions` | Siembra las preguntas del formulario |
+| `npm run db:drop` | Borra todas las tablas, tipos y funciones (`database/drop.sql`). ⚠️ Destructivo. |
+| `npm run db:reset` | `db:drop` + `migrate` + `seed-translations` + `seed-questions` + `seed-users`. ⚠️ Destructivo. |
+| `npm run db:setup` | `migrate` + `seed-translations` + `seed-questions` |
+| `npm run db:setup-all` | `migrate` + `seed-translations` + `seed-questions` + `seed-users` |
+| `npm run db:setup-100` | `migrate` + `seed-translations` + `seed-questions` + 100 usuarios + 100 declaraciones |
+| `npm run db:seed-translations` | Siembra/actualiza idiomas y traducciones |
+| `npm run db:seed-languages` | Siembra/actualiza solo la tabla `idiomas` |
+| `npm run db:seed-questions` | Siembra/actualiza las preguntas del formulario |
 | `npm run db:seed-users` | Siembra usuarios de prueba (incluye un admin) |
+| `npm run seed:admin` | Inserta/actualiza solo el usuario administrador |
 
 ---
 
