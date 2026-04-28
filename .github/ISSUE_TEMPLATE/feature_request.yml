@@ -1,0 +1,43 @@
+name: ✨ Feature request
+description: Propón una nueva funcionalidad o mejora
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por tu propuesta. Cuanto más detallada sea, más fácil será evaluar e implementarla.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema o necesidad
+      description: Describe el problema que quieres resolver o la necesidad que motiva esta propuesta.
+      placeholder: "Me resulta difícil / imposible hacer… porque…"
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solución propuesta
+      description: Describe cómo te gustaría que se resolviera el problema.
+      placeholder: "Sería útil que la aplicación permitiera…"
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+      description: ¿Has pensado en otras formas de resolver el problema? ¿Por qué las descartas?
+      placeholder: "Podría usarse X, pero…"
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Contexto adicional
+      description: Mockups, capturas, ejemplos de otras apps, enlaces relevantes…
+    validations:
+      required: false

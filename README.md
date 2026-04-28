@@ -140,11 +140,17 @@ http://localhost:5173/#/api-docs
 
 Crea el fichero `backend/.env` a partir de `backend/.env.example`:
 
+```bash
+cp backend/.env.example backend/.env
+```
+
+Variables más importantes:
+
 ```env
 PROFILE=db
 PORT=3001
 
-# Opción A – URL completa (Heroku / Neon)
+# Opción A – URL completa (Heroku / Neon / Render)
 DATABASE_URL=postgresql://<usuario>:<contraseña>@<host>/<bbdd>?sslmode=require
 
 # Opción B – variables individuales
@@ -156,11 +162,35 @@ DATABASE_URL=postgresql://<usuario>:<contraseña>@<host>/<bbdd>?sslmode=require
 
 CORS_ORIGIN=http://localhost:5173
 
+# Clave de firma de tokens HMAC-SHA256 (>=32 chars en producción)
+# node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+AUTH_SECRET=cambia-esto-en-produccion
+
+# Clave AES-256 para cifrar DNI/NIE (64 hex chars)
+# node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+# DNI_ENCRYPTION_KEY=
+
 # Credenciales del usuario administrador (usadas por el seed)
 ADMIN_DNI=admin
 ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=admin
 ```
+
+Consulta `backend/.env.example` para la lista completa de variables, incluidas las opciones de SMTP para notificaciones por correo.
+
+---
+
+## Seguridad
+
+| Aspecto | Detalle |
+|---------|---------|
+| **Tokens** | Tokens bearer HMAC-SHA256 firmados con `AUTH_SECRET`. TTL de 8 horas. Sin dependencias externas (usa el módulo `crypto` de Node.js). |
+| **DNI/NIE** | Almacenados cifrados con AES-256-CBC (IV aleatorio por registro) en `dni_nie` y en claro HMAC en `dni_nie_hash` para búsquedas. Clave desde `DNI_ENCRYPTION_KEY`. |
+| **Contraseñas** | Hash con bcrypt (coste 10). |
+| **Rate limiting** | Limitador de 20 req/15 min en endpoints de autenticación; 600 req/15 min en endpoints de admin. |
+| **Sanitización** | Las trazas del servidor enmascaran campos sensibles (`password`, `token`, `authorization`, etc.). |
+
+> Para más detalles, consulta [`SECURITY.md`](SECURITY.md).
 
 ---
 
@@ -181,5 +211,20 @@ npm install --prefix backend && npm run build
 Configura las variables de entorno en el dashboard de Heroku o con:
 
 ```bash
-heroku config:set DATABASE_URL=<url_neon> CORS_ORIGIN=<url_frontend>
+heroku config:set DATABASE_URL=<url_neon> CORS_ORIGIN=<url_frontend> AUTH_SECRET=<secreto> DNI_ENCRYPTION_KEY=<clave>
 ```
+
+---
+
+## Contribuir
+
+Consulta [`CONTRIBUTING.md`](CONTRIBUTING.md) para la guía de configuración del entorno y las convenciones del proyecto.
+
+## Changelog
+
+Consulta [`CHANGELOG.md`](CHANGELOG.md) para el historial de cambios.
+
+## Licencia
+
+Este proyecto está bajo la licencia [MIT](LICENSE).
+
