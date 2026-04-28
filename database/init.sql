@@ -14,6 +14,9 @@ DO $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_expediente') THEN
         CREATE TYPE estado_expediente AS ENUM ('recibido', 'en_revision', 'documentacion_pendiente', 'completado', 'archivado');
     END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_pregunta') THEN
+        CREATE TYPE estado_pregunta AS ENUM ('activa', 'inactiva', 'borrador', 'archivada');
+    END IF;
 END $$;
 
 -- 2. Funciones de Auditoría
@@ -94,11 +97,13 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_usuarios_dni_nie_hash
 -- `orden` controla la posición en el wizard; `texto` JSONB contiene las
 -- traducciones por idioma ({"es": "...", "fr": "...", ...}).
 CREATE TABLE IF NOT EXISTS preguntas (
-    id             UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
-    campo          VARCHAR(100) NOT NULL UNIQUE,
-    orden          INTEGER      NOT NULL DEFAULT 0,
-    texto          JSONB        NOT NULL DEFAULT '{}',
-    actualizada_en TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    id             UUID            PRIMARY KEY DEFAULT gen_random_uuid(),
+    campo          VARCHAR(100)    NOT NULL UNIQUE,
+    orden          INTEGER         NOT NULL DEFAULT 0,
+    texto          JSONB           NOT NULL DEFAULT '{}',
+    estado         estado_pregunta NOT NULL DEFAULT 'activa',
+    creada_en      TIMESTAMPTZ     NOT NULL DEFAULT NOW(),
+    actualizada_en TIMESTAMPTZ     NOT NULL DEFAULT NOW()
 );
 -- Backfill columns for legacy databases where `preguntas` was created
 -- without `campo` / `orden` (pre-multi-section schema). The CREATE TABLE
@@ -106,6 +111,8 @@ CREATE TABLE IF NOT EXISTS preguntas (
 -- before any index that references them.
 ALTER TABLE preguntas ADD COLUMN IF NOT EXISTS campo VARCHAR(100);
 ALTER TABLE preguntas ADD COLUMN IF NOT EXISTS orden INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE preguntas ADD COLUMN IF NOT EXISTS creada_en TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE preguntas ADD COLUMN IF NOT EXISTS estado estado_pregunta NOT NULL DEFAULT 'activa';
 CREATE INDEX IF NOT EXISTS idx_preguntas_orden ON preguntas (orden);
 
 -- Widen usuarios.dni_nie to TEXT, add dni_nie_hash and username for

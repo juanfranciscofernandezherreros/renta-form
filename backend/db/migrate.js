@@ -58,6 +58,20 @@ async function migrate() {
     if (!(await columnExists(client, 'preguntas', 'orden'))) {
       await client.query(`ALTER TABLE preguntas ADD COLUMN orden INTEGER NOT NULL DEFAULT 0`)
     }
+    if (!(await columnExists(client, 'preguntas', 'creada_en'))) {
+      await client.query(`ALTER TABLE preguntas ADD COLUMN creada_en TIMESTAMPTZ NOT NULL DEFAULT NOW()`)
+    }
+    if (!(await columnExists(client, 'preguntas', 'estado'))) {
+      // Ensure the enum type exists before adding the column.
+      await client.query(`
+        DO $$ BEGIN
+          IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_pregunta') THEN
+            CREATE TYPE estado_pregunta AS ENUM ('activa', 'inactiva', 'borrador', 'archivada');
+          END IF;
+        END $$;
+      `)
+      await client.query(`ALTER TABLE preguntas ADD COLUMN estado estado_pregunta NOT NULL DEFAULT 'activa'`)
+    }
 
     // Backfill `campo` for canonical rows that still have it NULL by using
     // their UUID against the legacy hard-coded catalogue (only relevant for

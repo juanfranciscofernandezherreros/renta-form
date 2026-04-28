@@ -356,6 +356,8 @@ function rowToPreguntaFormulario(r) {
     texto: textoDisplay,
     textos,
     tipo: 'sino',
+    estado: r.estado ?? 'activa',
+    creadaEn: r.creada_en,
     actualizadaEn: r.actualizada_en,
   }
 }
@@ -366,7 +368,7 @@ async function listPreguntasFormulario({ page = 1, limit = 10 } = {}) {
     const total = parseInt(countRes.rows[0].count, 10)
     const offset = (page - 1) * limit
     const { rows } = await pool.query(
-      `SELECT id, campo, orden, texto, actualizada_en
+      `SELECT id, campo, orden, texto, estado, creada_en, actualizada_en
          FROM preguntas
         ORDER BY orden NULLS LAST, actualizada_en, campo
         LIMIT $1 OFFSET $2`,
@@ -402,7 +404,9 @@ function sanitiseTextos(raw) {
   return out
 }
 
-async function createPreguntaFormulario({ campo, orden, texto, textos } = {}) {
+const VALID_ESTADO_PREGUNTA = new Set(['activa', 'inactiva', 'borrador', 'archivada'])
+
+async function createPreguntaFormulario({ campo, orden, texto, textos, estado } = {}) {
   // Validate campo (mandatory, camelCase, unique)
   if (!campo || typeof campo !== 'string' || !campo.trim()) {
     return { data: null, error: { message: 'El campo es obligatorio' } }
@@ -410,6 +414,16 @@ async function createPreguntaFormulario({ campo, orden, texto, textos } = {}) {
   const campoNorm = campo.trim()
   if (!CAMPO_RE.test(campoNorm)) {
     return { data: null, error: { message: 'El campo debe ser camelCase (letras y números, comenzando por minúscula)' } }
+  }
+
+  // Validate estado
+  let estadoNorm = 'activa'
+  if (estado !== undefined && estado !== null && estado !== '') {
+    const v = String(estado).trim()
+    if (!VALID_ESTADO_PREGUNTA.has(v)) {
+      return { data: null, error: { message: `estado debe ser uno de: ${[...VALID_ESTADO_PREGUNTA].join(', ')}` } }
+    }
+    estadoNorm = v
   }
 
   // Build the i18n object
@@ -469,10 +483,10 @@ async function createPreguntaFormulario({ campo, orden, texto, textos } = {}) {
     }
 
     const { rows } = await client.query(
-      `INSERT INTO preguntas (campo, orden, texto)
-       VALUES ($1, $2, $3::jsonb)
-       RETURNING id, campo, orden, texto, actualizada_en`,
-      [campoNorm, ordenNum, JSON.stringify(mergeObj)]
+      `INSERT INTO preguntas (campo, orden, texto, estado)
+       VALUES ($1, $2, $3::jsonb, $4::estado_pregunta)
+       RETURNING id, campo, orden, texto, estado, creada_en, actualizada_en`,
+      [campoNorm, ordenNum, JSON.stringify(mergeObj), estadoNorm]
     )
     await client.query('COMMIT')
     return { data: rowToPreguntaFormulario(rows[0]), status: 201, error: null }
@@ -500,7 +514,7 @@ async function deletePreguntaFormulario(id) {
   }
 }
 
-async function updatePreguntaFormulario(id, { campo, orden, texto, textos } = {}) {
+async function updatePreguntaFormulario(id, { campo, orden, texto, textos, estado } = {}) {
   if (!id) return { data: null, error: { message: 'El id es obligatorio' } }
 
   // Validate inputs up front (before opening a transaction).
@@ -510,6 +524,15 @@ async function updatePreguntaFormulario(id, { campo, orden, texto, textos } = {}
     if (!CAMPO_RE.test(campoNorm)) {
       return { data: null, error: { message: 'El campo debe ser camelCase (letras y números, comenzando por minúscula)' } }
     }
+  }
+
+  let estadoNorm
+  if (estado !== undefined && estado !== null && estado !== '') {
+    const v = String(estado).trim()
+    if (!VALID_ESTADO_PREGUNTA.has(v)) {
+      return { data: null, error: { message: `estado debe ser uno de: ${[...VALID_ESTADO_PREGUNTA].join(', ')}` } }
+    }
+    estadoNorm = v
   }
 
   let requestedOrden = null
@@ -533,7 +556,7 @@ async function updatePreguntaFormulario(id, { campo, orden, texto, textos } = {}
     mergeObj = { es: String(texto).trim() }
   }
 
-  if (campoNorm === undefined && requestedOrden === null && !mergeObj) {
+  if (campoNorm === undefined && requestedOrden === null && !mergeObj && estadoNorm === undefined) {
     return { data: null, error: { message: 'No hay cambios que guardar' } }
   }
 
@@ -603,6 +626,10 @@ async function updatePreguntaFormulario(id, { campo, orden, texto, textos } = {}
       params.push(JSON.stringify(mergeObj))
       setClauses.push(`texto = COALESCE(texto, '{}'::jsonb) || $${params.length}::jsonb`)
     }
+    if (estadoNorm !== undefined) {
+      params.push(estadoNorm)
+      setClauses.push(`estado = $${params.length}::estado_pregunta`)
+    }
     setClauses.push(`actualizada_en = NOW()`)
     params.push(id)
 
@@ -616,7 +643,7 @@ async function updatePreguntaFormulario(id, { campo, orden, texto, textos } = {}
     }
 
     const { rows } = await client.query(
-      `SELECT id, campo, orden, texto, actualizada_en FROM preguntas WHERE id = $1`,
+      `SELECT id, campo, orden, texto, estado, creada_en, actualizada_en FROM preguntas WHERE id = $1`,
       [id]
     )
 

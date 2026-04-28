@@ -13,10 +13,21 @@ const DEFAULT_LANGS = [{ code: 'es', label: 'Español' }]
 const PAGE_SIZE_OPTIONS = [5, 10, 15, 20]
 const DEFAULT_PAGE_LIMIT = 10
 
+const ESTADOS_PREGUNTA = [
+  { value: 'activa',    label: 'Activa',    color: '#2e7d32', bg: '#e8f5e9' },
+  { value: 'inactiva',  label: 'Inactiva',  color: '#e65100', bg: '#fff3e0' },
+  { value: 'borrador',  label: 'Borrador',  color: '#1565c0', bg: '#e3f2fd' },
+  { value: 'archivada', label: 'Archivada', color: '#6d4c41', bg: '#efebe9' },
+]
+
+function estadoInfo(valor) {
+  return ESTADOS_PREGUNTA.find(e => e.value === valor) ?? { value: valor, label: valor, color: '#555', bg: '#eee' }
+}
+
 function makeEmptyForm(langs) {
   const textos = {}
   for (const { code } of langs) textos[code] = ''
-  return { campo: '', orden: '', textos }
+  return { campo: '', orden: '', estado: 'activa', textos }
 }
 
 // Convert a Spanish text into a camelCase identifier suitable for the `campo`
@@ -112,7 +123,7 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
     for (const { code } of langs) {
       textos[code] = pregunta.textos?.[code] ?? ''
     }
-    setForm({ campo: pregunta.campo ?? '', orden: pregunta.orden ?? '', textos })
+    setForm({ campo: pregunta.campo ?? '', orden: pregunta.orden ?? '', estado: pregunta.estado ?? 'activa', textos })
     setEditando(pregunta)
     setModal('edit')
   }
@@ -184,13 +195,13 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
     setSaving(true)
     try {
       if (modal === 'create') {
-        const body = { textos, campo: campoTrim }
+        const body = { textos, campo: campoTrim, estado: form.estado || 'activa' }
         if (ordenNum !== undefined) body.orden = ordenNum
         const { error: apiErr } = await createPreguntaFormulario({ body })
         if (apiErr) { showToast(`Error: ${apiErr.message}`, 'error'); return }
         showToast('Pregunta creada correctamente')
       } else {
-        const body = { textos }
+        const body = { textos, estado: form.estado || 'activa' }
         if (campoTrim && campoTrim !== editando.campo) body.campo = campoTrim
         if (ordenNum !== undefined) body.orden = ordenNum
         const { error: apiErr } = await updatePreguntaFormulario({
@@ -261,51 +272,71 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
                 <th style={{ whiteSpace: 'nowrap' }}>Campo</th>
                 <th style={{ whiteSpace: 'nowrap' }}>Orden</th>
                 <th style={{ whiteSpace: 'nowrap' }}>Tipo</th>
+                <th style={{ whiteSpace: 'nowrap' }}>Estado</th>
                 <th style={{ whiteSpace: 'nowrap' }}>Idiomas</th>
+                <th style={{ whiteSpace: 'nowrap' }}>Creada</th>
                 <th style={{ whiteSpace: 'nowrap' }}>Última modificación</th>
                 <th style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
-              {preguntas.map(p => (
-                <tr key={p.id}>
-                  <td>
-                    <div className="pregunta-texto">{p.texto}</div>
-                  </td>
-                  <td style={{ whiteSpace: 'nowrap', fontFamily: 'monospace', fontSize: '.85em' }}>{p.campo}</td>
-                  <td style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>{p.orden ?? '—'}</td>
-                  <td style={{ whiteSpace: 'nowrap' }}>Sí / No</td>
-                  <td style={{ whiteSpace: 'nowrap', fontSize: '.85em', color: '#555' }}>
-                    {p.textos
-                      ? Object.keys(p.textos)
-                          .filter(k => p.textos[k])
-                          .map(code => langs.find(l => l.code === code)?.label || code)
-                          .join(', ')
-                      : '—'}
-                  </td>
-                  <td style={{ whiteSpace: 'nowrap' }}>{formatFecha(p.actualizadaEn)}</td>
-                  <td>
-                    <div className="pregunta-actions">
-                      <button
-                        type="button"
-                        className="btn btn-secondary btn-sm btn-xs"
-                        onClick={() => openEdit(p)}
-                        title="Editar pregunta"
-                      >
-                        ✏️ Editar
-                      </button>
-                      <button
-                        type="button"
-                        className="btn btn-danger btn-sm btn-xs"
-                        onClick={() => handleDelete(p)}
-                        title="Eliminar pregunta"
-                      >
-                        🗑️ Eliminar
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {preguntas.map(p => {
+                const ei = estadoInfo(p.estado)
+                return (
+                  <tr key={p.id}>
+                    <td>
+                      <div className="pregunta-texto">{p.texto}</div>
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap', fontFamily: 'monospace', fontSize: '.85em' }}>{p.campo}</td>
+                    <td style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>{p.orden ?? '—'}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>Sí / No</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '2px 10px',
+                        borderRadius: 12,
+                        fontSize: '.82em',
+                        fontWeight: 600,
+                        color: ei.color,
+                        background: ei.bg,
+                        border: `1px solid ${ei.color}`,
+                      }}>
+                        {ei.label}
+                      </span>
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap', fontSize: '.85em', color: '#555' }}>
+                      {p.textos
+                        ? Object.keys(p.textos)
+                            .filter(k => p.textos[k])
+                            .map(code => langs.find(l => l.code === code)?.label || code)
+                            .join(', ')
+                        : '—'}
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{formatFecha(p.creadaEn)}</td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{formatFecha(p.actualizadaEn)}</td>
+                    <td>
+                      <div className="pregunta-actions">
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-sm btn-xs"
+                          onClick={() => openEdit(p)}
+                          title="Editar pregunta"
+                        >
+                          ✏️ Editar
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-danger btn-sm btn-xs"
+                          onClick={() => handleDelete(p)}
+                          title="Eliminar pregunta"
+                        >
+                          🗑️ Eliminar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>
@@ -366,6 +397,18 @@ export default function PreguntasFormularioAdminTab({ showToast }) {
                   />
                 </div>
               ))}
+              <div>
+                <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>Estado</label>
+                <select
+                  value={form.estado ?? 'activa'}
+                  onChange={e => setForm(prev => ({ ...prev, estado: e.target.value }))}
+                  style={{ width: '100%', boxSizing: 'border-box', padding: '6px 8px', borderRadius: 4, border: '1px solid #ccc' }}
+                >
+                  {ESTADOS_PREGUNTA.map(({ value, label }) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label style={{ display: 'block', marginBottom: 6, fontWeight: 500 }}>Tipo de respuesta</label>
                 <input
