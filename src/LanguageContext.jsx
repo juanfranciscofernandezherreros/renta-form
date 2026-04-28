@@ -82,7 +82,11 @@ export function LanguageProvider({ children }) {
         console.warn('Failed to load translations from DB:', err)
       })
       .finally(() => {
-        if (!cancelled) setReady(true)
+        // setReady is always safe to call – React 18 silently ignores setState
+        // on unmounted components, and in Strict Mode the double-effect cycle
+        // sets cancelled=true before the fetch resolves, which would otherwise
+        // leave the app permanently stuck on the loading spinner.
+        setReady(true)
       })
     return () => { cancelled = true }
   }, [applyData])

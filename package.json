@@ -7,6 +7,7 @@
     "test": "cucumber-js",
     "test:backend": "cucumber-js --tags @api",
     "test:backend:coverage": "node scripts/run-backend-tests.cjs",
+    "test:frontend": "node scripts/run-frontend-tests.cjs",
     "generate": "openapi-ts",
     "dev": "vite",
     "build": "vite build",
