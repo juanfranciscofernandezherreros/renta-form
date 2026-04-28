@@ -1274,6 +1274,9 @@ async function updateDeclaracion(id, body) {
     return { data: rowToDeclaracion(row, respuestasMap.get(row.id) ?? {}), error: null }
   } catch (err) {
     await client.query('ROLLBACK').catch(() => {})
+    if (err.code === '23505' && (err.constraint === 'uq_declaraciones_dni_nie_hash' || err.constraint === 'uq_declaraciones_dni_nie')) {
+      return { data: null, error: { message: 'Ya existe una declaración con este DNI/NIE' }, status: 409 }
+    }
     console.error('updateDeclaracion DB error:', err.message)
     return { data: null, error: { message: 'Error de base de datos' }, status: 503 }
   } finally {
